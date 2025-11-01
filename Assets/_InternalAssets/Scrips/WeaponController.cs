@@ -72,20 +72,24 @@ public class WeaponController : MonoBehaviour
     public void Equip(Camera camera)
     {
         playerCamera = camera;
-        transform.SetParent(camera.transform);
-        transform.localPosition = heldPosition;
-        transform.localRotation = Quaternion.Euler(heldRotation);
-        originalLocalPosition = transform.localPosition;
         isEquipped = true;
         
-        // Make weapon invisible to camera (so it doesn't render in front)
-        SetLayerRecursively(gameObject, LayerMask.NameToLayer("Weapon"));
+        // Get local position from ItemPickup if available
+        ItemPickup itemPickup = GetComponent<ItemPickup>();
+        if (itemPickup != null)
+        {
+            originalLocalPosition = itemPickup.OriginalLocalPosition;
+        }
+        else
+        {
+            originalLocalPosition = transform.localPosition;
+        }
     }
     
     public void Unequip()
     {
-        transform.SetParent(null);
         isEquipped = false;
+        playerCamera = null;
     }
     
     private void Shoot()

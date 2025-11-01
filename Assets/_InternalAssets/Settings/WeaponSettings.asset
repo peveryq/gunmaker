@@ -22,6 +22,6 @@ MonoBehaviour:
   magSize: 15
   reloadTime: 2
   muzzleFlash: {fileID: 0}
-  shootSound: {fileID: 0}
-  reloadSound: {fileID: 0}
+  shootSound: {fileID: 8300000, guid: b1eef4d682d54a644aba55886f1c878d, type: 3}
+  reloadSound: {fileID: 8300000, guid: 6d96cf02f4403b64d8e94f0ecacacfe2, type: 3}
   emptySound: {fileID: 0}
