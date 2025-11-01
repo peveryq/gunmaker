@@ -32,6 +32,10 @@ public class WeaponController : MonoBehaviour
     private float defaultFOV;
     private Vector3 defaultPosition;
     
+    // Weapon Sway
+    private Vector3 swayOffset = Vector3.zero;
+    private float swayTimer = 0f;
+    
     private void Start()
     {
         originalLocalPosition = transform.localPosition;
@@ -105,6 +109,12 @@ public class WeaponController : MonoBehaviour
         if (cursorLocked && Input.GetKeyDown(KeyCode.R))
         {
             StartReload();
+        }
+        
+        // Handle weapon sway when moving
+        if (settings != null && settings.enableWeaponSway)
+        {
+            HandleWeaponSway();
         }
         
         // Handle recoil recovery (always, even when cursor is unlocked)
@@ -226,13 +236,26 @@ public class WeaponController : MonoBehaviour
         Vector3 direction;
         
         // Raycast from camera center to get accurate aim point
-        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        // Start raycast slightly forward to avoid hitting own weapon
+        Vector3 rayStart = playerCamera.transform.position + playerCamera.transform.forward * 0.1f;
+        Ray ray = new Ray(rayStart, playerCamera.transform.forward);
         RaycastHit hit;
         
+        // Ignore own weapon layer or use longer raycast start
         if (Physics.Raycast(ray, out hit, 1000f))
         {
-            // Aim at the hit point
-            direction = (hit.point - firePoint.position).normalized;
+            // Check if we hit ourselves (weapon/player)
+            if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform.IsChildOf(playerCamera.transform))
+            {
+                // Hit own weapon, use camera forward instead
+                Vector3 targetPoint = playerCamera.transform.position + playerCamera.transform.forward * 1000f;
+                direction = (targetPoint - firePoint.position).normalized;
+            }
+            else
+            {
+                // Aim at the hit point
+                direction = (hit.point - firePoint.position).normalized;
+            }
         }
         else
         {
@@ -307,6 +330,43 @@ public class WeaponController : MonoBehaviour
         hasPlayedEmptySound = false; // Reset flag after reload
     }
     
+    private void HandleWeaponSway()
+    {
+        // Get movement info from FirstPersonController
+        FirstPersonController fpsController = playerCamera.GetComponentInParent<FirstPersonController>();
+        bool isMoving = false;
+        bool isRunning = false;
+        
+        if (fpsController != null)
+        {
+            isMoving = fpsController.IsMoving;
+            isRunning = fpsController.IsRunning;
+        }
+        
+        if (isMoving && !isAiming) // Sway only when moving and not aiming
+        {
+            // Increase timer for sway animation
+            float swaySpeed = isRunning ? settings.swaySpeed * 1.5f : settings.swaySpeed;
+            swayTimer += swaySpeed * Time.deltaTime;
+            
+            // Calculate sway offset using sine waves
+            float swayX = Mathf.Sin(swayTimer) * settings.swayAmount;
+            float swayY = Mathf.Sin(swayTimer * 2f) * settings.swayAmount * 0.5f; // Vertical sway at double frequency
+            
+            Vector3 targetSway = new Vector3(swayX, swayY, 0f);
+            swayOffset = Vector3.Lerp(swayOffset, targetSway, settings.swaySmoothing * Time.deltaTime);
+        }
+        else
+        {
+            // Smoothly return to zero when not moving or when aiming
+            swayOffset = Vector3.Lerp(swayOffset, Vector3.zero, settings.swaySmoothing * Time.deltaTime);
+            if (!isMoving)
+            {
+                swayTimer = 0f;
+            }
+        }
+    }
+    
     private void HandleAiming()
     {
         if (playerCamera == null || settings == null) return;
@@ -331,9 +391,9 @@ public class WeaponController : MonoBehaviour
         float lerpSpeed = settings.aimSpeed * Time.deltaTime;
         playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFOV, lerpSpeed);
         
-        // Smoothly interpolate weapon position WITH recoil offset
-        Vector3 targetPosWithRecoil = targetPosition + recoilOffset;
-        transform.localPosition = Vector3.Lerp(transform.localPosition, targetPosWithRecoil, lerpSpeed);
+        // Smoothly interpolate weapon position WITH recoil offset AND sway offset
+        Vector3 targetPosWithOffsets = targetPosition + recoilOffset + swayOffset;
+        transform.localPosition = Vector3.Lerp(transform.localPosition, targetPosWithOffsets, lerpSpeed);
         
         // Update original position based on aiming state (for recoil calculations)
         originalLocalPosition = targetPosition;

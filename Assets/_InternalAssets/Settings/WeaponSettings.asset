@@ -16,9 +16,9 @@ MonoBehaviour:
   bulletSpeed: 50
   bulletDamage: 10
   spreadAngle: 5
-  recoilUpward: 1
-  recoilKickback: 0.05
-  recoilRecoverySpeed: 5
+  recoilUpward: 2
+  recoilKickback: 0.15
+  recoilRecoverySpeed: 15
   magSize: 15
   reloadTime: 1.3
   autoReload: 0
@@ -26,6 +26,10 @@ MonoBehaviour:
   aimFOV: 50
   aimSpeed: 8
   aimPosition: {x: 0, y: -0.3, z: 0.5}
+  enableWeaponSway: 1
+  swayAmount: 0.02
+  swaySpeed: 10
+  swaySmoothing: 8
   muzzleFlash: {fileID: 3296632129810359161, guid: 840af1fada9ee28449c645e83585e80b, type: 3}
   shootSound: {fileID: 8300000, guid: b1eef4d682d54a644aba55886f1c878d, type: 3}
   reloadStartSound: {fileID: 8300000, guid: e34622b632502a645b808cee6fa81c22, type: 3}

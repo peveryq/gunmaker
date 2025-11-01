@@ -12,6 +12,10 @@ public class ItemPickup : MonoBehaviour
     [Tooltip("LOCAL rotation when holding item (Euler angles)")]
     [SerializeField] private Vector3 heldRotation = new Vector3(0, 0, 0);
     
+    [Header("Drop Settings")]
+    [Tooltip("Rotation when dropped (relative to camera direction).\n(0,90,0) = item lies sideways to camera view\n(90,0,0) = item tilted forward")]
+    [SerializeField] private Vector3 dropRotation = new Vector3(0, 90, 0);
+    
     [Header("Visual Feedback")]
     [SerializeField] private GameObject pickupPrompt;
     
@@ -87,7 +91,7 @@ public class ItemPickup : MonoBehaviour
         isHeld = true;
     }
     
-    public void Drop(Vector3 dropPosition, Vector3 dropForce)
+    public void Drop(Vector3 dropPosition, Vector3 dropForce, Quaternion dropRotation)
     {
         if (!isHeld) return;
         
@@ -100,8 +104,9 @@ public class ItemPickup : MonoBehaviour
             itemCollider.enabled = false;
         }
         
-        // Set position
+        // Set position and rotation
         transform.position = dropPosition;
+        transform.rotation = dropRotation;
         
         // Enable physics
         if (rb != null)
@@ -179,5 +184,6 @@ public class ItemPickup : MonoBehaviour
     public float PickupRange => pickupRange;
     public string ItemName => itemName;
     public Vector3 OriginalLocalPosition => originalLocalPosition;
+    public Vector3 DropRotation => dropRotation;
 }
 

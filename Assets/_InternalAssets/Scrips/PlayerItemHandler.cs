@@ -17,6 +17,7 @@ public class PlayerItemHandler : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private Camera playerCamera;
+    [SerializeField] private Transform itemHoldPoint;
     
     private ItemPickup currentItem;
     private ItemPickup lookingAtItem;
@@ -35,6 +36,16 @@ public class PlayerItemHandler : MonoBehaviour
             {
                 playerCamera = Camera.main;
             }
+        }
+        
+        // Create item hold point if not assigned (intermediate object between camera and items)
+        if (itemHoldPoint == null && playerCamera != null)
+        {
+            GameObject holdPointObj = new GameObject("ItemHoldPoint");
+            holdPointObj.transform.SetParent(playerCamera.transform);
+            holdPointObj.transform.localPosition = Vector3.zero;
+            holdPointObj.transform.localRotation = Quaternion.identity;
+            itemHoldPoint = holdPointObj.transform;
         }
     }
     
@@ -161,10 +172,10 @@ public class PlayerItemHandler : MonoBehaviour
     
     private void PickupItem(ItemPickup item)
     {
-        if (item == null || playerCamera == null) return;
+        if (item == null || itemHoldPoint == null) return;
         
-        // Pickup item directly to camera (no intermediate hold point)
-        item.Pickup(playerCamera.transform);
+        // Pickup item to hold point (intermediate object, not directly to camera)
+        item.Pickup(itemHoldPoint);
         currentItem = item;
         
         // Enable weapon controller if item has one
@@ -190,7 +201,11 @@ public class PlayerItemHandler : MonoBehaviour
         Vector3 dropPosition = FindSafeDropPosition();
         Vector3 dropForceVector = playerCamera.transform.forward * dropForce;
         
-        currentItem.Drop(dropPosition, dropForceVector);
+        // Calculate drop rotation relative to camera forward
+        Quaternion baseRotation = Quaternion.LookRotation(playerCamera.transform.forward);
+        Quaternion finalRotation = baseRotation * Quaternion.Euler(currentItem.DropRotation);
+        
+        currentItem.Drop(dropPosition, dropForceVector, finalRotation);
         currentItem = null;
     }
     

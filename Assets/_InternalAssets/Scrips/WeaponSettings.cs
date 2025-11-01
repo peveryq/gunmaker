@@ -26,6 +26,12 @@ public class WeaponSettings : ScriptableObject
     [Tooltip("LOCAL position relative to CAMERA when aiming.\nX: left(-)/right(+), Y: down(-)/up(+), Z: forward(+)\nExample: (0, -0.2, 0.4) = centered, slightly down, closer to camera")]
     public Vector3 aimPosition = new Vector3(0f, -0.2f, 0.4f);
     
+    [Header("Weapon Sway")]
+    public bool enableWeaponSway = true;
+    public float swayAmount = 0.02f; // How much weapon sways
+    public float swaySpeed = 10f; // Speed of sway animation
+    public float swaySmoothing = 8f; // Smoothing of sway movement
+    
     [Header("Effects")]
     public GameObject muzzleFlash;
     public AudioClip shootSound;

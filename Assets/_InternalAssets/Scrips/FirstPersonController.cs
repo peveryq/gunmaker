@@ -285,6 +285,11 @@ public class FirstPersonController : MonoBehaviour
     // Public property to access camera
     public Camera PlayerCamera => playerCamera;
     
+    // Public properties for weapon sway
+    public bool IsMoving => isMoving;
+    public bool IsRunning => isRunning;
+    public float CurrentSpeed => currentSpeed;
+    
     // Public method to apply camera recoil from weapons
     public void ApplyCameraRecoil(float verticalRecoil, float horizontalRecoil = 0f)
     {
