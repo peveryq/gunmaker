@@ -7,13 +7,19 @@ public class WeaponController : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private GameObject casingPrefab;
     [SerializeField] private Transform firePoint;
+    [SerializeField] private Transform casingEjectPoint;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private AudioSource audioSource;
     
     [Header("Weapon Position")]
     [SerializeField] private Vector3 heldPosition = new Vector3(0.5f, -0.3f, 0.5f);
     [SerializeField] private Vector3 heldRotation = new Vector3(0, 0, 0);
+    
+    [Header("Casing Ejection")]
+    [SerializeField] private Vector3 casingEjectDirection = new Vector3(1f, 1f, 0f); // Right and up
+    [SerializeField] private float casingEjectForce = 3f;
     
     private bool isEquipped = false;
     private int currentAmmo;
@@ -113,6 +119,9 @@ public class WeaponController : MonoBehaviour
             }
         }
         
+        // Eject casing
+        EjectCasing();
+        
         // Apply recoil
         ApplyRecoil();
         
@@ -131,6 +140,27 @@ public class WeaponController : MonoBehaviour
         if (currentAmmo <= 0)
         {
             StartReload();
+        }
+    }
+    
+    private void EjectCasing()
+    {
+        if (casingPrefab == null) return;
+        
+        // Use casing eject point if assigned, otherwise use fire point
+        Vector3 ejectPosition = casingEjectPoint != null ? casingEjectPoint.position : firePoint.position;
+        
+        // Create casing
+        GameObject casing = Instantiate(casingPrefab, ejectPosition, Random.rotation);
+        
+        // Calculate eject direction in world space
+        Vector3 worldEjectDirection = transform.TransformDirection(casingEjectDirection.normalized);
+        
+        // Get BulletCasing component and eject
+        BulletCasing casingScript = casing.GetComponent<BulletCasing>();
+        if (casingScript != null)
+        {
+            casingScript.Eject(worldEjectDirection, casingEjectForce);
         }
     }
     
