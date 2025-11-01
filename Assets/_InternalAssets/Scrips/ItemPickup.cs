@@ -16,7 +16,9 @@ public class ItemPickup : MonoBehaviour
     
     [Header("Audio")]
     [SerializeField] private AudioClip pickupSound;
-    [SerializeField] private AudioClip dropSound;
+    [SerializeField] private AudioClip[] impactSounds; // Sounds when item hits ground
+    [SerializeField] private float minImpactVelocity = 1f; // Minimum velocity to play impact sound
+    [SerializeField] private float impactSoundCooldown = 0.5f; // Time between impact sounds
     
     private Rigidbody rb;
     private Collider itemCollider;
@@ -24,6 +26,7 @@ public class ItemPickup : MonoBehaviour
     private bool isHeld = false;
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
+    private float lastImpactSoundTime = -999f;
     
     private void Start()
     {
@@ -119,13 +122,35 @@ public class ItemPickup : MonoBehaviour
         // Re-enable collider after physics is set up
         StartCoroutine(EnableColliderDelayed());
         
-        // Play sound
-        if (dropSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(dropSound);
-        }
-        
         isHeld = false;
+    }
+    
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Play impact sound when item hits something with enough force
+        if (!isHeld && impactSounds != null && impactSounds.Length > 0)
+        {
+            // Check cooldown to prevent sound spam
+            if (Time.time - lastImpactSoundTime < impactSoundCooldown)
+                return;
+            
+            float impactVelocity = collision.relativeVelocity.magnitude;
+            
+            if (impactVelocity >= minImpactVelocity)
+            {
+                AudioClip impactClip = impactSounds[Random.Range(0, impactSounds.Length)];
+                
+                if (audioSource != null && impactClip != null)
+                {
+                    // Use 3D sound at the collision point
+                    audioSource.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
+                    audioSource.PlayOneShot(impactClip);
+                    
+                    // Update last impact time
+                    lastImpactSoundTime = Time.time;
+                }
+            }
+        }
     }
     
     private System.Collections.IEnumerator EnableColliderDelayed()

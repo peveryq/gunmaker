@@ -24,8 +24,7 @@ public class FirstPersonController : MonoBehaviour
     
     [Header("Footsteps")]
     [SerializeField] private AudioSource footstepAudioSource;
-    [SerializeField] private AudioClip[] walkingSounds;
-    [SerializeField] private AudioClip[] runningSounds;
+    [SerializeField] private AudioClip[] footstepSounds;
     [SerializeField] private float walkingStepInterval = 0.5f;
     [SerializeField] private float runningStepInterval = 0.3f;
     
@@ -251,7 +250,7 @@ public class FirstPersonController : MonoBehaviour
     
     private void HandleFootsteps()
     {
-        if (!isGrounded || !isMoving || (walkingSounds.Length == 0 && runningSounds.Length == 0))
+        if (!isGrounded || !isMoving || footstepSounds.Length == 0)
             return;
         
         float stepInterval = isRunning ? runningStepInterval : walkingStepInterval;
@@ -266,16 +265,12 @@ public class FirstPersonController : MonoBehaviour
     
     private void PlayFootstep()
     {
-        if (footstepAudioSource == null)
+        if (footstepAudioSource == null || footstepSounds.Length == 0)
             return;
         
-        AudioClip[] currentSounds = isRunning ? runningSounds : walkingSounds;
-        
-        if (currentSounds.Length > 0 && !footstepAudioSource.isPlaying)
-        {
-            AudioClip clip = currentSounds[Random.Range(0, currentSounds.Length)];
-            footstepAudioSource.PlayOneShot(clip);
-        }
+        // Use same sounds for walking and running
+        AudioClip clip = footstepSounds[Random.Range(0, footstepSounds.Length)];
+        footstepAudioSource.PlayOneShot(clip);
     }
     
     private void OnDrawGizmosSelected()

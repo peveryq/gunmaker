@@ -398,8 +398,11 @@ MonoBehaviour:
   heldPosition: {x: 0.5, y: -0.3, z: 0.5}
   heldRotation: {x: 0, y: 0, z: 0}
   pickupPrompt: {fileID: 1025453406}
-  pickupSound: {fileID: 0}
-  dropSound: {fileID: 0}
+  pickupSound: {fileID: 8300000, guid: 3d071c90f923a8f47b5d9b0e0856b3aa, type: 3}
+  impactSounds:
+  - {fileID: 8300000, guid: b0eabaa3708b8be43bf4937dfcfb07f7, type: 3}
+  minImpactVelocity: 2
+  impactSoundCooldown: 0.5
 --- !u!114 &94435438
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -932,7 +935,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   footstepAudioSource: {fileID: 0}
-  walkingSounds:
+  footstepSounds:
   - {fileID: 8300000, guid: cf19e3aafcbe3914bb75fb26dab03e70, type: 3}
   - {fileID: 8300000, guid: cc5316cd722540f49bdb9a74a7cdfcb2, type: 3}
   - {fileID: 8300000, guid: ecf5f4a08ce52c140803e8edb48dba6d, type: 3}
@@ -940,7 +943,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d1e42e7dd2e034d4babbe7c24daaba00, type: 3}
   - {fileID: 8300000, guid: 0b59da429898fad48a9b071717300cd5, type: 3}
   - {fileID: 8300000, guid: 08d2410ffb0e7eb45a0aae05abae6c69, type: 3}
-  runningSounds: []
   walkingStepInterval: 0.5
   runningStepInterval: 0.3
   lockCursorOnStart: 1
@@ -1370,7 +1372,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.01
   far clip plane: 1000
   field of view: 60
   orthographic: 0
