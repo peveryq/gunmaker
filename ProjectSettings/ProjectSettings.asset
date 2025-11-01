@@ -658,7 +658,8 @@ PlayerSettings:
   webGLWebAssemblyBigInt: 0
   webGLCloseOnQuit: 0
   webWasm2023: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    WebGL: NODECANVAS
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

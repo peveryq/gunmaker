@@ -72,6 +72,14 @@ public class PlayerItemHandler : MonoBehaviour
         if (lookingAtItem != null)
         {
             lookingAtItem.ShowPrompt(false);
+            
+            // Disable Outlinable component
+            MonoBehaviour outlinable = lookingAtItem.GetComponent("Outlinable") as MonoBehaviour;
+            if (outlinable != null)
+            {
+                outlinable.enabled = false;
+            }
+            
             lookingAtItem = null;
         }
         
@@ -102,6 +110,13 @@ public class PlayerItemHandler : MonoBehaviour
                 {
                     lookingAtItem = item;
                     lookingAtItem.ShowPrompt(true);
+                    
+                    // Enable Outlinable component
+                    MonoBehaviour outlinable = lookingAtItem.GetComponent("Outlinable") as MonoBehaviour;
+                    if (outlinable != null)
+                    {
+                        outlinable.enabled = true;
+                    }
                 }
             }
         }
