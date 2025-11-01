@@ -7,7 +7,8 @@ public class ItemPickup : MonoBehaviour
     [SerializeField] private string itemName = "Item";
     
     [Header("Held Position")]
-    [SerializeField] private Vector3 heldPosition = new Vector3(0.5f, -0.3f, 0.5f);
+    [Tooltip("Position when holding item. X=0 centers weapon horizontally for proper aiming.")]
+    [SerializeField] private Vector3 heldPosition = new Vector3(0f, -0.3f, 0.5f);
     [SerializeField] private Vector3 heldRotation = new Vector3(0, 0, 0);
     
     [Header("Visual Feedback")]

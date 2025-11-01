@@ -16,12 +16,18 @@ MonoBehaviour:
   bulletSpeed: 50
   bulletDamage: 10
   spreadAngle: 5
-  recoilUpward: 0.5
-  recoilKickback: 0.1
+  recoilUpward: 1
+  recoilKickback: 0.05
   recoilRecoverySpeed: 5
   magSize: 15
   reloadTime: 2
+  autoReload: 0
+  canAim: 1
+  aimFOV: 50
+  aimSpeed: 8
+  aimPosition: {x: 0, y: -0.2, z: 0.4}
   muzzleFlash: {fileID: 0}
   shootSound: {fileID: 8300000, guid: b1eef4d682d54a644aba55886f1c878d, type: 3}
-  reloadSound: {fileID: 8300000, guid: 6d96cf02f4403b64d8e94f0ecacacfe2, type: 3}
-  emptySound: {fileID: 0}
+  reloadStartSound: {fileID: 8300000, guid: e34622b632502a645b808cee6fa81c22, type: 3}
+  reloadEndSound: {fileID: 8300000, guid: 9720efc9ab73c1f41980bc6095a93899, type: 3}
+  emptySound: {fileID: 8300000, guid: cbf5087d5757ab143a4d0a78a211f301, type: 3}

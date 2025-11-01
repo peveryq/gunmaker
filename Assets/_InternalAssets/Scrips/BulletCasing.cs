@@ -9,7 +9,6 @@ public class BulletCasing : MonoBehaviour
     [SerializeField] private bool useScaleFade = true; // Scale down instead of transparency
     
     [Header("Physics")]
-    [SerializeField] private float ejectionForce = 3f;
     [SerializeField] private float randomTorque = 5f;
     
     private Rigidbody rb;

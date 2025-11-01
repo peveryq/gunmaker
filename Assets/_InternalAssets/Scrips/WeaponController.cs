@@ -29,6 +29,13 @@ public class WeaponController : MonoBehaviour
     private Vector3 originalLocalPosition;
     private Vector3 recoilOffset = Vector3.zero;
     
+    private bool hasPlayedEmptySound = false; // Track if empty sound was played
+    
+    // Aiming
+    private bool isAiming = false;
+    private float defaultFOV;
+    private Vector3 defaultPosition;
+    
     private void Start()
     {
         originalLocalPosition = transform.localPosition;
@@ -51,9 +58,51 @@ public class WeaponController : MonoBehaviour
         bool cursorLocked = Cursor.lockState == CursorLockMode.Locked;
         
         // Handle shooting only when cursor is locked
-        if (cursorLocked && Input.GetMouseButton(0) && Time.time >= nextFireTime && !isReloading)
+        if (cursorLocked && Input.GetMouseButton(0) && Time.time >= nextFireTime)
         {
-            Shoot();
+            if (isReloading)
+            {
+                // Play empty sound once when trying to shoot during reload
+                if (!hasPlayedEmptySound)
+                {
+                    PlaySound(settings.emptySound);
+                    hasPlayedEmptySound = true;
+                }
+            }
+            else if (currentAmmo <= 0)
+            {
+                // Play empty sound once when magazine is empty
+                if (!hasPlayedEmptySound)
+                {
+                    PlaySound(settings.emptySound);
+                    hasPlayedEmptySound = true;
+                }
+            }
+            else
+            {
+                Shoot();
+            }
+        }
+        
+        // Reset empty sound flag when button is released
+        if (!Input.GetMouseButton(0))
+        {
+            hasPlayedEmptySound = false;
+        }
+        
+        // Handle aiming
+        if (cursorLocked && settings != null && settings.canAim)
+        {
+            if (Input.GetMouseButton(1))
+            {
+                isAiming = true;
+            }
+            else
+            {
+                isAiming = false;
+            }
+            
+            HandleAiming();
         }
         
         // Handle reload only when cursor is locked
@@ -66,12 +115,10 @@ public class WeaponController : MonoBehaviour
         if (recoilOffset.magnitude > 0.01f)
         {
             recoilOffset = Vector3.Lerp(recoilOffset, Vector3.zero, settings.recoilRecoverySpeed * Time.deltaTime);
-            transform.localPosition = originalLocalPosition + recoilOffset;
         }
         else
         {
             recoilOffset = Vector3.zero;
-            transform.localPosition = originalLocalPosition;
         }
     }
     
@@ -90,21 +137,35 @@ public class WeaponController : MonoBehaviour
         {
             originalLocalPosition = transform.localPosition;
         }
+        
+        // Store default values for aiming
+        defaultPosition = originalLocalPosition;
+        if (playerCamera != null)
+        {
+            defaultFOV = playerCamera.fieldOfView;
+        }
     }
     
     public void Unequip()
     {
+        // Restore default FOV before unequipping
+        if (playerCamera != null && defaultFOV > 0)
+        {
+            playerCamera.fieldOfView = defaultFOV;
+        }
+        
         isEquipped = false;
+        isAiming = false;
         playerCamera = null;
     }
     
     private void Shoot()
     {
-        if (currentAmmo <= 0)
-        {
-            PlaySound(settings.emptySound);
-            return;
-        }
+        // This should not be reached if ammo is 0, but check anyway
+        if (currentAmmo <= 0) return;
+        
+        // Reset empty sound flag when successfully shooting
+        hasPlayedEmptySound = false;
         
         // Create bullet
         if (bulletPrefab != null && firePoint != null)
@@ -136,8 +197,8 @@ public class WeaponController : MonoBehaviour
         currentAmmo--;
         nextFireTime = Time.time + settings.fireRate;
         
-        // Auto reload if empty
-        if (currentAmmo <= 0)
+        // Auto reload if empty and auto reload is enabled
+        if (currentAmmo <= 0 && settings.autoReload)
         {
             StartReload();
         }
@@ -166,12 +227,28 @@ public class WeaponController : MonoBehaviour
     
     private Vector3 GetShootDirection()
     {
-        Vector3 direction = playerCamera.transform.forward;
+        Vector3 direction;
+        
+        // Raycast from camera center to get accurate aim point
+        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        RaycastHit hit;
+        
+        if (Physics.Raycast(ray, out hit, 1000f))
+        {
+            // Aim at the hit point
+            direction = (hit.point - firePoint.position).normalized;
+        }
+        else
+        {
+            // No hit, use camera forward direction adjusted from fire point
+            Vector3 targetPoint = playerCamera.transform.position + playerCamera.transform.forward * 1000f;
+            direction = (targetPoint - firePoint.position).normalized;
+        }
         
         // Add spread
         if (settings.spreadAngle > 0)
         {
-            float spread = Random.Range(-settings.spreadAngle, settings.spreadAngle);
+            float spread = settings.spreadAngle;
             Quaternion spreadRotation = Quaternion.Euler(
                 Random.Range(-spread, spread),
                 Random.Range(-spread, spread),
@@ -195,8 +272,8 @@ public class WeaponController : MonoBehaviour
             }
         }
         
-        // Weapon recoil (kickback toward player)
-        recoilOffset = -transform.forward * settings.recoilKickback;
+        // Weapon recoil (kickback toward player) - use local Z axis, always backward
+        recoilOffset = Vector3.back * settings.recoilKickback;
         transform.localPosition = originalLocalPosition + recoilOffset;
     }
     
@@ -205,14 +282,65 @@ public class WeaponController : MonoBehaviour
         if (isReloading || currentAmmo >= settings.magSize) return;
         
         isReloading = true;
-        PlaySound(settings.reloadSound);
+        
+        // Play reload start sound
+        PlaySound(settings.reloadStartSound);
+        
+        // Schedule reload end sound to play just before reload finishes
+        if (settings.reloadEndSound != null)
+        {
+            float endSoundDelay = settings.reloadTime - settings.reloadEndSound.length;
+            // Ensure delay is not negative
+            endSoundDelay = Mathf.Max(endSoundDelay, 0f);
+            Invoke(nameof(PlayReloadEndSound), endSoundDelay);
+        }
+        
+        // Schedule reload finish
         Invoke(nameof(FinishReload), settings.reloadTime);
+    }
+    
+    private void PlayReloadEndSound()
+    {
+        PlaySound(settings.reloadEndSound);
     }
     
     private void FinishReload()
     {
         currentAmmo = settings.magSize;
         isReloading = false;
+        hasPlayedEmptySound = false; // Reset flag after reload
+    }
+    
+    private void HandleAiming()
+    {
+        if (playerCamera == null || settings == null) return;
+        
+        // Target values
+        float targetFOV = isAiming ? settings.aimFOV : defaultFOV;
+        Vector3 targetPosition;
+        
+        if (isAiming)
+        {
+            // When aiming, use absolute position relative to itemHoldPoint (parent)
+            // This ensures weapon is centered regardless of heldPosition from ItemPickup
+            targetPosition = settings.aimPosition;
+        }
+        else
+        {
+            // When not aiming, use default position from when weapon was equipped
+            targetPosition = defaultPosition;
+        }
+        
+        // Smoothly interpolate FOV
+        float lerpSpeed = settings.aimSpeed * Time.deltaTime;
+        playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFOV, lerpSpeed);
+        
+        // Smoothly interpolate weapon position WITH recoil offset
+        Vector3 targetPosWithRecoil = targetPosition + recoilOffset;
+        transform.localPosition = Vector3.Lerp(transform.localPosition, targetPosWithRecoil, lerpSpeed);
+        
+        // Update original position based on aiming state (for recoil calculations)
+        originalLocalPosition = targetPosition;
     }
     
     private void PlaySound(AudioClip clip)
