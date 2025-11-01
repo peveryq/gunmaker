@@ -8,10 +8,6 @@ public class Bullet : MonoBehaviour
     [SerializeField] private float damage = 10f;
     [SerializeField] private GameObject hitEffect;
     
-    [Header("Trail Settings")]
-    [SerializeField] private TrailRenderer trailRenderer;
-    [SerializeField] private Color trailColor = Color.yellow;
-    
     private Rigidbody rb;
     private bool hasHit = false;
     

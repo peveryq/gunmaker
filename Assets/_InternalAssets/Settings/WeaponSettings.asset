@@ -20,13 +20,13 @@ MonoBehaviour:
   recoilKickback: 0.05
   recoilRecoverySpeed: 5
   magSize: 15
-  reloadTime: 2
+  reloadTime: 1.3
   autoReload: 0
   canAim: 1
   aimFOV: 50
   aimSpeed: 8
   aimPosition: {x: 0, y: -0.12, z: 0.4}
-  muzzleFlash: {fileID: 0}
+  muzzleFlash: {fileID: 3296632129810359161, guid: 840af1fada9ee28449c645e83585e80b, type: 3}
   shootSound: {fileID: 8300000, guid: b1eef4d682d54a644aba55886f1c878d, type: 3}
   reloadStartSound: {fileID: 8300000, guid: e34622b632502a645b808cee6fa81c22, type: 3}
   reloadEndSound: {fileID: 8300000, guid: 9720efc9ab73c1f41980bc6095a93899, type: 3}
