@@ -8,7 +8,7 @@ public class PlayerItemHandler : MonoBehaviour
     
     [Header("Pickup Detection")]
     [SerializeField] private float maxPickupDistance = 5f;
-    [SerializeField] private float detectionRadius = 0.3f; // Radius for sphere cast (easier to aim)
+    [SerializeField] private float aimAssistRadius = 0f; // Additional radius for easier aiming (0 = precise)
     [SerializeField] private LayerMask interactableLayer = -1; // All layers by default
     
     [Header("Drop Settings")]
@@ -17,7 +17,6 @@ public class PlayerItemHandler : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private Camera playerCamera;
-    [SerializeField] private Transform itemHoldPoint;
     
     private ItemPickup currentItem;
     private ItemPickup lookingAtItem;
@@ -36,16 +35,6 @@ public class PlayerItemHandler : MonoBehaviour
             {
                 playerCamera = Camera.main;
             }
-        }
-        
-        // Create item hold point if not assigned
-        if (itemHoldPoint == null && playerCamera != null)
-        {
-            GameObject holdPointObj = new GameObject("ItemHoldPoint");
-            holdPointObj.transform.SetParent(playerCamera.transform);
-            holdPointObj.transform.localPosition = Vector3.zero;
-            holdPointObj.transform.localRotation = Quaternion.identity;
-            itemHoldPoint = holdPointObj.transform;
         }
     }
     
@@ -88,14 +77,15 @@ public class PlayerItemHandler : MonoBehaviour
         
         if (playerCamera == null) return;
         
-        // Use SphereCast for easier aiming (more forgiving than raycast)
-        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        ItemPickup detectedItem = null;
+        
+        // Primary detection: Raycast from screen center for precise aiming
+        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f)); // Center of screen
         RaycastHit hit;
         
-        // SphereCast with configurable radius
-        if (Physics.SphereCast(ray, detectionRadius, out hit, maxPickupDistance, interactableLayer))
+        if (Physics.Raycast(ray, out hit, maxPickupDistance, interactableLayer))
         {
-            // Check if we hit an item
+            // Check if we hit an item directly
             ItemPickup item = hit.collider.GetComponent<ItemPickup>();
             if (item == null)
             {
@@ -104,19 +94,66 @@ public class PlayerItemHandler : MonoBehaviour
             
             if (item != null && !item.IsHeld)
             {
-                // Check if within pickup range
-                float distance = Vector3.Distance(transform.position, item.transform.position);
-                if (distance <= item.PickupRange)
+                detectedItem = item;
+            }
+        }
+        
+        // Secondary detection: Check nearby items if aim assist is enabled and no direct hit
+        if (detectedItem == null && aimAssistRadius > 0f)
+        {
+            // Get point along the ray for proximity check
+            Vector3 checkPoint = ray.GetPoint(Mathf.Min(maxPickupDistance * 0.5f, 3f));
+            
+            // Use OverlapSphere instead of FindObjectsOfType (MUCH faster!)
+            Collider[] nearbyColliders = Physics.OverlapSphere(checkPoint, aimAssistRadius, interactableLayer);
+            ItemPickup closestItem = null;
+            float closestDistance = float.MaxValue;
+            
+            foreach (Collider col in nearbyColliders)
+            {
+                ItemPickup item = col.GetComponent<ItemPickup>();
+                if (item == null)
                 {
-                    lookingAtItem = item;
-                    lookingAtItem.ShowPrompt(true);
+                    item = col.GetComponentInParent<ItemPickup>();
+                }
+                
+                if (item != null && !item.IsHeld)
+                {
+                    float distanceToRay = Vector3.Distance(item.transform.position, checkPoint);
                     
-                    // Enable Outlinable component
-                    MonoBehaviour outlinable = lookingAtItem.GetComponent("Outlinable") as MonoBehaviour;
-                    if (outlinable != null)
+                    if (distanceToRay < closestDistance)
                     {
-                        outlinable.enabled = true;
+                        // Check if item is in front of camera
+                        Vector3 toItem = item.transform.position - playerCamera.transform.position;
+                        float dotProduct = Vector3.Dot(playerCamera.transform.forward, toItem.normalized);
+                        
+                        if (dotProduct > 0.7f) // Item is roughly in front (within ~45 degrees)
+                        {
+                            closestItem = item;
+                            closestDistance = distanceToRay;
+                        }
                     }
+                }
+            }
+            
+            detectedItem = closestItem;
+        }
+        
+        // Process detected item
+        if (detectedItem != null)
+        {
+            // Check if within pickup range (distance from player)
+            float distance = Vector3.Distance(transform.position, detectedItem.transform.position);
+            if (distance <= detectedItem.PickupRange)
+            {
+                lookingAtItem = detectedItem;
+                lookingAtItem.ShowPrompt(true);
+                
+                // Enable Outlinable component
+                MonoBehaviour outlinable = lookingAtItem.GetComponent("Outlinable") as MonoBehaviour;
+                if (outlinable != null)
+                {
+                    outlinable.enabled = true;
                 }
             }
         }
@@ -124,9 +161,10 @@ public class PlayerItemHandler : MonoBehaviour
     
     private void PickupItem(ItemPickup item)
     {
-        if (item == null || itemHoldPoint == null) return;
+        if (item == null || playerCamera == null) return;
         
-        item.Pickup(itemHoldPoint);
+        // Pickup item directly to camera (no intermediate hold point)
+        item.Pickup(playerCamera.transform);
         currentItem = item;
         
         // Enable weapon controller if item has one

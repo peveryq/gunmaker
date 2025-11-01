@@ -23,8 +23,8 @@ public class WeaponSettings : ScriptableObject
     public bool canAim = true;
     public float aimFOV = 40f; // Field of view when aiming
     public float aimSpeed = 8f; // How fast to zoom in/out
-    [Tooltip("Weapon position when aiming. Use same X as heldPosition for consistent centering. Y: up/down, Z: closer/farther")]
-    public Vector3 aimPosition = new Vector3(0f, -0.2f, 0.4f); // Position when aiming (X should match heldPosition.x)
+    [Tooltip("LOCAL position relative to CAMERA when aiming.\nX: left(-)/right(+), Y: down(-)/up(+), Z: forward(+)\nExample: (0, -0.2, 0.4) = centered, slightly down, closer to camera")]
+    public Vector3 aimPosition = new Vector3(0f, -0.2f, 0.4f);
     
     [Header("Effects")]
     public GameObject muzzleFlash;

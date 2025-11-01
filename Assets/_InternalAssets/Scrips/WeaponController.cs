@@ -13,10 +13,6 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private Camera playerCamera;
     [SerializeField] private AudioSource audioSource;
     
-    [Header("Weapon Position")]
-    [SerializeField] private Vector3 heldPosition = new Vector3(0.5f, -0.3f, 0.5f);
-    [SerializeField] private Vector3 heldRotation = new Vector3(0, 0, 0);
-    
     [Header("Casing Ejection")]
     [SerializeField] private Vector3 casingEjectDirection = new Vector3(1f, 1f, 0f); // Right and up
     [SerializeField] private float casingEjectForce = 3f;
