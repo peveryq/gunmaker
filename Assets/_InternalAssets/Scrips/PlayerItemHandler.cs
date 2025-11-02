@@ -242,6 +242,27 @@ public class PlayerItemHandler : MonoBehaviour
         }
     }
     
+    // Force pickup item (for workbench unmounting)
+    public void ForcePickupItem(ItemPickup item)
+    {
+        if (item == null || itemHoldPoint == null) return;
+        
+        // Drop current item if holding one
+        if (currentItem != null)
+        {
+            DropItem();
+        }
+        
+        // Pickup the item
+        PickupItem(item);
+    }
+    
+    // Clear current item without dropping (for workbench mounting)
+    public void ClearCurrentItem()
+    {
+        currentItem = null;
+    }
+    
     // Public property to check if holding item
     public bool IsHoldingItem => currentItem != null;
     public ItemPickup CurrentItem => currentItem;

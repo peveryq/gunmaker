@@ -167,6 +167,14 @@ public class WeaponController : MonoBehaviour
     
     private void Shoot()
     {
+        // Check if weapon can shoot (has barrel)
+        WeaponBody weaponBody = GetComponent<WeaponBody>();
+        if (weaponBody != null && !weaponBody.CanShoot())
+        {
+            PlaySound(settings.emptySound);
+            return;
+        }
+        
         // This should not be reached if ammo is 0, but check anyway
         if (currentAmmo <= 0) return;
         
@@ -298,6 +306,14 @@ public class WeaponController : MonoBehaviour
     
     private void StartReload()
     {
+        // Check if weapon can reload (has magazine)
+        WeaponBody weaponBody = GetComponent<WeaponBody>();
+        if (weaponBody != null && !weaponBody.CanReload())
+        {
+            PlaySound(settings.emptySound);
+            return;
+        }
+        
         if (isReloading || currentAmmo >= settings.magSize) return;
         
         isReloading = true;
@@ -413,6 +429,15 @@ public class WeaponController : MonoBehaviour
         foreach (Transform child in obj.transform)
         {
             SetLayerRecursively(child.gameObject, layer);
+        }
+    }
+    
+    public void RefreshAmmo()
+    {
+        // Called when weapon parts change
+        if (settings != null)
+        {
+            currentAmmo = Mathf.Min(currentAmmo, settings.magSize);
         }
     }
     

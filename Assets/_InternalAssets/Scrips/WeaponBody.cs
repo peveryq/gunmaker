@@ -1,0 +1,169 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class WeaponBody : MonoBehaviour
+{
+    [Header("Base Stats")]
+    [SerializeField] private WeaponStats baseStats = new WeaponStats();
+    
+    [Header("Installed Parts")]
+    [SerializeField] private WeaponPart barrelPart;
+    [SerializeField] private WeaponPart magazinePart;
+    [SerializeField] private WeaponPart stockPart;
+    [SerializeField] private WeaponPart scopePart;
+    
+    [Header("References")]
+    [SerializeField] private WeaponController weaponController;
+    [SerializeField] private WeaponSettings weaponSettings;
+    
+    private WeaponStats currentStats;
+    
+    private void Start()
+    {
+        // Get references if not assigned
+        if (weaponController == null)
+        {
+            weaponController = GetComponent<WeaponController>();
+        }
+        
+        UpdateWeaponStats();
+    }
+    
+    // Install a part on the weapon
+    public bool InstallPart(WeaponPart part)
+    {
+        if (part == null) return false;
+        
+        WeaponPart oldPart = null;
+        
+        // Replace part based on type
+        switch (part.Type)
+        {
+            case PartType.Barrel:
+                oldPart = barrelPart;
+                barrelPart = part;
+                break;
+            case PartType.Magazine:
+                oldPart = magazinePart;
+                magazinePart = part;
+                break;
+            case PartType.Stock:
+                oldPart = stockPart;
+                stockPart = part;
+                break;
+            case PartType.Scope:
+                oldPart = scopePart;
+                scopePart = part;
+                break;
+        }
+        
+        // Destroy old part if exists
+        if (oldPart != null)
+        {
+            Destroy(oldPart.gameObject);
+        }
+        
+        // Parent new part to weapon body
+        part.transform.SetParent(transform);
+        part.transform.localPosition = Vector3.zero;
+        part.transform.localRotation = Quaternion.identity;
+        
+        // Disable physics and interaction on installed part
+        Rigidbody rb = part.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+        
+        Collider col = part.GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = false;
+        }
+        
+        // Disable ItemPickup on part
+        ItemPickup pickup = part.GetComponent<ItemPickup>();
+        if (pickup != null)
+        {
+            pickup.enabled = false;
+        }
+        
+        // Update weapon stats
+        UpdateWeaponStats();
+        
+        return true;
+    }
+    
+    // Calculate current stats based on installed parts
+    public void UpdateWeaponStats()
+    {
+        // Start with base stats
+        currentStats = baseStats.Clone();
+        
+        // Apply modifiers from each installed part
+        if (barrelPart != null) barrelPart.ApplyModifiers(currentStats);
+        if (magazinePart != null) magazinePart.ApplyModifiers(currentStats);
+        if (stockPart != null) stockPart.ApplyModifiers(currentStats);
+        if (scopePart != null) scopePart.ApplyModifiers(currentStats);
+        
+        // Apply stats to weapon settings if available
+        if (weaponSettings != null)
+        {
+            currentStats.ApplyToSettings(weaponSettings);
+        }
+        
+        // Update weapon controller ammo
+        if (weaponController != null)
+        {
+            weaponController.RefreshAmmo();
+        }
+    }
+    
+    // Check if weapon can function
+    public bool CanShoot()
+    {
+        return barrelPart != null; // Need barrel to shoot
+    }
+    
+    public bool CanReload()
+    {
+        return magazinePart != null; // Need magazine to reload
+    }
+    
+    // Get part in slot
+    public WeaponPart GetPart(PartType type)
+    {
+        switch (type)
+        {
+            case PartType.Barrel: return barrelPart;
+            case PartType.Magazine: return magazinePart;
+            case PartType.Stock: return stockPart;
+            case PartType.Scope: return scopePart;
+            default: return null;
+        }
+    }
+    
+    // Get stats description for UI
+    public string GetStatsDescription()
+    {
+        if (currentStats == null) return "";
+        
+        string desc = $"<b>Weapon Stats</b>\n";
+        desc += $"Power: {currentStats.power:F0}\n";
+        desc += $"Accuracy: {currentStats.accuracy:F0}\n";
+        desc += $"Rapidity: {currentStats.rapidity:F0}\n";
+        desc += $"Recoil: {currentStats.recoil:F0}\n";
+        desc += $"Reload Speed: {currentStats.reloadSpeed:F0}\n";
+        desc += $"Scope: {currentStats.scope:F0}\n";
+        desc += $"Ammo: {currentStats.ammo}\n";
+        
+        return desc;
+    }
+    
+    // Properties
+    public WeaponStats CurrentStats => currentStats;
+    public bool HasBarrel => barrelPart != null;
+    public bool HasMagazine => magazinePart != null;
+}
+

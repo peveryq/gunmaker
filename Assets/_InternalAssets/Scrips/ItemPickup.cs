@@ -179,6 +179,12 @@ public class ItemPickup : MonoBehaviour
         }
     }
     
+    // Mark item as held without parenting (for workbench)
+    public void SetHeldState(bool held)
+    {
+        isHeld = held;
+    }
+    
     // Properties
     public bool IsHeld => isHeld;
     public float PickupRange => pickupRange;
