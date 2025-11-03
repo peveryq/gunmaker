@@ -81,6 +81,7 @@ GameObject:
   - component: {fileID: 808965257084503860}
   - component: {fileID: 5546836531649502627}
   - component: {fileID: 4285577044281728039}
+  - component: {fileID: 45929564900488092}
   m_Layer: 6
   m_Name: Body
   m_TagString: Untagged
@@ -136,7 +137,6 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 4abc8c0ba3de1d74baac56007363db2f, type: 2}
   - {fileID: 2100000, guid: 4abc8c0ba3de1d74baac56007363db2f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
@@ -563,3 +563,17 @@ MonoBehaviour:
   scopePart: {fileID: 0}
   weaponController: {fileID: 1825065320432647414}
   weaponSettings: {fileID: 11400000, guid: f718d573cafe3b045bea95d60b371b70, type: 2}
+--- !u!114 &45929564900488092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8210088487383162815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccdbb9036afa46fcac29037f4f019ea2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoSetupOnStart: 1
+  includeChildren: 1
