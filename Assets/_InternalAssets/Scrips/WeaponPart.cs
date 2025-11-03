@@ -11,8 +11,8 @@ public enum PartType
 public class WeaponPart : MonoBehaviour
 {
     [Header("Part Info")]
-    [SerializeField] private PartType partType;
-    [SerializeField] private string partName = "Part";
+    public PartType partType;
+    public string partName = "Part";
     
     [Header("Stat Modifiers")]
     [Tooltip("Change in power (-100 to +100)")]

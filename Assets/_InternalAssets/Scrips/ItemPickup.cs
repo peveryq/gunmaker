@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ItemPickup : MonoBehaviour
+public class ItemPickup : MonoBehaviour, IInteractable
 {
     [Header("Pickup Settings")]
     [SerializeField] private float pickupRange = 3f;
@@ -184,6 +184,27 @@ public class ItemPickup : MonoBehaviour
     {
         isHeld = held;
     }
+    
+    // IInteractable implementation
+    public bool Interact(InteractionHandler player)
+    {
+        if (isHeld || player == null) return false;
+        return player.PickupItem(this);
+    }
+    
+    public bool CanInteract(InteractionHandler player)
+    {
+        return !isHeld && player != null && !player.IsHoldingItem;
+    }
+    
+    public string GetInteractionPrompt(InteractionHandler player)
+    {
+        return $"[E] Pick up {itemName}";
+    }
+    
+    public Transform Transform => transform;
+    public float InteractionRange => pickupRange;
+    public bool ShowOutline => true;
     
     // Properties
     public bool IsHeld => isHeld;

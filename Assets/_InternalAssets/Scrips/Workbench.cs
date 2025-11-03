@@ -1,20 +1,18 @@
 using UnityEngine;
 
-public class Workbench : MonoBehaviour
+public class Workbench : MonoBehaviour, IInteractable
 {
     [Header("Workbench Settings")]
     [SerializeField] private Transform weaponMountPoint;
     [SerializeField] private Vector3 weaponMountRotation = new Vector3(0, -90, 0);
     [SerializeField] private float interactionRange = 3f;
-    [SerializeField] private KeyCode interactionKey = KeyCode.E;
     
     [Header("Part Preview")]
     [SerializeField] private GameObject partPreviewPrefab; // Prefab with Outlinable
     
     private WeaponBody mountedWeapon;
     private GameObject currentPreview;
-    private PlayerItemHandler playerHandler;
-    private Camera playerCamera;
+    private InteractionHandler interactionHandler;
     
     private void Start()
     {
@@ -32,72 +30,35 @@ public class Workbench : MonoBehaviour
     private void Update()
     {
         FindPlayer();
-        CheckInteraction();
+        UpdatePreview();
     }
     
     private void FindPlayer()
     {
-        if (playerHandler == null)
+        if (interactionHandler == null)
         {
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
-                playerHandler = player.GetComponent<PlayerItemHandler>();
-                FirstPersonController fps = player.GetComponent<FirstPersonController>();
-                if (fps != null)
-                {
-                    playerCamera = fps.PlayerCamera;
-                }
+                interactionHandler = player.GetComponent<InteractionHandler>();
             }
         }
     }
     
-    private void CheckInteraction()
+    private void UpdatePreview()
     {
-        if (playerHandler == null || playerCamera == null) return;
-        
-        // Clear preview
+        // Clear preview first
         if (currentPreview != null)
         {
             Destroy(currentPreview);
             currentPreview = null;
         }
         
-        // Check if looking at workbench
-        if (!IsLookingAtWorkbench()) return;
+        if (interactionHandler == null || mountedWeapon == null) return;
         
-        // Get current item in hand
-        ItemPickup heldItem = playerHandler.CurrentItem;
-        
-        if (Input.GetKeyDown(interactionKey))
-        {
-            if (mountedWeapon == null && heldItem != null)
-            {
-                // Try to mount weapon body
-                WeaponBody weaponBody = heldItem.GetComponent<WeaponBody>();
-                if (weaponBody != null)
-                {
-                    MountWeapon(weaponBody);
-                }
-            }
-            else if (mountedWeapon != null && heldItem == null)
-            {
-                // Unmount weapon (take back to hands)
-                UnmountWeapon();
-            }
-            else if (mountedWeapon != null && heldItem != null)
-            {
-                // Try to install part on mounted weapon
-                WeaponPart part = heldItem.GetComponent<WeaponPart>();
-                if (part != null)
-                {
-                    InstallPart(part);
-                }
-            }
-        }
-        
-        // Show preview if holding a part and weapon is mounted
-        if (mountedWeapon != null && heldItem != null)
+        // Show preview if holding a part
+        ItemPickup heldItem = interactionHandler.CurrentItem;
+        if (heldItem != null)
         {
             WeaponPart part = heldItem.GetComponent<WeaponPart>();
             if (part != null)
@@ -107,29 +68,14 @@ public class Workbench : MonoBehaviour
         }
     }
     
-    private bool IsLookingAtWorkbench()
-    {
-        if (playerCamera == null) return false;
-        
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        RaycastHit hit;
-        
-        if (Physics.Raycast(ray, out hit, interactionRange))
-        {
-            return hit.collider.gameObject == gameObject || hit.collider.transform.IsChildOf(transform);
-        }
-        
-        return false;
-    }
-    
     private void MountWeapon(WeaponBody weaponBody)
     {
         if (weaponBody == null) return;
         
-        // Notify player handler that item is being placed (clear currentItem)
-        if (playerHandler != null)
+        // Notify interaction handler that item is being placed (clear currentItem)
+        if (interactionHandler != null)
         {
-            playerHandler.ClearCurrentItem();
+            interactionHandler.ClearCurrentItem();
         }
         
         // Unequip weapon from player
@@ -172,7 +118,7 @@ public class Workbench : MonoBehaviour
     
     private void UnmountWeapon()
     {
-        if (mountedWeapon == null || playerHandler == null) return;
+        if (mountedWeapon == null || interactionHandler == null) return;
         
         // Get ItemPickup
         ItemPickup pickup = mountedWeapon.GetComponent<ItemPickup>();
@@ -181,8 +127,8 @@ public class Workbench : MonoBehaviour
             // Mark as not held so it can be picked up
             pickup.SetHeldState(false);
             
-            // Trigger pickup through player handler (simulates taking weapon)
-            playerHandler.ForcePickupItem(pickup);
+            // Trigger pickup through interaction handler (simulates taking weapon)
+            interactionHandler.ForcePickupItem(pickup);
         }
         
         mountedWeapon = null;
@@ -192,10 +138,10 @@ public class Workbench : MonoBehaviour
     {
         if (mountedWeapon == null || part == null) return;
         
-        // Notify player handler that item is being used
-        if (playerHandler != null)
+        // Notify interaction handler that item is being used
+        if (interactionHandler != null)
         {
-            playerHandler.ClearCurrentItem();
+            interactionHandler.ClearCurrentItem();
         }
         
         // Install part on weapon
@@ -244,6 +190,106 @@ public class Workbench : MonoBehaviour
             outlinable.enabled = true;
         }
     }
+    
+    // IInteractable implementation
+    public bool Interact(InteractionHandler player)
+    {
+        if (player == null) return false;
+        
+        ItemPickup heldItem = player.CurrentItem;
+        
+        if (mountedWeapon == null && heldItem != null)
+        {
+            // Try to mount weapon body
+            WeaponBody weaponBody = heldItem.GetComponent<WeaponBody>();
+            if (weaponBody != null)
+            {
+                MountWeapon(weaponBody);
+                return true;
+            }
+        }
+        else if (mountedWeapon != null && heldItem == null)
+        {
+            // Unmount weapon (take back to hands)
+            UnmountWeapon();
+            return true;
+        }
+        else if (mountedWeapon != null && heldItem != null)
+        {
+            // Try to install part on mounted weapon
+            WeaponPart part = heldItem.GetComponent<WeaponPart>();
+            if (part != null)
+            {
+                InstallPart(part);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    public bool CanInteract(InteractionHandler player)
+    {
+        if (player == null) return false;
+        
+        ItemPickup heldItem = player.CurrentItem;
+        
+        // Can interact if:
+        // 1. No weapon mounted and holding a weapon body
+        // 2. Weapon mounted and not holding anything (to unmount)
+        // 3. Weapon mounted and holding a part (to install)
+        
+        if (mountedWeapon == null && heldItem != null)
+        {
+            return heldItem.GetComponent<WeaponBody>() != null;
+        }
+        
+        if (mountedWeapon != null && heldItem == null)
+        {
+            return true;
+        }
+        
+        if (mountedWeapon != null && heldItem != null)
+        {
+            return heldItem.GetComponent<WeaponPart>() != null;
+        }
+        
+        return false;
+    }
+    
+    public string GetInteractionPrompt(InteractionHandler player)
+    {
+        if (player == null) return "";
+        
+        ItemPickup heldItem = player.CurrentItem;
+        
+        if (mountedWeapon == null && heldItem != null)
+        {
+            WeaponBody weaponBody = heldItem.GetComponent<WeaponBody>();
+            if (weaponBody != null)
+            {
+                return "[E] Place weapon on workbench";
+            }
+        }
+        else if (mountedWeapon != null && heldItem == null)
+        {
+            return "[E] Take weapon";
+        }
+        else if (mountedWeapon != null && heldItem != null)
+        {
+            WeaponPart part = heldItem.GetComponent<WeaponPart>();
+            if (part != null)
+            {
+                return $"[E] Install {part.partName}";
+            }
+        }
+        
+        return "[E] Workbench";
+    }
+    
+    public Transform Transform => transform;
+    public float InteractionRange => interactionRange;
+    public bool ShowOutline => true;
     
     // Properties
     public bool HasWeapon => mountedWeapon != null;
