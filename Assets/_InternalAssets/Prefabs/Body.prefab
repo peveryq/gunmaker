@@ -316,7 +316,7 @@ MonoBehaviour:
   drawingMode: 1
   outlineLayer: 0
   outlineTargets:
-  - IsVisible: 1
+  - IsVisible: 0
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -328,7 +328,7 @@ MonoBehaviour:
       m_Center: {x: 0, y: 0, z: 0}
       m_Extent: {x: 0.5, y: 0.5, z: 0.5}
     CutoutThreshold: 0.5
-    CullMode: 2
+    CullMode: 0
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
@@ -549,6 +549,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2837d6db25b14d63a9d7a2ed81235bc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponName: Custom Weapon
   baseStats:
     power: 1
     accuracy: 1
@@ -577,3 +578,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   autoSetupOnStart: 1
   includeChildren: 1
+  updateDynamically: 1

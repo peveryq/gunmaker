@@ -85,7 +85,13 @@ namespace EPOOutline
             var targets = GetApplicableGroups();
             foreach (var buildTargetGroup in targets)
             {
+#if UNITY_2023_1_OR_NEWER
+                var namedBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+                PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget, out string[] defines);
+                var definitions = string.Join(";", defines);
+#else
                 var definitions = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
+#endif
                 var splited = definitions.Split(';');
 
                 if (Array.Find(splited, x => x == definition) == null)
@@ -151,7 +157,13 @@ namespace EPOOutline
                 return;
 
             var group = EditorUserBuildSettings.selectedBuildTargetGroup;
+#if UNITY_2023_1_OR_NEWER
+            var namedBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(group);
+            PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget, out string[] definesArray);
+            var definitions = string.Join(";", definesArray);
+#else
             var definitions = PlayerSettings.GetScriptingDefineSymbolsForGroup(group);
+#endif
             var splited = definitions.Split(';');
 
             var builder = new StringBuilder();
@@ -170,7 +182,11 @@ namespace EPOOutline
             if (addedCount != 0)
                 builder.Remove(builder.Length - 1, 1);
 
+#if UNITY_2023_1_OR_NEWER
+            PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, builder.ToString());
+#else
             PlayerSettings.SetScriptingDefineSymbolsForGroup(group, builder.ToString());
+#endif
         }
 
         private static void AddURPDefinition()
@@ -201,8 +217,15 @@ namespace EPOOutline
             var groups = GetApplicableGroups();
             foreach (var group in groups)
             {
+#if UNITY_2023_1_OR_NEWER
+                var namedBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(group);
+                PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget, out string[] definesArray);
+                var definitions = string.Join(";", definesArray);
+                PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, definitions + ";" + definition);
+#else
                 var definitions = PlayerSettings.GetScriptingDefineSymbolsForGroup(group);
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(group, definitions + ";" + definition);
+#endif
             }
         }
         

@@ -30,7 +30,6 @@ public class Workbench : MonoBehaviour, IInteractable
     private void Update()
     {
         FindPlayer();
-        UpdatePreview();
     }
     
     private void FindPlayer()
@@ -45,9 +44,10 @@ public class Workbench : MonoBehaviour, IInteractable
         }
     }
     
-    private void UpdatePreview()
+    // Called by InteractionHandler when player can interact (looking at workbench)
+    public void ShowPreview()
     {
-        // Clear preview first
+        // Clear old preview
         if (currentPreview != null)
         {
             Destroy(currentPreview);
@@ -65,6 +65,16 @@ public class Workbench : MonoBehaviour, IInteractable
             {
                 ShowPartPreview(part);
             }
+        }
+    }
+    
+    // Called when player stops looking at workbench
+    public void HidePreview()
+    {
+        if (currentPreview != null)
+        {
+            Destroy(currentPreview);
+            currentPreview = null;
         }
     }
     

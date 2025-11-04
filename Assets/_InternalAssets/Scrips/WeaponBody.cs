@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 public class WeaponBody : MonoBehaviour
 {
+    [Header("Weapon Info")]
+    [SerializeField] private string weaponName = "Custom Weapon";
+    
     [Header("Base Stats")]
     [SerializeField] private WeaponStats baseStats = new WeaponStats();
     
@@ -17,6 +20,9 @@ public class WeaponBody : MonoBehaviour
     [SerializeField] private WeaponSettings weaponSettings;
     
     private WeaponStats currentStats;
+    
+    // Properties
+    public string WeaponName => weaponName;
     
     private void Start()
     {
@@ -156,16 +162,19 @@ public class WeaponBody : MonoBehaviour
     {
         if (currentStats == null) return "";
         
-        string desc = $"<b>Weapon Stats</b>\n";
-        desc += $"Power: {currentStats.power:F0}\n";
-        desc += $"Accuracy: {currentStats.accuracy:F0}\n";
-        desc += $"Rapidity: {currentStats.rapidity:F0}\n";
-        desc += $"Recoil: {currentStats.recoil:F0}\n";
-        desc += $"Reload Speed: {currentStats.reloadSpeed:F0}\n";
-        desc += $"Scope: {currentStats.scope:F0}\n";
-        desc += $"Ammo: {currentStats.ammo}\n";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
         
-        return desc;
+        sb.AppendLine($"<b>{weaponName}</b>");
+        sb.AppendLine();
+        sb.AppendLine($"Power: {currentStats.power}");
+        sb.AppendLine($"Accuracy: {currentStats.accuracy}");
+        sb.AppendLine($"Rapidity: {currentStats.rapidity}");
+        sb.AppendLine($"Recoil: {currentStats.recoil}");
+        sb.AppendLine($"Reload Speed: {currentStats.reloadSpeed}");
+        sb.AppendLine($"Scope: {currentStats.scope}");
+        sb.AppendLine($"Ammo: {currentStats.ammo}");
+        
+        return sb.ToString();
     }
     
     // Properties

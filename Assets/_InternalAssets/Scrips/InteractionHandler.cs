@@ -81,6 +81,14 @@ public class InteractionHandler : MonoBehaviour
         {
             DisableOutline(currentTarget);
             HidePrompt();
+            
+            // Hide workbench preview if leaving workbench
+            Workbench prevWorkbench = currentTarget as Workbench;
+            if (prevWorkbench != null)
+            {
+                prevWorkbench.HidePreview();
+            }
+            
             currentTarget = null;
         }
         
@@ -168,6 +176,13 @@ public class InteractionHandler : MonoBehaviour
                 }
                 
                 ShowPrompt(detected.GetInteractionPrompt(this));
+                
+                // Show workbench preview if looking at workbench
+                Workbench workbench = detected as Workbench;
+                if (workbench != null)
+                {
+                    workbench.ShowPreview();
+                }
             }
         }
     }

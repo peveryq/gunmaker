@@ -58,17 +58,27 @@ public class WeaponPart : MonoBehaviour
     // Get description of modifiers for UI
     public string GetModifierDescription()
     {
-        string desc = $"<b>{partName}</b>\n";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
         
-        if (powerModifier != 0) desc += $"Power: {(powerModifier > 0 ? "+" : "")}{powerModifier}\n";
-        if (accuracyModifier != 0) desc += $"Accuracy: {(accuracyModifier > 0 ? "+" : "")}{accuracyModifier}\n";
-        if (rapidityModifier != 0) desc += $"Rapidity: {(rapidityModifier > 0 ? "+" : "")}{rapidityModifier}\n";
-        if (recoilModifier != 0) desc += $"Recoil: {(recoilModifier > 0 ? "+" : "")}{recoilModifier}\n";
-        if (reloadSpeedModifier != 0) desc += $"Reload Speed: {(reloadSpeedModifier > 0 ? "+" : "")}{reloadSpeedModifier}\n";
-        if (scopeModifier != 0) desc += $"Scope: {(scopeModifier > 0 ? "+" : "")}{scopeModifier}\n";
-        if (partType == PartType.Magazine) desc += $"Ammo: {magazineCapacity}\n";
+        sb.AppendLine($"<b>{partName}</b>");
+        sb.AppendLine();
         
-        return desc;
+        if (powerModifier != 0) 
+            sb.AppendLine($"Power: {(powerModifier > 0 ? "+" : "")}{powerModifier}");
+        if (accuracyModifier != 0) 
+            sb.AppendLine($"Accuracy: {(accuracyModifier > 0 ? "+" : "")}{accuracyModifier}");
+        if (rapidityModifier != 0) 
+            sb.AppendLine($"Rapidity: {(rapidityModifier > 0 ? "+" : "")}{rapidityModifier}");
+        if (recoilModifier != 0) 
+            sb.AppendLine($"Recoil: {(recoilModifier > 0 ? "+" : "")}{recoilModifier}");
+        if (reloadSpeedModifier != 0) 
+            sb.AppendLine($"Reload Speed: {(reloadSpeedModifier > 0 ? "+" : "")}{reloadSpeedModifier}");
+        if (scopeModifier != 0) 
+            sb.AppendLine($"Scope: {(scopeModifier > 0 ? "+" : "")}{scopeModifier}");
+        if (partType == PartType.Magazine) 
+            sb.AppendLine($"Ammo: {magazineCapacity}");
+        
+        return sb.ToString();
     }
     
     // Properties
