@@ -92,6 +92,13 @@ public class WeaponBody : MonoBehaviour
         // Update weapon stats
         UpdateWeaponStats();
         
+        // Update outline to include new part
+        AutoOutline autoOutline = GetComponent<AutoOutline>();
+        if (autoOutline != null)
+        {
+            autoOutline.RefreshOutline();
+        }
+        
         return true;
     }
     

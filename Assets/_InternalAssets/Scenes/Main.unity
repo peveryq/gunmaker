@@ -3496,8 +3496,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.2416625, y: 0.8090559, z: 0.8582454}
-  m_Center: {x: 0.046494007, y: -0.15630156, z: -0.15703607}
+  m_Size: {x: 1.1706946, y: 0.8090559, z: 0.8582454}
+  m_Center: {x: 0.08197799, y: -0.15630156, z: -0.15703607}
 --- !u!114 &894785009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7979,6 +7979,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 3027508608901381638, guid: 0e43f765ac2529247943b109ae92f03d, type: 3}
+      propertyPath: aimAssistRadius
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3366428156899440924, guid: 0e43f765ac2529247943b109ae92f03d, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -8563,13 +8567,37 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2886553236754284414, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2921347700853588098, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3888230510393396911, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
       propertyPath: m_Name
       value: blowtorch
       objectReference: {fileID: 0}
+    - target: {fileID: 3888230510393396911, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3892984341943515015, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4901699912902881017, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4901699912902881017, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
       propertyPath: m_CastShadows
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7848337322319756206, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7848337322319756206, guid: 6e30604da881b1945a7ae7f7e6a896cd, type: 3}
       propertyPath: pickupSound

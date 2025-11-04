@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Rifle
   m_EditorClassIdentifier: 
   fireRate: 0.1
-  bulletSpeed: 100
+  bulletSpeed: 30
   bulletDamage: 10
-  spreadAngle: 2
-  recoilUpward: 2
+  spreadAngle: 0
+  recoilUpward: 0
   recoilKickback: 0.15
   recoilRecoverySpeed: 15
   magSize: 30

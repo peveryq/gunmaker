@@ -29,9 +29,17 @@ public class AutoOutline : MonoBehaviour
             if (currentChildCount != lastChildCount)
             {
                 lastChildCount = currentChildCount;
-                SetupOutlinable();
+                // Delay setup to next frame to ensure hierarchy is updated
+                Invoke(nameof(SetupOutlinable), 0.01f);
             }
         }
+    }
+    
+    // Public method to manually trigger update (called after part installation)
+    public void RefreshOutline()
+    {
+        lastChildCount = transform.childCount;
+        SetupOutlinable();
     }
     
     [ContextMenu("Setup Outlinable")]
@@ -157,7 +165,7 @@ public class AutoOutline : MonoBehaviour
             }
         }
         
-        Debug.Log($"Added {addedCount} targets from {renderers.Length} renderers to Outlinable on {gameObject.name}");
+        // Debug.Log($"Added {addedCount} targets from {renderers.Length} renderers to Outlinable on {gameObject.name}");
     }
 }
 
