@@ -1614,8 +1614,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2007675308}
-  - {fileID: 1667212213}
   - {fileID: 475794636}
   - {fileID: 1038184961}
   - {fileID: 216639098}
@@ -3436,8 +3434,10 @@ GameObject:
   - component: {fileID: 894785006}
   - component: {fileID: 894785008}
   - component: {fileID: 894785007}
-  m_Layer: 0
-  m_Name: weaponPlace
+  - component: {fileID: 894785010}
+  - component: {fileID: 894785009}
+  m_Layer: 6
+  m_Name: WorkBench
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3457,6 +3457,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1668410002}
+  - {fileID: 2007675308}
+  - {fileID: 1667212213}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &894785007
@@ -3474,7 +3476,6 @@ MonoBehaviour:
   weaponMountPoint: {fileID: 1668410002}
   weaponMountRotation: {x: 0, y: -90, z: 0}
   interactionRange: 3
-  interactionKey: 101
   partPreviewPrefab: {fileID: 6301199859137585369, guid: fe4f1599499294a48a0d8f27ad9c23ca, type: 3}
 --- !u!65 &894785008
 BoxCollider:
@@ -3495,8 +3496,96 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.6141402, y: 0.32905698, z: 0.411973}
-  m_Center: {x: -0.025981575, y: 0.083697915, z: -0.04247904}
+  m_Size: {x: 1.2416625, y: 0.8090559, z: 0.8582454}
+  m_Center: {x: 0.046494007, y: -0.15630156, z: -0.15703607}
+--- !u!114 &894785009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894785005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccdbb9036afa46fcac29037f4f019ea2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoSetupOnStart: 1
+  includeChildren: 1
+  updateDynamically: 0
+--- !u!114 &894785010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894785005}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fe91dc294731a9428c0941ea7579110, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  complexMaskingMode: 0
+  drawingMode: 1
+  outlineLayer: 0
+  outlineTargets:
+  - IsVisible: 0
+    CutoutMask: 8
+    edgeDilateAmount: 5
+    frontEdgeDilateAmount: 5
+    backEdgeDilateAmount: 5
+    renderer: {fileID: 2007675310}
+    SubmeshIndex: 0
+    BoundsMode: 0
+    Bounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+    CutoutThreshold: 0.5
+    CullMode: 0
+    cutoutTextureName: 
+    DilateRenderingMode: 0
+    cutoutTextureIndex: 0
+  - IsVisible: 0
+    CutoutMask: 8
+    edgeDilateAmount: 5
+    frontEdgeDilateAmount: 5
+    backEdgeDilateAmount: 5
+    renderer: {fileID: 1667212218}
+    SubmeshIndex: 0
+    BoundsMode: 0
+    Bounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+    CutoutThreshold: 0.5
+    CullMode: 0
+    cutoutTextureName: 
+    DilateRenderingMode: 0
+    cutoutTextureIndex: 0
+  renderStyle: 1
+  outlineParameters:
+    enabled: 1
+    color: {r: 1, g: 1, b: 1, a: 1}
+    dilateShift: 1
+    blurShift: 0
+    fillPass:
+      shader: {fileID: 0}
+      serializedProperties: []
+  backParameters:
+    enabled: 1
+    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    dilateShift: 1
+    blurShift: 1
+    fillPass:
+      shader: {fileID: 0}
+      serializedProperties: []
+  frontParameters:
+    enabled: 1
+    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    dilateShift: 1
+    blurShift: 1
+    fillPass:
+      shader: {fileID: 0}
+      serializedProperties: []
 --- !u!20 &963194227 stripped
 Camera:
   m_CorrespondingSourceObject: {fileID: 1432751061069463011, guid: 0e43f765ac2529247943b109ae92f03d, type: 3}
@@ -5562,11 +5651,8 @@ GameObject:
   - component: {fileID: 1667212213}
   - component: {fileID: 1667212219}
   - component: {fileID: 1667212218}
-  - component: {fileID: 1667212217}
-  - component: {fileID: 1667212216}
-  - component: {fileID: 1667212215}
   - component: {fileID: 1667212214}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: weaponPlace (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5582,11 +5668,11 @@ Transform:
   m_GameObject: {fileID: 1667212212}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.58, y: 1.9485, z: 5.298}
+  m_LocalPosition: {x: 0.08899999, y: -0.46850002, z: 0.09499979}
   m_LocalScale: {x: 0.9794574, y: 0.54517615, z: 0.22920379}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 290108637}
+  m_Father: {fileID: 894785006}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1667212214
 MonoBehaviour:
@@ -5600,101 +5686,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034bc47afcbf5e141a58d5c20b7808e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1667212215
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1667212212}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fe91dc294731a9428c0941ea7579110, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  complexMaskingMode: 0
-  drawingMode: 1
-  outlineLayer: 0
-  outlineTargets:
-  - IsVisible: 1
-    CutoutMask: 8
-    edgeDilateAmount: 5
-    frontEdgeDilateAmount: 5
-    backEdgeDilateAmount: 5
-    renderer: {fileID: 3376149797831092423}
-    SubmeshIndex: 0
-    BoundsMode: 0
-    Bounds:
-      m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
-    CutoutThreshold: 0.5
-    CullMode: 2
-    cutoutTextureName: 
-    DilateRenderingMode: 0
-    cutoutTextureIndex: 0
-  renderStyle: 1
-  outlineParameters:
-    enabled: 1
-    color: {r: 1, g: 1, b: 1, a: 1}
-    dilateShift: 1
-    blurShift: 0
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
-  backParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
-  frontParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
---- !u!114 &1667212216
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1667212212}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24df56d5a0cc4d1bbd63c1c994b1af87, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  weaponMountPoint: {fileID: 1668410002}
-  weaponMountRotation: {x: 0, y: -90, z: 0}
-  interactionRange: 3
-  interactionKey: 101
-  partPreviewPrefab: {fileID: 0}
---- !u!65 &1667212217
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1667212212}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1667212218
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5757,7 +5748,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1668410002}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mount
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7496,11 +7487,8 @@ GameObject:
   - component: {fileID: 2007675308}
   - component: {fileID: 2007675311}
   - component: {fileID: 2007675310}
-  - component: {fileID: 2007675309}
-  - component: {fileID: 2007675314}
-  - component: {fileID: 2007675313}
   - component: {fileID: 2007675312}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: weaponPlace
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7516,33 +7504,12 @@ Transform:
   m_GameObject: {fileID: 2007675307}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.58, y: 1.9485, z: 4.873}
+  m_LocalPosition: {x: 0.08899999, y: -0.46850002, z: -0.32999992}
   m_LocalScale: {x: 0.9794574, y: 0.54517615, z: 0.22920379}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 290108637}
+  m_Father: {fileID: 894785006}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &2007675309
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2007675307}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &2007675310
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7608,80 +7575,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034bc47afcbf5e141a58d5c20b7808e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2007675313
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2007675307}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fe91dc294731a9428c0941ea7579110, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  complexMaskingMode: 0
-  drawingMode: 1
-  outlineLayer: 0
-  outlineTargets:
-  - IsVisible: 1
-    CutoutMask: 8
-    edgeDilateAmount: 5
-    frontEdgeDilateAmount: 5
-    backEdgeDilateAmount: 5
-    renderer: {fileID: 3376149797831092423}
-    SubmeshIndex: 0
-    BoundsMode: 0
-    Bounds:
-      m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
-    CutoutThreshold: 0.5
-    CullMode: 2
-    cutoutTextureName: 
-    DilateRenderingMode: 0
-    cutoutTextureIndex: 0
-  renderStyle: 1
-  outlineParameters:
-    enabled: 1
-    color: {r: 1, g: 1, b: 1, a: 1}
-    dilateShift: 1
-    blurShift: 0
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
-  backParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
-  frontParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
---- !u!114 &2007675314
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2007675307}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24df56d5a0cc4d1bbd63c1c994b1af87, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  weaponMountPoint: {fileID: 1668410002}
-  weaponMountRotation: {x: 0, y: -90, z: 0}
-  interactionRange: 3
-  interactionKey: 101
-  partPreviewPrefab: {fileID: 0}
 --- !u!1 &2030257646 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8210088487383162815, guid: 7f86257039bdade428dee581984d2c93, type: 3}

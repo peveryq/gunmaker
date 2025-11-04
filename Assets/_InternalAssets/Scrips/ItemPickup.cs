@@ -194,11 +194,16 @@ public class ItemPickup : MonoBehaviour, IInteractable
     
     public bool CanInteract(InteractionHandler player)
     {
-        return !isHeld && player != null && !player.IsHoldingItem;
+        // Can pick up if not currently held (will auto-drop current item if holding one)
+        return !isHeld && player != null;
     }
     
     public string GetInteractionPrompt(InteractionHandler player)
     {
+        if (player != null && player.IsHoldingItem)
+        {
+            return $"[E] Swap for {itemName}";
+        }
         return $"[E] Pick up {itemName}";
     }
     

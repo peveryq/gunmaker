@@ -90,14 +90,27 @@ public class InteractionHandler : MonoBehaviour
         
         // Primary: Raycast from screen center
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        RaycastHit hit;
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxInteractionDistance, interactableLayer);
         
-        if (Physics.Raycast(ray, out hit, maxInteractionDistance, interactableLayer))
+        // Find first valid interactable (not held item)
+        foreach (RaycastHit hit in hits)
         {
-            detected = hit.collider.GetComponent<IInteractable>();
-            if (detected == null)
+            // Skip objects that are children of player/camera (held items)
+            if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform.IsChildOf(playerCamera.transform))
             {
-                detected = hit.collider.GetComponentInParent<IInteractable>();
+                continue;
+            }
+            
+            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+            if (interactable == null)
+            {
+                interactable = hit.collider.GetComponentInParent<IInteractable>();
+            }
+            
+            if (interactable != null)
+            {
+                detected = interactable;
+                break;
             }
         }
         
@@ -110,6 +123,12 @@ public class InteractionHandler : MonoBehaviour
             
             foreach (Collider col in nearbyColliders)
             {
+                // Skip held items
+                if (col.transform.IsChildOf(transform) || col.transform.IsChildOf(playerCamera.transform))
+                {
+                    continue;
+                }
+                
                 IInteractable interactable = col.GetComponent<IInteractable>();
                 if (interactable == null)
                 {
@@ -138,6 +157,7 @@ public class InteractionHandler : MonoBehaviour
         if (detected != null)
         {
             float distance = Vector3.Distance(transform.position, detected.Transform.position);
+            
             if (distance <= detected.InteractionRange && detected.CanInteract(this))
             {
                 currentTarget = detected;
@@ -200,7 +220,7 @@ public class InteractionHandler : MonoBehaviour
     {
         if (item == null || itemHoldPoint == null) return false;
         
-        // Drop current item if holding one
+        // Automatically drop current item if holding one
         if (currentItem != null)
         {
             DropCurrentItem();

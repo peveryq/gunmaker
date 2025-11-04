@@ -16,7 +16,7 @@ public class WeaponStatsUI : MonoBehaviour
     private void Start()
     {
         // Find player camera
-        FirstPersonController fps = FindObjectOfType<FirstPersonController>();
+        FirstPersonController fps = FindFirstObjectByType<FirstPersonController>();
         if (fps != null)
         {
             playerCamera = fps.PlayerCamera;
