@@ -6,6 +6,10 @@ public class ItemPickup : MonoBehaviour, IInteractable
     [SerializeField] private float pickupRange = 3f;
     [SerializeField] private string itemName = "Item";
     
+    [Header("Auto-Settings (Optional)")]
+    [Tooltip("If checked, will automatically apply settings from WeaponPart type")]
+    [SerializeField] private bool usePartTypeDefaults = true;
+    
     [Header("Held Position")]
     [Tooltip("LOCAL position relative to CAMERA when holding item.\nX: left(-)/right(+), Y: down(-)/up(+), Z: forward(+)\nExample: (0, -0.3, 0.5) = centered, slightly down, in front")]
     [SerializeField] private Vector3 heldPosition = new Vector3(0f, -0.3f, 0.5f);
@@ -15,10 +19,6 @@ public class ItemPickup : MonoBehaviour, IInteractable
     [Header("Drop Settings")]
     [Tooltip("Rotation when dropped (relative to camera direction).\n(0,90,0) = item lies sideways to camera view\n(90,0,0) = item tilted forward")]
     [SerializeField] private Vector3 dropRotation = new Vector3(0, 90, 0);
-    [Tooltip("Use geometry center instead of pivot for drop position")]
-    [SerializeField] private bool useGeometryCenter = true;
-    [Tooltip("Manual offset for drop position (if useGeometryCenter is false).\nUseful when pivot is far from geometry")]
-    [SerializeField] private Vector3 dropPositionOffset = Vector3.zero;
     
     [Header("Visual Feedback")]
     [SerializeField] private GameObject pickupPrompt;
@@ -52,6 +52,56 @@ public class ItemPickup : MonoBehaviour, IInteractable
         if (pickupPrompt != null)
         {
             pickupPrompt.SetActive(false);
+        }
+        
+        // Apply part type defaults if enabled
+        if (usePartTypeDefaults)
+        {
+            ApplyPartTypeDefaults();
+        }
+    }
+    
+    // Apply default settings based on weapon part type or body
+    private void ApplyPartTypeDefaults()
+    {
+        // Get defaults from PartTypeDefaultSettings
+        PartTypeDefaultSettings defaults = PartTypeDefaultSettings.Instance;
+        if (defaults == null) return;
+        
+        // Check if this is a weapon part
+        WeaponPart weaponPart = GetComponent<WeaponPart>();
+        if (weaponPart != null)
+        {
+            switch (weaponPart.partType)
+            {
+                case PartType.Barrel:
+                    heldPosition = defaults.barrelHeldPosition;
+                    heldRotation = defaults.barrelHeldRotation;
+                    dropRotation = defaults.barrelDropRotation;
+                    break;
+                case PartType.Magazine:
+                    heldPosition = defaults.magazineHeldPosition;
+                    heldRotation = defaults.magazineHeldRotation;
+                    dropRotation = defaults.magazineDropRotation;
+                    break;
+                case PartType.Stock:
+                    heldPosition = defaults.stockHeldPosition;
+                    heldRotation = defaults.stockHeldRotation;
+                    dropRotation = defaults.stockDropRotation;
+                    break;
+                case PartType.Scope:
+                    heldPosition = defaults.scopeHeldPosition;
+                    heldRotation = defaults.scopeHeldRotation;
+                    dropRotation = defaults.scopeDropRotation;
+                    break;
+            }
+        }
+        // Check if this is a weapon body
+        else if (GetComponent<WeaponBody>() != null)
+        {
+            heldPosition = defaults.bodyHeldPosition;
+            heldRotation = defaults.bodyHeldRotation;
+            dropRotation = defaults.bodyDropRotation;
         }
     }
     
@@ -108,21 +158,10 @@ public class ItemPickup : MonoBehaviour, IInteractable
             itemCollider.enabled = false;
         }
         
-        // Calculate adjusted drop position based on geometry center or manual offset
-        Vector3 adjustedDropPosition = dropPosition;
-        
-        if (useGeometryCenter)
-        {
-            // Use geometry center instead of pivot
-            Vector3 geometryCenter = GetGeometryCenter();
-            Vector3 currentPivotOffset = transform.position - geometryCenter;
-            adjustedDropPosition = dropPosition + currentPivotOffset;
-        }
-        else if (dropPositionOffset != Vector3.zero)
-        {
-            // Apply manual offset in world space
-            adjustedDropPosition = dropPosition + dropPositionOffset;
-        }
+        // Adjust drop position to use geometry center instead of pivot
+        Vector3 geometryCenter = GetGeometryCenter();
+        Vector3 pivotToCenter = transform.position - geometryCenter;
+        Vector3 adjustedDropPosition = dropPosition + pivotToCenter;
         
         // Set position and rotation
         transform.position = adjustedDropPosition;

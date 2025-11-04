@@ -12,7 +12,8 @@ public class InteractionHandler : MonoBehaviour
     [SerializeField] private LayerMask interactableLayer = -1;
     
     [Header("Drop Settings")]
-    [SerializeField] private float dropDistance = 2f;
+    [Tooltip("Position where items are dropped (relative to camera)")]
+    [SerializeField] private Vector3 dropPosition = new Vector3(0f, -0.5f, 1.5f);
     [SerializeField] private float dropForce = 5f;
     
     [Header("UI")]
@@ -100,7 +101,13 @@ public class InteractionHandler : MonoBehaviour
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit[] hits = Physics.RaycastAll(ray, maxInteractionDistance, interactableLayer);
         
-        // Find first valid interactable (not held item)
+        // Sort hits by distance (closest first) for accurate selection
+        if (hits.Length > 1)
+        {
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        }
+        
+        // Find first valid interactable (now guaranteed to be closest)
         foreach (RaycastHit hit in hits)
         {
             // Skip objects that are children of player/camera (held items)
@@ -265,43 +272,21 @@ public class InteractionHandler : MonoBehaviour
             weapon.Unequip();
         }
         
-        // Find safe drop position
-        Vector3 dropPosition = FindSafeDropPosition();
-        Vector3 dropForceVector = playerCamera.transform.forward * dropForce;
+        // Calculate drop position in world space (from camera)
+        Vector3 worldDropPosition = playerCamera.transform.position + 
+                                    playerCamera.transform.right * dropPosition.x +
+                                    playerCamera.transform.up * dropPosition.y +
+                                    playerCamera.transform.forward * dropPosition.z;
         
         // Calculate drop rotation
         Quaternion baseRotation = Quaternion.LookRotation(playerCamera.transform.forward);
         Quaternion finalRotation = baseRotation * Quaternion.Euler(currentItem.DropRotation);
         
-        currentItem.Drop(dropPosition, dropForceVector, finalRotation);
+        // Apply force in camera forward direction
+        Vector3 dropForceVector = playerCamera.transform.forward * dropForce;
+        
+        currentItem.Drop(worldDropPosition, dropForceVector, finalRotation);
         currentItem = null;
-    }
-    
-    private Vector3 FindSafeDropPosition()
-    {
-        if (currentItem == null) return playerCamera.transform.position + playerCamera.transform.forward * dropDistance;
-        
-        Collider itemCollider = currentItem.GetComponent<Collider>();
-        float itemRadius = 0.5f;
-        
-        if (itemCollider != null)
-        {
-            Bounds bounds = itemCollider.bounds;
-            itemRadius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
-        }
-        
-        Vector3 startPos = playerCamera.transform.position;
-        Vector3 direction = playerCamera.transform.forward;
-        RaycastHit hit;
-        
-        if (Physics.SphereCast(startPos, itemRadius, direction, out hit, dropDistance))
-        {
-            float safeDistance = hit.distance - itemRadius - 0.1f;
-            safeDistance = Mathf.Max(safeDistance, 0.5f);
-            return startPos + direction * safeDistance;
-        }
-        
-        return startPos + direction * dropDistance;
     }
     
     public void ClearCurrentItem()
@@ -319,5 +304,6 @@ public class InteractionHandler : MonoBehaviour
     public ItemPickup CurrentItem => currentItem;
     public Camera PlayerCamera => playerCamera;
     public Transform ItemHoldPoint => itemHoldPoint;
+    public IInteractable CurrentTarget => currentTarget; // For WeaponStatsUI to sync
 }
 

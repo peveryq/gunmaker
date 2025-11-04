@@ -12,6 +12,13 @@ public class AutoOutline : MonoBehaviour
     
     private int lastChildCount = -1;
     
+    // Cache types and reflection data to avoid expensive lookups
+    private static System.Type cachedOutlineTargetType;
+    private static System.Type cachedOutlinableType;
+    private static MethodInfo cachedTryAddTargetMethod;
+    private static FieldInfo cachedRendererField;
+    private static FieldInfo cachedSubmeshField;
+    
     private void Start()
     {
         if (autoSetupOnStart)
@@ -75,27 +82,45 @@ public class AutoOutline : MonoBehaviour
         // Use reflection to work with Outlinable
         System.Type outlinableType = outlinable.GetType();
         
-        // Get OutlineTarget type from EPOOutline namespace
-        System.Type outlineTargetType = null;
-        foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+        // Cache outlinable type
+        if (cachedOutlinableType == null)
         {
-            outlineTargetType = assembly.GetType("EPOOutline.OutlineTarget");
-            if (outlineTargetType != null) break;
+            cachedOutlinableType = outlinableType;
         }
         
-        if (outlineTargetType == null)
+        // Get OutlineTarget type (cached to avoid expensive assembly search)
+        if (cachedOutlineTargetType == null)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                cachedOutlineTargetType = assembly.GetType("EPOOutline.OutlineTarget");
+                if (cachedOutlineTargetType != null) break;
+            }
+        }
+        
+        if (cachedOutlineTargetType == null)
         {
             Debug.LogError("OutlineTarget type not found!");
             return;
         }
         
-        // Find TryAddTarget method
-        MethodInfo tryAddTargetMethod = outlinableType.GetMethod("TryAddTarget", BindingFlags.Public | BindingFlags.Instance);
+        // Find TryAddTarget method (cached)
+        if (cachedTryAddTargetMethod == null && cachedOutlinableType != null)
+        {
+            cachedTryAddTargetMethod = cachedOutlinableType.GetMethod("TryAddTarget", BindingFlags.Public | BindingFlags.Instance);
+        }
         
-        if (tryAddTargetMethod == null)
+        if (cachedTryAddTargetMethod == null)
         {
             Debug.LogWarning("TryAddTarget method not found on Outlinable.");
             return;
+        }
+        
+        // Cache field info
+        if (cachedRendererField == null && cachedOutlineTargetType != null)
+        {
+            cachedRendererField = cachedOutlineTargetType.GetField("renderer");
+            cachedSubmeshField = cachedOutlineTargetType.GetField("SubmeshIndex");
         }
         
         // Get outlineTargets field to check/clear
@@ -137,25 +162,22 @@ public class AutoOutline : MonoBehaviour
                 // Add target for each submesh
                 for (int i = 0; i < submeshCount; i++)
                 {
-                    // Create OutlineTarget instance using default constructor
-                    object outlineTarget = Activator.CreateInstance(outlineTargetType);
+                    // Create OutlineTarget instance using default constructor (cached type)
+                    object outlineTarget = Activator.CreateInstance(cachedOutlineTargetType);
                     
-                    // Set renderer and submesh index fields
-                    FieldInfo rendererField = outlineTargetType.GetField("renderer");
-                    FieldInfo submeshField = outlineTargetType.GetField("SubmeshIndex");
-                    
-                    if (rendererField != null)
+                    // Set renderer and submesh index fields (use cached fields)
+                    if (cachedRendererField != null)
                     {
-                        rendererField.SetValue(outlineTarget, renderer);
+                        cachedRendererField.SetValue(outlineTarget, renderer);
                     }
                     
-                    if (submeshField != null)
+                    if (cachedSubmeshField != null)
                     {
-                        submeshField.SetValue(outlineTarget, i);
+                        cachedSubmeshField.SetValue(outlineTarget, i);
                     }
                     
-                    // Call TryAddTarget
-                    tryAddTargetMethod.Invoke(outlinable, new object[] { outlineTarget });
+                    // Call TryAddTarget (use cached method)
+                    cachedTryAddTargetMethod.Invoke(outlinable, new object[] { outlineTarget });
                     addedCount++;
                 }
             }

@@ -40,7 +40,7 @@ public class WeaponStats
     public float GetRecoilKickback()
     {
         // recoil: 1->0.01, 100->0.4
-        return Mathf.Lerp(0.01f, 0.4f, (recoil - 1f) / 99f);
+        return Mathf.Lerp(0.05f, 0.15f, (recoil - 1f) / 99f);
     }
     
     public float GetReloadTime()

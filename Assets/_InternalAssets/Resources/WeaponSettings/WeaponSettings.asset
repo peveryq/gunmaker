@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2adda0dd24ea4ea29b569b9737c3616c, type: 3}
   m_Name: WeaponSettings
   m_EditorClassIdentifier: 
-  fireRate: 0.5
-  bulletSpeed: 30
+  fireRate: 0.4090909
+  bulletSpeed: 100.50505
   bulletDamage: 10
-  spreadAngle: 7
-  recoilUpward: 3
-  recoilKickback: 0.4
+  spreadAngle: 5.939394
+  recoilUpward: 2.6969697
+  recoilKickback: 0.139899
   recoilRecoverySpeed: 15
-  magSize: 15
-  reloadTime: 3
+  magSize: 30
+  reloadTime: 2.5959597
   autoReload: 0
   canAim: 1
-  aimFOV: 40
-  aimSpeed: 8
+  aimFOV: 33.939396
+  aimSpeed: 12
   aimPosition: {x: 0, y: -0.3, z: 0.5}
   enableWeaponSway: 1
   swayAmount: 0.02
