@@ -197,6 +197,8 @@ MonoBehaviour:
   heldPosition: {x: 0.5, y: -0.5, z: 0.6}
   heldRotation: {x: 0, y: 0, z: 0}
   dropRotation: {x: 0, y: -90, z: -90}
+  useGeometryCenter: 1
+  dropPositionOffset: {x: 0, y: 0, z: 0}
   pickupPrompt: {fileID: 0}
   pickupSound: {fileID: 8300000, guid: 3d071c90f923a8f47b5d9b0e0856b3aa, type: 3}
   impactSounds:

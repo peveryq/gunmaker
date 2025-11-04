@@ -15,6 +15,10 @@ public class ItemPickup : MonoBehaviour, IInteractable
     [Header("Drop Settings")]
     [Tooltip("Rotation when dropped (relative to camera direction).\n(0,90,0) = item lies sideways to camera view\n(90,0,0) = item tilted forward")]
     [SerializeField] private Vector3 dropRotation = new Vector3(0, 90, 0);
+    [Tooltip("Use geometry center instead of pivot for drop position")]
+    [SerializeField] private bool useGeometryCenter = true;
+    [Tooltip("Manual offset for drop position (if useGeometryCenter is false).\nUseful when pivot is far from geometry")]
+    [SerializeField] private Vector3 dropPositionOffset = Vector3.zero;
     
     [Header("Visual Feedback")]
     [SerializeField] private GameObject pickupPrompt;
@@ -91,7 +95,7 @@ public class ItemPickup : MonoBehaviour, IInteractable
         isHeld = true;
     }
     
-    public void Drop(Vector3 dropPosition, Vector3 dropForce, Quaternion dropRotation)
+    public void Drop(Vector3 dropPosition, Vector3 dropForce, Quaternion dropRotationQuat)
     {
         if (!isHeld) return;
         
@@ -104,9 +108,25 @@ public class ItemPickup : MonoBehaviour, IInteractable
             itemCollider.enabled = false;
         }
         
+        // Calculate adjusted drop position based on geometry center or manual offset
+        Vector3 adjustedDropPosition = dropPosition;
+        
+        if (useGeometryCenter)
+        {
+            // Use geometry center instead of pivot
+            Vector3 geometryCenter = GetGeometryCenter();
+            Vector3 currentPivotOffset = transform.position - geometryCenter;
+            adjustedDropPosition = dropPosition + currentPivotOffset;
+        }
+        else if (dropPositionOffset != Vector3.zero)
+        {
+            // Apply manual offset in world space
+            adjustedDropPosition = dropPosition + dropPositionOffset;
+        }
+        
         // Set position and rotation
-        transform.position = dropPosition;
-        transform.rotation = dropRotation;
+        transform.position = adjustedDropPosition;
+        transform.rotation = dropRotationQuat;
         
         // Enable physics
         if (rb != null)
@@ -171,6 +191,27 @@ public class ItemPickup : MonoBehaviour, IInteractable
         }
     }
     
+    // Calculate geometry center based on renderers bounds
+    private Vector3 GetGeometryCenter()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        
+        if (renderers.Length == 0)
+        {
+            // Fallback to pivot if no renderers
+            return transform.position;
+        }
+        
+        // Calculate combined bounds
+        Bounds combinedBounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+        {
+            combinedBounds.Encapsulate(renderers[i].bounds);
+        }
+        
+        return combinedBounds.center;
+    }
+    
     public void ShowPrompt(bool show)
     {
         if (pickupPrompt != null && !isHeld)
@@ -213,7 +254,6 @@ public class ItemPickup : MonoBehaviour, IInteractable
     
     // Properties
     public bool IsHeld => isHeld;
-    public float PickupRange => pickupRange;
     public string ItemName => itemName;
     public Vector3 OriginalLocalPosition => originalLocalPosition;
     public Vector3 DropRotation => dropRotation;

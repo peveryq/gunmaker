@@ -6,6 +6,7 @@ public class Workbench : MonoBehaviour, IInteractable
     [SerializeField] private Transform weaponMountPoint;
     [SerializeField] private Vector3 weaponMountRotation = new Vector3(0, -90, 0);
     [SerializeField] private float interactionRange = 3f;
+    [SerializeField] private string mountedWeaponLayer = "Default"; // Layer for mounted weapons (non-interactable)
     
     [Header("Part Preview")]
     [SerializeField] private GameObject partPreviewPrefab; // Prefab with Outlinable
@@ -13,6 +14,7 @@ public class Workbench : MonoBehaviour, IInteractable
     private WeaponBody mountedWeapon;
     private GameObject currentPreview;
     private InteractionHandler interactionHandler;
+    private int originalWeaponLayer = 0; // Store original layer to restore later
     
     private void Start()
     {
@@ -54,11 +56,22 @@ public class Workbench : MonoBehaviour, IInteractable
             currentPreview = null;
         }
         
-        if (interactionHandler == null || mountedWeapon == null) return;
+        if (interactionHandler == null) return;
         
-        // Show preview if holding a part
         ItemPickup heldItem = interactionHandler.CurrentItem;
-        if (heldItem != null)
+        if (heldItem == null) return;
+        
+        // Show preview for weapon body (mounting)
+        if (mountedWeapon == null)
+        {
+            WeaponBody weaponBody = heldItem.GetComponent<WeaponBody>();
+            if (weaponBody != null)
+            {
+                ShowWeaponBodyPreview(weaponBody);
+            }
+        }
+        // Show preview for part (installing)
+        else
         {
             WeaponPart part = heldItem.GetComponent<WeaponPart>();
             if (part != null)
@@ -123,12 +136,19 @@ public class Workbench : MonoBehaviour, IInteractable
             col.enabled = true;
         }
         
+        // Store original layer and change to non-interactable layer
+        originalWeaponLayer = weaponBody.gameObject.layer;
+        SetLayerRecursively(weaponBody.gameObject, LayerMask.NameToLayer(mountedWeaponLayer));
+        
         mountedWeapon = weaponBody;
     }
     
     private void UnmountWeapon()
     {
         if (mountedWeapon == null || interactionHandler == null) return;
+        
+        // Restore original layer before unmounting
+        SetLayerRecursively(mountedWeapon.gameObject, originalWeaponLayer);
         
         // Get ItemPickup
         ItemPickup pickup = mountedWeapon.GetComponent<ItemPickup>();
@@ -160,6 +180,44 @@ public class Workbench : MonoBehaviour, IInteractable
         if (installed)
         {
             // Part is now child of weapon, handled by WeaponBody.InstallPart
+        }
+    }
+    
+    private void ShowWeaponBodyPreview(WeaponBody weaponBody)
+    {
+        if (weaponMountPoint == null) return;
+        
+        // Create ghost - clone the entire weapon (body + all parts)
+        currentPreview = new GameObject("WeaponBodyPreview");
+        currentPreview.transform.SetParent(weaponMountPoint);
+        currentPreview.transform.localPosition = Vector3.zero;
+        currentPreview.transform.localRotation = Quaternion.Euler(weaponMountRotation);
+        
+        // Copy all renderers from weapon body and its children
+        CopyRenderersRecursively(weaponBody.transform, currentPreview.transform);
+        
+        // Copy Outlinable settings from part preview prefab if available
+        if (partPreviewPrefab != null)
+        {
+            MonoBehaviour prefabOutlinable = partPreviewPrefab.GetComponent("Outlinable") as MonoBehaviour;
+            if (prefabOutlinable != null)
+            {
+                // Add Outlinable and copy settings
+                System.Type outlinableType = prefabOutlinable.GetType();
+                MonoBehaviour previewOutlinable = currentPreview.AddComponent(outlinableType) as MonoBehaviour;
+                
+                if (previewOutlinable != null)
+                {
+                    // Setup renderers FIRST (before copying properties)
+                    AutoOutline autoOutline = currentPreview.AddComponent<AutoOutline>();
+                    autoOutline.SetupOutlinable();
+                    
+                    // Copy outline properties using reflection AFTER setup
+                    CopyOutlinableProperties(prefabOutlinable, previewOutlinable);
+                    
+                    previewOutlinable.enabled = true;
+                }
+            }
         }
     }
     
@@ -198,6 +256,135 @@ public class Workbench : MonoBehaviour, IInteractable
         if (outlinable != null)
         {
             outlinable.enabled = true;
+        }
+    }
+    
+    // Recursively copy all renderers from source to target hierarchy
+    private void CopyRenderersRecursively(Transform source, Transform target)
+    {
+        // Copy renderer from source if exists
+        MeshFilter sourceMF = source.GetComponent<MeshFilter>();
+        MeshRenderer sourceMR = source.GetComponent<MeshRenderer>();
+        
+        if (sourceMF != null && sourceMR != null)
+        {
+            MeshFilter targetMF = target.gameObject.AddComponent<MeshFilter>();
+            MeshRenderer targetMR = target.gameObject.AddComponent<MeshRenderer>();
+            
+            targetMF.sharedMesh = sourceMF.sharedMesh;
+            targetMR.sharedMaterials = sourceMR.sharedMaterials;
+            
+            // Copy MeshRenderer settings from prefab if available
+            if (partPreviewPrefab != null)
+            {
+                MeshRenderer prefabMR = partPreviewPrefab.GetComponent<MeshRenderer>();
+                if (prefabMR != null)
+                {
+                    CopyMeshRendererSettings(prefabMR, targetMR);
+                }
+            }
+        }
+        
+        // Recursively copy children
+        foreach (Transform child in source)
+        {
+            GameObject childCopy = new GameObject(child.name);
+            childCopy.transform.SetParent(target);
+            childCopy.transform.localPosition = child.localPosition;
+            childCopy.transform.localRotation = child.localRotation;
+            childCopy.transform.localScale = child.localScale;
+            
+            CopyRenderersRecursively(child, childCopy.transform);
+        }
+    }
+    
+    // Copy MeshRenderer settings (shadows, lighting, etc.) from source to target
+    private void CopyMeshRendererSettings(MeshRenderer source, MeshRenderer target)
+    {
+        if (source == null || target == null) return;
+        
+        // Shadow settings
+        target.shadowCastingMode = source.shadowCastingMode;
+        target.receiveShadows = source.receiveShadows;
+        
+        // Lighting
+        target.lightProbeUsage = source.lightProbeUsage;
+        target.reflectionProbeUsage = source.reflectionProbeUsage;
+        
+        // Rendering
+        target.motionVectorGenerationMode = source.motionVectorGenerationMode;
+        target.allowOcclusionWhenDynamic = source.allowOcclusionWhenDynamic;
+        
+        // Other settings
+        target.renderingLayerMask = source.renderingLayerMask;
+        target.rendererPriority = source.rendererPriority;
+    }
+    
+    // Copy Outlinable properties from source to target using reflection
+    private void CopyOutlinableProperties(MonoBehaviour source, MonoBehaviour target)
+    {
+        if (source == null || target == null) return;
+        
+        System.Type outlinableType = source.GetType();
+        
+        // Get the private outlineParameters field directly
+        var outlineParametersField = outlinableType.GetField("outlineParameters", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        if (outlineParametersField != null)
+        {
+            object sourceParameters = outlineParametersField.GetValue(source);
+            object targetParameters = outlineParametersField.GetValue(target);
+            
+            if (sourceParameters != null && targetParameters != null)
+            {
+                System.Type parametersType = sourceParameters.GetType();
+                
+                // Copy color field
+                var colorField = parametersType.GetField("color", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (colorField != null)
+                {
+                    Color sourceColor = (Color)colorField.GetValue(sourceParameters);
+                    colorField.SetValue(targetParameters, sourceColor);
+                }
+                
+                // Copy dilateShift field
+                var dilateField = parametersType.GetField("dilateShift", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (dilateField != null)
+                {
+                    float sourceValue = (float)dilateField.GetValue(sourceParameters);
+                    dilateField.SetValue(targetParameters, sourceValue);
+                }
+                
+                // Copy blurShift field
+                var blurField = parametersType.GetField("blurShift", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (blurField != null)
+                {
+                    float sourceValue = (float)blurField.GetValue(sourceParameters);
+                    blurField.SetValue(targetParameters, sourceValue);
+                }
+                
+                // Copy fillPass (for fill color)
+                var fillPassField = parametersType.GetField("fillPass", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (fillPassField != null)
+                {
+                    object sourceFillPass = fillPassField.GetValue(sourceParameters);
+                    if (sourceFillPass != null)
+                    {
+                        // Serialize and deserialize to copy the entire SerializedPass
+                        string json = JsonUtility.ToJson(sourceFillPass);
+                        object targetFillPass = fillPassField.GetValue(targetParameters);
+                        if (targetFillPass != null)
+                        {
+                            JsonUtility.FromJsonOverwrite(json, targetFillPass);
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -300,6 +487,19 @@ public class Workbench : MonoBehaviour, IInteractable
     public Transform Transform => transform;
     public float InteractionRange => interactionRange;
     public bool ShowOutline => true;
+    
+    // Helper method to change layer recursively (weapon + all parts)
+    private void SetLayerRecursively(GameObject obj, int layer)
+    {
+        if (obj == null) return;
+        
+        obj.layer = layer;
+        
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
+    }
     
     // Properties
     public bool HasWeapon => mountedWeapon != null;

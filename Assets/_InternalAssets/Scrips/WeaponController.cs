@@ -171,7 +171,12 @@ public class WeaponController : MonoBehaviour
         WeaponBody weaponBody = GetComponent<WeaponBody>();
         if (weaponBody != null && !weaponBody.CanShoot())
         {
-            PlaySound(settings.emptySound);
+            // Play empty sound once (same logic as empty magazine)
+            if (!hasPlayedEmptySound)
+            {
+                PlaySound(settings.emptySound);
+                hasPlayedEmptySound = true;
+            }
             return;
         }
         

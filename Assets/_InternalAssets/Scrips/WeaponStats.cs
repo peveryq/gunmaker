@@ -16,7 +16,7 @@ public class WeaponStats
     public float GetBulletSpeed()
     {
         // power: 1->30, 100->300
-        return Mathf.Lerp(30f, 300f, (power - 1f) / 99f);
+        return Mathf.Lerp(50f, 300f, (power - 1f) / 99f);
     }
     
     public float GetSpreadAngle()

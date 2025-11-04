@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2adda0dd24ea4ea29b569b9737c3616c, type: 3}
   m_Name: WeaponSettings
   m_EditorClassIdentifier: 
-  fireRate: 0.42772728
-  bulletSpeed: 76.090904
+  fireRate: 0.5
+  bulletSpeed: 30
   bulletDamage: 10
-  spreadAngle: 5.8545456
-  recoilUpward: 2.3030303
-  recoilKickback: 0.30939394
+  spreadAngle: 7
+  recoilUpward: 3
+  recoilKickback: 0.4
   recoilRecoverySpeed: 15
-  magSize: 0
-  reloadTime: 2.010101
+  magSize: 15
+  reloadTime: 3
   autoReload: 0
   canAim: 1
   aimFOV: 40
