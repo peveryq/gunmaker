@@ -180,6 +180,8 @@ MonoBehaviour:
   audioSource: {fileID: 838883491963731865}
   casingEjectDirection: {x: 2, y: 2, z: 0}
   casingEjectForce: 2
+  barrelEjectForce: 10
+  barrelEjectTorque: 10
 --- !u!114 &5990432222170610844
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -5,8 +5,8 @@ public class Blowtorch : MonoBehaviour, IInteractable
     [Header("Visual Effects")]
     [SerializeField] private GameObject flameEffect; // Sprite + particle system for flame
     [SerializeField] private Transform flameTip; // Point where flame appears
-    [SerializeField] private Vector3 workingPositionOffset = new Vector3(0.1f, -0.05f, 0.05f); // Offset when working
     [SerializeField] private float movementSpeed = 5f; // Speed of movement to working position
+    [SerializeField] private float rotationSpeed = 10f; // Speed of rotation to working position
     
     [Header("Audio")]
     [SerializeField] private AudioSource blowtorchAudio;
@@ -18,9 +18,14 @@ public class Blowtorch : MonoBehaviour, IInteractable
     
     private bool isWorking = false;
     private bool isStartSoundPlaying = false;
-    private Vector3 currentOffset = Vector3.zero; // Current offset from heldPosition
     private ItemPickup itemPickup;
     private float startSoundTimer = 0f;
+    
+    // Working position control
+    private Transform targetWorkingTransform; // Target position when working
+    private Vector3 originalHeldPosition;
+    private Quaternion originalHeldRotation;
+    private bool isMovingToWorkPosition = false;
     
     private void Awake()
     {
@@ -34,20 +39,34 @@ public class Blowtorch : MonoBehaviour, IInteractable
     
     private void LateUpdate()
     {
-        // Only apply offset when held
+        // Only work when held
         if (itemPickup == null || !itemPickup.IsHeld)
         {
             StopWorking();
             return;
         }
         
-        // Smoothly lerp the offset
-        Vector3 targetOffset = isWorking ? workingPositionOffset : Vector3.zero;
-        currentOffset = Vector3.Lerp(currentOffset, targetOffset, Time.deltaTime * movementSpeed);
-        
-        // Apply offset on top of ItemPickup's heldPosition
-        // ItemPickup sets position in Update, we modify it in LateUpdate
-        transform.localPosition = itemPickup.OriginalLocalPosition + currentOffset;
+        // Handle position movement
+        if (isWorking && targetWorkingTransform != null)
+        {
+            // Move to working position (world space)
+            transform.position = Vector3.Lerp(transform.position, targetWorkingTransform.position, Time.deltaTime * movementSpeed);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetWorkingTransform.rotation, Time.deltaTime * rotationSpeed);
+        }
+        else if (!isWorking && isMovingToWorkPosition)
+        {
+            // Return to held position (local space)
+            transform.localPosition = Vector3.Lerp(transform.localPosition, originalHeldPosition, Time.deltaTime * movementSpeed);
+            transform.localRotation = Quaternion.Slerp(transform.localRotation, originalHeldRotation, Time.deltaTime * rotationSpeed);
+            
+            // Check if close enough to held position
+            if (Vector3.Distance(transform.localPosition, originalHeldPosition) < 0.01f)
+            {
+                transform.localPosition = originalHeldPosition;
+                transform.localRotation = originalHeldRotation;
+                isMovingToWorkPosition = false;
+            }
+        }
         
         // Handle start sound to working sound transition
         if (isStartSoundPlaying && blowtorchAudio != null)
@@ -63,11 +82,19 @@ public class Blowtorch : MonoBehaviour, IInteractable
         }
     }
     
-    public void StartWorking()
+    public void StartWorking(Transform workPosition = null)
     {
         if (isWorking) return;
         
         isWorking = true;
+        targetWorkingTransform = workPosition;
+        
+        // Store original held position
+        if (itemPickup != null)
+        {
+            originalHeldPosition = itemPickup.OriginalLocalPosition;
+            originalHeldRotation = Quaternion.Euler(Vector3.zero); // ItemPickup rotation
+        }
         
         if (flameEffect != null)
         {
@@ -108,6 +135,7 @@ public class Blowtorch : MonoBehaviour, IInteractable
         isWorking = false;
         isStartSoundPlaying = false;
         startSoundTimer = 0f;
+        isMovingToWorkPosition = true; // Start returning to held position
         
         if (flameEffect != null)
         {

@@ -15,16 +15,22 @@ public class Workbench : MonoBehaviour, IInteractable
     [SerializeField] private WeldingUI weldingUI;
     [SerializeField] private ParticleSystem weldingSparks; // Sparks particle system at welding point
     [SerializeField] private Transform weldingSparkPoint; // Where sparks appear (optional, uses barrel position if null)
+    [SerializeField] private Transform blowtorchWorkPosition; // Position where blowtorch moves when welding
     
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip installSound; // Sound when part/weapon is installed on workbench
+    
+    [Header("Weapon Creation")]
+    [SerializeField] private GameObject emptyWeaponBodyPrefab; // Prefab of empty weapon body
+    [SerializeField] private WeaponNameInputUI weaponNameInputUI;
     
     private WeaponBody mountedWeapon;
     private GameObject currentPreview;
     private InteractionHandler interactionHandler;
     private int originalWeaponLayer = 0; // Store original layer to restore later
     private WeldingSystem currentWeldingTarget; // Part being welded
+    private bool isCreatingWeapon = false; // Flag to prevent input conflicts
     
     private void Start()
     {
@@ -88,7 +94,7 @@ public class Workbench : MonoBehaviour, IInteractable
             // Start welding on LMB
             if (Input.GetMouseButton(0))
             {
-                blowtorch.StartWorking();
+                blowtorch.StartWorking(blowtorchWorkPosition);
                 
                 if (blowtorch.IsWorking)
                 {
@@ -204,6 +210,60 @@ public class Workbench : MonoBehaviour, IInteractable
         {
             audioSource.PlayOneShot(installSound);
         }
+    }
+    
+    private void StartWeaponCreation()
+    {
+        if (emptyWeaponBodyPrefab == null || weaponNameInputUI == null)
+        {
+            Debug.LogError("Cannot create weapon: emptyWeaponBodyPrefab or weaponNameInputUI not assigned!");
+            return;
+        }
+        
+        if (isCreatingWeapon) return;
+        
+        isCreatingWeapon = true;
+        
+        // Show name input UI
+        weaponNameInputUI.ShowInputUI(
+            "Enter weapon name:",
+            OnWeaponNameConfirmed,
+            OnWeaponCreationCancelled
+        );
+    }
+    
+    private void OnWeaponNameConfirmed(string weaponName)
+    {
+        isCreatingWeapon = false;
+        
+        // Spawn weapon body
+        GameObject newWeaponObj = Instantiate(emptyWeaponBodyPrefab);
+        WeaponBody newWeaponBody = newWeaponObj.GetComponent<WeaponBody>();
+        
+        if (newWeaponBody != null)
+        {
+            // Set weapon name using reflection (weaponName is private)
+            var weaponNameField = typeof(WeaponBody).GetField("weaponName", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (weaponNameField != null)
+            {
+                weaponNameField.SetValue(newWeaponBody, weaponName);
+            }
+            
+            // Mount the newly created weapon
+            MountWeapon(newWeaponBody);
+        }
+        else
+        {
+            Debug.LogError("emptyWeaponBodyPrefab does not have WeaponBody component!");
+            Destroy(newWeaponObj);
+        }
+    }
+    
+    private void OnWeaponCreationCancelled()
+    {
+        isCreatingWeapon = false;
     }
     
     // Called by InteractionHandler when player can interact (looking at workbench)
@@ -569,6 +629,13 @@ public class Workbench : MonoBehaviour, IInteractable
             return false;
         }
         
+        // Create new weapon if empty workbench and empty hands
+        if (mountedWeapon == null && heldItem == null)
+        {
+            StartWeaponCreation();
+            return true;
+        }
+        
         if (mountedWeapon == null && heldItem != null)
         {
             // Try to mount weapon body
@@ -606,16 +673,23 @@ public class Workbench : MonoBehaviour, IInteractable
         ItemPickup heldItem = player.CurrentItem;
         
         // Can interact if:
-        // 1. No weapon mounted and holding a weapon body
-        // 2. Weapon mounted and not holding anything (to unmount)
-        // 3. Weapon mounted and holding a part (to install)
-        // 4. Holding blowtorch and there's unwelded barrel (for welding)
+        // 1. No weapon mounted and empty hands (to create new weapon)
+        // 2. No weapon mounted and holding a weapon body (to mount)
+        // 3. Weapon mounted and not holding anything (to unmount)
+        // 4. Weapon mounted and holding a part (to install)
+        // 5. Holding blowtorch and there's unwelded barrel (for welding)
         
         // Check for blowtorch - allow interaction for welding
         if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
         {
             // Can interact if there's an unwelded barrel
             return FindUnweldedBarrel() != null;
+        }
+        
+        // Allow creating new weapon if workbench is empty and hands are empty
+        if (mountedWeapon == null && heldItem == null)
+        {
+            return emptyWeaponBodyPrefab != null;
         }
         
         if (mountedWeapon == null && heldItem != null)
@@ -650,6 +724,12 @@ public class Workbench : MonoBehaviour, IInteractable
             {
                 return "Weld Barrel (Hold LMB)";
             }
+        }
+        
+        // Create new weapon if empty workbench and empty hands
+        if (mountedWeapon == null && heldItem == null && emptyWeaponBodyPrefab != null)
+        {
+            return "[E] Create New Weapon";
         }
         
         if (mountedWeapon == null && heldItem != null)

@@ -45,8 +45,8 @@
    Visual Effects:
    - Flame Effect: <GameObject с Particle System и Sprite для пламени>
    - Flame Tip: <Transform точки, где появляется пламя>
-   - Working Position Offset: (0.1, -0.05, 0.05) - смещение при работе
-   - Movement Speed: 5 - скорость смещения
+   - Movement Speed: 5 - скорость перемещения к точке сварки
+   - Rotation Speed: 10 - скорость поворота к точке сварки
    
    Audio:
    - Blowtorch Audio: <AudioSource>
@@ -123,17 +123,52 @@ Welding:
 - Welding UI: <WeldingUIManager из шага 3>
 - Welding Sparks: <WeldingSparks Particle System>
 - Welding Spark Point: <Transform точки искр> (опционально)
+- Blowtorch Work Position: <Transform позиции горелки при сварке> (опционально)
 
 Audio:
 - Audio Source: <AudioSource компонент>
 - Install Sound: <AudioClip звука установки детали>
+
+Weapon Creation:
+- Empty Weapon Body Prefab: <Префаб пустого WeaponBody>
+- Weapon Name Input UI: <WeaponNameInputUI компонент>
 ```
 
 **Важно:** 
 - Если `Welding Spark Point` не назначен, искры будут автоматически появляться в позиции ствола!
+- Если `Blowtorch Work Position` не назначен, горелка останется в руках (старое поведение)
+- Если `Blowtorch Work Position` назначен, горелка будет "летать" к этой точке при сварке!
 - `Install Sound` проигрывается при установке оружия на верстак или при установке любой детали
 
-### Шаг 6: Проверить WeaponStatsUI
+### Шаг 6: Создать UI ввода имени оружия
+
+1. **Создайте Input Panel:**
+   - В Canvas создайте новый Panel: `WeaponNameInputPanel`
+   - Anchor: Center
+   - Size: 400x200 (или по вкусу)
+   - Фон: полупрозрачный темный
+
+2. **Добавьте текстовые элементы:**
+   - `PromptText` (TMP): "Enter weapon name:"
+   - `InputField` (TMP InputField): поле для ввода имени
+
+3. **Создайте WeaponNameInputUI Manager:**
+   - Создайте GameObject `WeaponNameInputUI`
+   - Добавьте компонент `WeaponNameInputUI`
+   - Настройте:
+     ```
+     - Input Panel: <WeaponNameInputPanel>
+     - Name Input Field: <TMP_InputField>
+     - Prompt Text: <PromptText>
+     ```
+
+4. **Назначьте в Workbench:**
+   ```
+   Weapon Creation:
+   - Weapon Name Input UI: <WeaponNameInputUI>
+   ```
+
+### Шаг 7: Проверить WeaponStatsUI
 
 `WeaponStatsUI` теперь автоматически показывает статы оружия на верстаке.
 Никаких дополнительных настроек не требуется!
@@ -163,6 +198,14 @@ Audio:
 3. Попробуйте выстрелить
 4. **БУМ!** - ствол вылетает вперед, оружие больше не стреляет
 
+### Создание нового оружия:
+1. Подойдите к **пустому** верстаку (без оружия)
+2. С **пустыми руками** нажмите **E**
+3. Откроется окно ввода имени
+4. Введите имя оружия (минимум 1 символ)
+5. Нажмите **Enter** → оружие создается и устанавливается на верстак!
+6. Нажмите **Esc** → отмена создания
+
 ### Просмотр статов на верстаке:
 1. Установите оружие на верстак
 2. Посмотрите на верстак
@@ -186,12 +229,10 @@ Barrel Ejection:
 - Barrel Eject Torque: 2.0 (вращение ствола)
 ```
 
-### Смещение горелки при работе
+### Скорость движения горелки
 В `Blowtorch`:
-- `Working Position Offset`: (X, Y, Z)
-  - X: вправо/влево
-  - Y: вверх/вниз
-  - Z: вперед/назад
+- `Movement Speed: 5` - скорость полета к точке сварки (выше = быстрее)
+- `Rotation Speed: 10` - скорость поворота (выше = быстрее)
 
 ---
 
