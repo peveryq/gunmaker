@@ -25,7 +25,7 @@ MonoBehaviour:
   canAim: 1
   aimFOV: 40
   aimSpeed: 12
-  aimPosition: {x: 0, y: -0.3, z: 0.5}
+  aimPosition: {x: 0, y: -0.27, z: 0.5}
   enableWeaponSway: 1
   swayAmount: 0.02
   swaySpeed: 10

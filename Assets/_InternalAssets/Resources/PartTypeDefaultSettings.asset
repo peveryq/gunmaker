@@ -25,5 +25,5 @@ MonoBehaviour:
   stockHeldRotation: {x: 0, y: -90, z: 0}
   stockDropRotation: {x: 0, y: -90, z: -90}
   scopeHeldPosition: {x: 0, y: -0.7, z: 1}
-  scopeHeldRotation: {x: 0, y: -90, z: 0}
+  scopeHeldRotation: {x: 0, y: -40, z: 0}
   scopeDropRotation: {x: 0, y: -90, z: 0}
