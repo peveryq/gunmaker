@@ -71,20 +71,34 @@ public class WeaponStatsUI : MonoBehaviour
             MonoBehaviour targetMB = currentTarget as MonoBehaviour;
             if (targetMB != null)
             {
-                WeaponBody weaponBody = targetMB.GetComponent<WeaponBody>();
-                if (weaponBody != null)
+                // Check if target is Workbench - show mounted weapon stats
+                Workbench workbench = targetMB.GetComponent<Workbench>();
+                if (workbench != null)
                 {
-                    displayText = weaponBody.GetStatsDescription();
-                    showPanel = true;
+                    WeaponBody mountedWeapon = workbench.GetMountedWeapon();
+                    if (mountedWeapon != null)
+                    {
+                        displayText = mountedWeapon.GetStatsDescription();
+                        showPanel = true;
+                    }
                 }
                 else
                 {
-                    // Try to get WeaponPart
-                    WeaponPart weaponPart = targetMB.GetComponent<WeaponPart>();
-                    if (weaponPart != null)
+                    WeaponBody weaponBody = targetMB.GetComponent<WeaponBody>();
+                    if (weaponBody != null)
                     {
-                        displayText = weaponPart.GetModifierDescription();
+                        displayText = weaponBody.GetStatsDescription();
                         showPanel = true;
+                    }
+                    else
+                    {
+                        // Try to get WeaponPart
+                        WeaponPart weaponPart = targetMB.GetComponent<WeaponPart>();
+                        if (weaponPart != null)
+                        {
+                            displayText = weaponPart.GetModifierDescription();
+                            showPanel = true;
+                        }
                     }
                 }
             }

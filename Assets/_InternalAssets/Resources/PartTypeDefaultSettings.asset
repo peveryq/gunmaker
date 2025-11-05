@@ -17,13 +17,13 @@ MonoBehaviour:
   bodyDropRotation: {x: 0, y: -90, z: -90}
   barrelHeldPosition: {x: 0.7, y: -0.6, z: 1}
   barrelHeldRotation: {x: 0, y: -90, z: 0}
-  barrelDropRotation: {x: 0, y: 0, z: 0}
-  magazineHeldPosition: {x: 0.7, y: -0.6, z: 1}
+  barrelDropRotation: {x: 0, y: -90, z: 0}
+  magazineHeldPosition: {x: 0.2, y: -0.2, z: 1}
   magazineHeldRotation: {x: 0, y: -90, z: 0}
-  magazineDropRotation: {x: 0, y: 90, z: 0}
-  stockHeldPosition: {x: 0.7, y: -0.6, z: 1}
+  magazineDropRotation: {x: 0, y: -90, z: 0}
+  stockHeldPosition: {x: -0.7, y: -0.5, z: 1}
   stockHeldRotation: {x: 0, y: -90, z: 0}
-  stockDropRotation: {x: 90, y: 0, z: 0}
-  scopeHeldPosition: {x: 0.7, y: -0.6, z: 1}
+  stockDropRotation: {x: 0, y: -90, z: -90}
+  scopeHeldPosition: {x: 0, y: -0.7, z: 1}
   scopeHeldRotation: {x: 0, y: -90, z: 0}
-  scopeDropRotation: {x: 0, y: 90, z: 0}
+  scopeDropRotation: {x: 0, y: -90, z: 0}

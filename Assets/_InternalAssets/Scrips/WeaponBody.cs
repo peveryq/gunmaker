@@ -157,6 +157,21 @@ public class WeaponBody : MonoBehaviour
         }
     }
     
+    // Remove part from slot (without destroying it)
+    public void RemovePart(PartType type)
+    {
+        switch (type)
+        {
+            case PartType.Barrel: barrelPart = null; break;
+            case PartType.Magazine: magazinePart = null; break;
+            case PartType.Stock: stockPart = null; break;
+            case PartType.Scope: scopePart = null; break;
+        }
+        
+        // Update stats after removal
+        UpdateWeaponStats();
+    }
+    
     // Get stats description for UI
     public string GetStatsDescription()
     {

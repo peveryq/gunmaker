@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 2131336469818005385}
   - component: {fileID: 6870438460274238900}
   - component: {fileID: 4320265139912385686}
+  - component: {fileID: 3832740869630213660}
   m_Layer: 6
   m_Name: Part
   m_TagString: Untagged
@@ -133,10 +134,8 @@ MonoBehaviour:
   heldPosition: {x: 0, y: 0, z: 0}
   heldRotation: {x: 0, y: 0, z: 0}
   dropRotation: {x: 0, y: 0, z: 0}
-  useGeometryCenter: 1
-  dropPositionOffset: {x: 0, y: 0, z: 0}
   pickupPrompt: {fileID: 0}
-  pickupSound: {fileID: 8300000, guid: b0eabaa3708b8be43bf4937dfcfb07f7, type: 3}
+  pickupSound: {fileID: 8300000, guid: 3b780c692dbc67b4fb78674747cc09aa, type: 3}
   impactSounds:
   - {fileID: 8300000, guid: b0eabaa3708b8be43bf4937dfcfb07f7, type: 3}
   minImpactVelocity: 2
@@ -370,3 +369,17 @@ MonoBehaviour:
   autoSetupOnStart: 1
   includeChildren: 0
   updateDynamically: 0
+--- !u!114 &3832740869630213660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7997086904584838352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39bcd1010728b3646b5155ac72870ec7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weldingProgress: 0
+  isWelded: 0

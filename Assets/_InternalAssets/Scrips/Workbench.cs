@@ -11,10 +11,20 @@ public class Workbench : MonoBehaviour, IInteractable
     [Header("Part Preview")]
     [SerializeField] private GameObject partPreviewPrefab; // Prefab with Outlinable
     
+    [Header("Welding")]
+    [SerializeField] private WeldingUI weldingUI;
+    [SerializeField] private ParticleSystem weldingSparks; // Sparks particle system at welding point
+    [SerializeField] private Transform weldingSparkPoint; // Where sparks appear (optional, uses barrel position if null)
+    
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip installSound; // Sound when part/weapon is installed on workbench
+    
     private WeaponBody mountedWeapon;
     private GameObject currentPreview;
     private InteractionHandler interactionHandler;
     private int originalWeaponLayer = 0; // Store original layer to restore later
+    private WeldingSystem currentWeldingTarget; // Part being welded
     
     private void Start()
     {
@@ -27,11 +37,18 @@ public class Workbench : MonoBehaviour, IInteractable
             mountObj.transform.localRotation = Quaternion.identity;
             weaponMountPoint = mountObj.transform;
         }
+        
+        // Stop welding sparks initially
+        if (weldingSparks != null)
+        {
+            weldingSparks.Stop();
+        }
     }
     
     private void Update()
     {
         FindPlayer();
+        HandleWelding();
     }
     
     private void FindPlayer()
@@ -43,6 +60,149 @@ public class Workbench : MonoBehaviour, IInteractable
             {
                 interactionHandler = player.GetComponent<InteractionHandler>();
             }
+        }
+    }
+    
+    private void HandleWelding()
+    {
+        if (interactionHandler == null) return;
+        
+        // Check if player is holding blowtorch
+        ItemPickup heldItem = interactionHandler.CurrentItem;
+        Blowtorch blowtorch = heldItem != null ? heldItem.GetComponent<Blowtorch>() : null;
+        
+        // Check if player is looking at this workbench
+        bool isLookingAtWorkbench = ReferenceEquals(interactionHandler.CurrentTarget, this);
+        
+        // Find unwelded barrel on mounted weapon
+        WeldingSystem unweldedBarrel = FindUnweldedBarrel();
+        
+        // Show welding UI if holding blowtorch and looking at workbench with unwelded barrel
+        if (blowtorch != null && isLookingAtWorkbench && unweldedBarrel != null)
+        {
+            if (weldingUI != null)
+            {
+                weldingUI.ShowWeldingUI(unweldedBarrel.WeldingProgress);
+            }
+            
+            // Start welding on LMB
+            if (Input.GetMouseButton(0))
+            {
+                blowtorch.StartWorking();
+                
+                if (blowtorch.IsWorking)
+                {
+                    float progressAdded = blowtorch.WeldingSpeed * Time.deltaTime;
+                    float newProgress = unweldedBarrel.AddWeldingProgress(progressAdded);
+                    
+                    if (weldingUI != null)
+                    {
+                        weldingUI.ShowWeldingUI(newProgress);
+                    }
+                    
+                    // Show sparks at welding point
+                    ShowWeldingSparks(unweldedBarrel);
+                }
+            }
+            else
+            {
+                blowtorch.StopWorking();
+                HideWeldingSparks();
+            }
+        }
+        else
+        {
+            // Hide welding UI
+            if (weldingUI != null)
+            {
+                weldingUI.HideWeldingUI();
+            }
+            
+            // Stop blowtorch if not looking at workbench
+            if (blowtorch != null)
+            {
+                blowtorch.StopWorking();
+            }
+            
+            // Hide sparks
+            HideWeldingSparks();
+        }
+    }
+    
+    private void ShowWeldingSparks(WeldingSystem weldingTarget)
+    {
+        if (weldingSparks == null || mountedWeapon == null) return;
+        
+        // Determine position
+        Vector3 targetPosition;
+        Quaternion targetRotation;
+        
+        if (weldingSparkPoint != null)
+        {
+            // Use custom spark point if assigned
+            targetPosition = weldingSparkPoint.position;
+            targetRotation = weldingSparkPoint.rotation;
+        }
+        else
+        {
+            // Use barrel position as spark point
+            WeaponPart barrel = mountedWeapon.GetPart(PartType.Barrel);
+            if (barrel != null)
+            {
+                targetPosition = barrel.transform.position;
+                targetRotation = barrel.transform.rotation;
+            }
+            else
+            {
+                return; // No valid position
+            }
+        }
+        
+        // Position sparks (only if changed significantly or not playing)
+        if (!weldingSparks.isPlaying || Vector3.Distance(weldingSparks.transform.position, targetPosition) > 0.01f)
+        {
+            weldingSparks.transform.position = targetPosition;
+            weldingSparks.transform.rotation = targetRotation;
+            
+            // Restart particle system to apply new position
+            if (weldingSparks.isPlaying)
+            {
+                weldingSparks.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+            weldingSparks.Play();
+        }
+    }
+    
+    private void HideWeldingSparks()
+    {
+        if (weldingSparks != null && weldingSparks.isPlaying)
+        {
+            weldingSparks.Stop();
+        }
+    }
+    
+    private WeldingSystem FindUnweldedBarrel()
+    {
+        if (mountedWeapon == null) return null;
+        
+        // Check if barrel is installed
+        WeaponPart barrel = mountedWeapon.GetPart(PartType.Barrel);
+        if (barrel == null) return null;
+        
+        WeldingSystem weldingSystem = barrel.GetComponent<WeldingSystem>();
+        if (weldingSystem != null && weldingSystem.RequiresWelding && !weldingSystem.IsWelded)
+        {
+            return weldingSystem;
+        }
+        
+        return null;
+    }
+    
+    private void PlayInstallSound()
+    {
+        if (audioSource != null && installSound != null)
+        {
+            audioSource.PlayOneShot(installSound);
         }
     }
     
@@ -141,6 +301,9 @@ public class Workbench : MonoBehaviour, IInteractable
         SetLayerRecursively(weaponBody.gameObject, LayerMask.NameToLayer(mountedWeaponLayer));
         
         mountedWeapon = weaponBody;
+        
+        // Play install sound
+        PlayInstallSound();
     }
     
     private void UnmountWeapon()
@@ -180,6 +343,9 @@ public class Workbench : MonoBehaviour, IInteractable
         if (installed)
         {
             // Part is now child of weapon, handled by WeaponBody.InstallPart
+            
+            // Play install sound
+            PlayInstallSound();
         }
     }
     
@@ -395,6 +561,14 @@ public class Workbench : MonoBehaviour, IInteractable
         
         ItemPickup heldItem = player.CurrentItem;
         
+        // Check if holding blowtorch - don't block interaction, just return false to allow welding
+        if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
+        {
+            // Don't interact with E key when holding blowtorch
+            // Welding is handled by HandleWelding() with LMB
+            return false;
+        }
+        
         if (mountedWeapon == null && heldItem != null)
         {
             // Try to mount weapon body
@@ -435,6 +609,14 @@ public class Workbench : MonoBehaviour, IInteractable
         // 1. No weapon mounted and holding a weapon body
         // 2. Weapon mounted and not holding anything (to unmount)
         // 3. Weapon mounted and holding a part (to install)
+        // 4. Holding blowtorch and there's unwelded barrel (for welding)
+        
+        // Check for blowtorch - allow interaction for welding
+        if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
+        {
+            // Can interact if there's an unwelded barrel
+            return FindUnweldedBarrel() != null;
+        }
         
         if (mountedWeapon == null && heldItem != null)
         {
@@ -460,6 +642,16 @@ public class Workbench : MonoBehaviour, IInteractable
         
         ItemPickup heldItem = player.CurrentItem;
         
+        // Check for blowtorch first
+        if (heldItem != null)
+        {
+            Blowtorch blowtorch = heldItem.GetComponent<Blowtorch>();
+            if (blowtorch != null && FindUnweldedBarrel() != null)
+            {
+                return "Weld Barrel (Hold LMB)";
+            }
+        }
+        
         if (mountedWeapon == null && heldItem != null)
         {
             WeaponBody weaponBody = heldItem.GetComponent<WeaponBody>();
@@ -482,6 +674,12 @@ public class Workbench : MonoBehaviour, IInteractable
         }
         
         return "[E] Workbench";
+    }
+    
+    // For WeaponStatsUI to display mounted weapon stats
+    public WeaponBody GetMountedWeapon()
+    {
+        return mountedWeapon;
     }
     
     public Transform Transform => transform;

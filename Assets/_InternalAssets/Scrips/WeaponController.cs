@@ -17,6 +17,12 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private Vector3 casingEjectDirection = new Vector3(1f, 1f, 0f); // Right and up
     [SerializeField] private float casingEjectForce = 3f;
     
+    [Header("Barrel Ejection")]
+    [Tooltip("Force applied when unwelded barrel is ejected during shooting")]
+    [SerializeField] private float barrelEjectForce = 5f;
+    [Tooltip("Torque applied to barrel for random rotation")]
+    [SerializeField] private float barrelEjectTorque = 2f;
+    
     private bool isEquipped = false;
     private int currentAmmo;
     private float nextFireTime = 0f;
@@ -180,6 +186,22 @@ public class WeaponController : MonoBehaviour
             return;
         }
         
+        // Check if barrel is welded (if barrel exists)
+        if (weaponBody != null)
+        {
+            WeaponPart barrel = weaponBody.GetPart(PartType.Barrel);
+            if (barrel != null)
+            {
+                WeldingSystem weldingSystem = barrel.GetComponent<WeldingSystem>();
+                if (weldingSystem != null && weldingSystem.RequiresWelding && !weldingSystem.IsWelded)
+                {
+                    // Barrel is not welded - eject it!
+                    EjectBarrel(barrel, weaponBody);
+                    return;
+                }
+            }
+        }
+        
         // This should not be reached if ammo is 0, but check anyway
         if (currentAmmo <= 0) return;
         
@@ -221,6 +243,53 @@ public class WeaponController : MonoBehaviour
         {
             StartReload();
         }
+    }
+    
+    private void EjectBarrel(WeaponPart barrel, WeaponBody weaponBody)
+    {
+        // Play single shot sound
+        PlaySound(settings.shootSound);
+        
+        // Use barrel's current position or firepoint as eject position
+        Vector3 ejectPosition = barrel.transform.position;
+        Vector3 ejectDirection = playerCamera != null ? playerCamera.transform.forward : transform.forward;
+        
+        // Manually remove barrel (set to null and destroy link)
+        // We'll use reflection-like approach: detach barrel from parent
+        barrel.transform.SetParent(null);
+        
+        // Re-enable physics and interaction
+        Rigidbody barrelRb = barrel.GetComponent<Rigidbody>();
+        if (barrelRb != null)
+        {
+            barrelRb.isKinematic = false;
+            barrelRb.useGravity = true;
+            
+            // Apply ejection force
+            barrelRb.AddForce(ejectDirection * barrelEjectForce, ForceMode.Impulse);
+            barrelRb.AddTorque(Random.insideUnitSphere * barrelEjectTorque, ForceMode.Impulse);
+        }
+        
+        // Re-enable collider
+        Collider barrelCol = barrel.GetComponent<Collider>();
+        if (barrelCol != null)
+        {
+            barrelCol.enabled = true;
+        }
+        
+        // Re-enable ItemPickup
+        ItemPickup barrelPickup = barrel.GetComponent<ItemPickup>();
+        if (barrelPickup != null)
+        {
+            barrelPickup.enabled = true;
+            barrelPickup.SetHeldState(false);
+        }
+        
+        // Remove barrel from weapon body slot
+        weaponBody.RemovePart(PartType.Barrel);
+        
+        // Weapon is now in "no barrel" state
+        // Empty sound will play on next shot attempt
     }
     
     private void EjectCasing()
