@@ -40,11 +40,21 @@ public class Bullet : MonoBehaviour
         if (hasHit) return;
         hasHit = true;
         
-        // Spawn hit effect
-        if (hitEffect != null)
+        // Spawn bullet hole using pooling system
+        if (collision.contacts.Length > 0)
         {
             ContactPoint contact = collision.contacts[0];
-            Instantiate(hitEffect, contact.point, Quaternion.LookRotation(contact.normal));
+            
+            // Use BulletHoleManager if available
+            if (BulletHoleManager.Instance != null)
+            {
+                BulletHoleManager.Instance.SpawnBulletHole(contact.point, contact.normal, collision.transform);
+            }
+            else if (hitEffect != null)
+            {
+                // Fallback to old system
+                Instantiate(hitEffect, contact.point, Quaternion.LookRotation(contact.normal));
+            }
         }
         
         // Apply damage if collision has health
@@ -63,11 +73,8 @@ public class Bullet : MonoBehaviour
         if (hasHit) return;
         hasHit = true;
         
-        // Spawn hit effect
-        if (hitEffect != null)
-        {
-            Instantiate(hitEffect, transform.position, Quaternion.identity);
-        }
+        // For triggers, we don't have contact point/normal, so skip bullet hole
+        // Or use raycast to find hit point
         
         // Apply damage if collision has health
         IDamageable damageable = other.gameObject.GetComponent<IDamageable>();

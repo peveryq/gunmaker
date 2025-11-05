@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 8135075361930263655}
   - component: {fileID: 2405165800236848484}
   - component: {fileID: 3027508608901381638}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -261,7 +261,7 @@ MonoBehaviour:
   interactableLayer:
     serializedVersion: 2
     m_Bits: 64
-  dropDistance: 3
+  dropPosition: {x: 0, y: -0.5, z: 1.5}
   dropForce: 1
   interactionPromptText: {fileID: 0}
   playerCamera: {fileID: 1432751061069463011}
@@ -277,7 +277,7 @@ GameObject:
   - component: {fileID: 8251379344398999178}
   - component: {fileID: 2422349375137898507}
   - component: {fileID: 5680085926003687120}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
