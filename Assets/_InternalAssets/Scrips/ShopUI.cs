@@ -281,7 +281,7 @@ public class ShopUI : MonoBehaviour
     /// <summary>
     /// Refresh current category display
     /// </summary>
-    public void RefreshCategory()
+    public void RefreshCategory(bool preserveScrollPosition = false)
     {
         if (offeringGenerator == null)
         {
@@ -289,6 +289,14 @@ public class ShopUI : MonoBehaviour
             return;
         }
         
+        float targetVertical = 1f;
+        float targetHorizontal = 0f;
+        if (preserveScrollPosition && itemScrollRect != null)
+        {
+            targetVertical = Mathf.Clamp01(itemScrollRect.verticalNormalizedPosition);
+            targetHorizontal = Mathf.Clamp01(itemScrollRect.horizontalNormalizedPosition);
+        }
+
         // Clear existing tiles
         ClearTiles();
         
@@ -301,40 +309,50 @@ public class ShopUI : MonoBehaviour
             CreateTile(offerings[i], i);
         }
 
-        ResetScrollPosition();
+        if (preserveScrollPosition)
+        {
+            SetScrollPosition(targetVertical, targetHorizontal);
+        }
+        else
+        {
+            SetScrollPosition(1f, 0f);
+        }
     }
 
-    private void ResetScrollPosition()
+    private void SetScrollPosition(float verticalPosition, float horizontalPosition)
     {
         if (itemScrollRect == null)
             return;
 
-        itemScrollRect.verticalNormalizedPosition = 1f;
-        itemScrollRect.horizontalNormalizedPosition = 0f;
+        verticalPosition = Mathf.Clamp01(verticalPosition);
+        horizontalPosition = Mathf.Clamp01(horizontalPosition);
+
+        itemScrollRect.verticalNormalizedPosition = verticalPosition;
+        itemScrollRect.horizontalNormalizedPosition = horizontalPosition;
 
         if (scrollResetRoutine != null)
         {
             StopCoroutine(scrollResetRoutine);
         }
-        scrollResetRoutine = StartCoroutine(EnsureScrollPositionNextFrame());
+        scrollResetRoutine = StartCoroutine(EnsureScrollPositionNextFrame(verticalPosition, horizontalPosition));
     }
 
-    private IEnumerator EnsureScrollPositionNextFrame()
+    private IEnumerator EnsureScrollPositionNextFrame(float verticalPosition, float horizontalPosition)
     {
         yield return null;
 
         if (itemScrollRect != null)
         {
-            itemScrollRect.verticalNormalizedPosition = 1f;
-            itemScrollRect.horizontalNormalizedPosition = 0f;
+            itemScrollRect.verticalNormalizedPosition = verticalPosition;
+            itemScrollRect.horizontalNormalizedPosition = horizontalPosition;
         }
 
         yield return new WaitForEndOfFrame();
 
         if (itemScrollRect != null)
         {
-            itemScrollRect.verticalNormalizedPosition = 1f;
-            itemScrollRect.horizontalNormalizedPosition = 0f;
+            itemScrollRect.verticalNormalizedPosition = verticalPosition;
+            itemScrollRect.horizontalNormalizedPosition = horizontalPosition;
         }
 
         scrollResetRoutine = null;
@@ -404,8 +422,7 @@ public class ShopUI : MonoBehaviour
     /// </summary>
     private void OnPurchaseComplete()
     {
-        // Optionally refresh the category or show feedback
-        // For now, just update money display (handled by subscription)
+        RefreshCategory(true);
     }
     
     /// <summary>

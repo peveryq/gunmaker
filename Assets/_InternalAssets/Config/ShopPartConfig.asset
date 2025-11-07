@@ -19,10 +19,8 @@ MonoBehaviour:
     rarityTiers:
     - rarity: 1
       partMeshData:
-      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
-        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
-      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
-        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      - mesh: {fileID: 3881314791668600096, guid: 63daf754bee1e8840886d8c45ef661a6, type: 3}
+        icon: {fileID: 21300000, guid: 67f8cafe45247a34f9dece47d7d75f96, type: 3}
       partNamePool:
       - rusty
       - low-grade
@@ -37,10 +35,10 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 2
       partMeshData:
-      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
-        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
-      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
-        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      - mesh: {fileID: 3881314791668600096, guid: 63daf754bee1e8840886d8c45ef661a6, type: 3}
+        icon: {fileID: 21300000, guid: 67f8cafe45247a34f9dece47d7d75f96, type: 3}
+      - mesh: {fileID: 375840638074260036, guid: 67afc2d9f06c7744d94360b2a2b31ea9, type: 3}
+        icon: {fileID: 21300000, guid: 79a59157a99180d4ab83f4af881fc665, type: 3}
       partNamePool:
       - used
       - battle-tested
@@ -54,9 +52,9 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 3
       partMeshData:
-      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
+      - mesh: {fileID: 7946524652529686908, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
         icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
-      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+      - mesh: {fileID: 7858061607450985075, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
       partNamePool:
       - reinforced
@@ -71,10 +69,10 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 4
       partMeshData:
-      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
-        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
-      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
-        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      - mesh: {fileID: -263093380595901162, guid: 961cc21655d2fb1458a894eff3b1912e, type: 3}
+        icon: {fileID: 21300000, guid: 23bad33abce101149ba04326ff4e996e, type: 3}
+      - mesh: {fileID: -7900713775377380437, guid: 44629b6a587dbe94eb35086d4d7b5125, type: 3}
+        icon: {fileID: 21300000, guid: 0cc018892ffaf7146bdadcfbfaecf562, type: 3}
       partNamePool:
       - enhanced
       - tuned
@@ -88,9 +86,9 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 5
       partMeshData:
-      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
-        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
-      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+      - mesh: {fileID: 8832121025229779155, guid: 7cd55c964f5ee2a4381fd36b38683bb9, type: 3}
+        icon: {fileID: 21300000, guid: 28d48683abc541746b248409f5d67298, type: 3}
+      - mesh: {fileID: 7858061607450985075, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
       partNamePool:
       - mastercrafted

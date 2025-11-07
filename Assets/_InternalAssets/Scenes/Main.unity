@@ -10631,7 +10631,8 @@ MonoBehaviour:
   buyButton: {fileID: 990477190}
   closeButton: {fileID: 593423366}
   audioSource: {fileID: 1002889497}
-  purchaseSound: {fileID: 8300000, guid: 3d071c90f923a8f47b5d9b0e0856b3aa, type: 3}
+  purchaseSound: {fileID: 8300000, guid: 83dd8c3cae9f27f4999bff39ecb94354, type: 3}
+  buttonClickSound: {fileID: 8300000, guid: 51da612e49613e647a709ca8c85e8ca8, type: 3}
   offeringGenerator: {fileID: 507574864}
 --- !u!1 &727552313
 GameObject:
@@ -10961,7 +10962,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: PURCHASE PART?
+  m_text: part name
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c5cfe3d44b7e9954597c52072f90ed94, type: 2}
   m_sharedMaterial: {fileID: 7881663402858037666, guid: c5cfe3d44b7e9954597c52072f90ed94, type: 2}
@@ -10994,7 +10995,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 16
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -14303,7 +14304,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletHolePrefab: {fileID: 1980816703336855924, guid: 6dff0fabdbfcc6e45808efd2a6eb2dae, type: 3}
   maxBulletHoles: 30
-  bulletHoleLifetime: 30
+  bulletHoleLifetime: 15
   impactParticles: {fileID: 75377369}
 --- !u!4 &1163109660
 Transform:
@@ -22565,7 +22566,7 @@ MonoBehaviour:
   offeringGenerator: {fileID: 507574864}
   purchaseConfirmationUI: {fileID: 725064671}
   audioSource: {fileID: 1002889497}
-  buttonClickSound: {fileID: 8300000, guid: 3b780c692dbc67b4fb78674747cc09aa, type: 3}
+  buttonClickSound: {fileID: 8300000, guid: 51da612e49613e647a709ca8c85e8ca8, type: 3}
 --- !u!1 &2129280558
 GameObject:
   m_ObjectHideFlags: 0

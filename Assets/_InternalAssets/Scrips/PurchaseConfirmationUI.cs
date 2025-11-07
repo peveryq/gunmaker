@@ -29,6 +29,7 @@ public class PurchaseConfirmationUI : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip purchaseSound;
+    [SerializeField] private AudioClip buttonClickSound;
     
     [Header("References")]
     [SerializeField] private ShopOfferingGenerator offeringGenerator;
@@ -341,6 +342,9 @@ public class PurchaseConfirmationUI : MonoBehaviour
             
             // Spawn part with universal prefab, specific mesh, part type, and stats
             PartSpawner.Instance.SpawnPart(universalPrefab, currentOffering.partMesh, currentPartType, stats, partName);
+
+            // Remove offering so it disappears from the shop list
+            offeringGenerator.RemoveOffering(currentPartType, currentOffering);
             
             // Play purchase sound
             PlayPurchaseSound();
@@ -358,6 +362,7 @@ public class PurchaseConfirmationUI : MonoBehaviour
     /// </summary>
     private void OnCloseClicked()
     {
+        PlayButtonClickSound();
         HideModal();
     }
     
@@ -384,6 +389,14 @@ public class PurchaseConfirmationUI : MonoBehaviour
         if (audioSource != null && purchaseSound != null)
         {
             audioSource.PlayOneShot(purchaseSound);
+        }
+    }
+
+    private void PlayButtonClickSound()
+    {
+        if (audioSource != null && buttonClickSound != null)
+        {
+            audioSource.PlayOneShot(buttonClickSound);
         }
     }
 }

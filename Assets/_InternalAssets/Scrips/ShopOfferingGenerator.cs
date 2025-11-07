@@ -264,6 +264,22 @@ public class ShopOfferingGenerator : MonoBehaviour
         
         currentOfferings[partType] = offerings;
     }
+
+    /// <summary>
+    /// Remove a specific offering after purchase
+    /// </summary>
+    public bool RemoveOffering(PartType partType, ShopOffering offering)
+    {
+        if (offering == null)
+            return false;
+
+        if (currentOfferings.TryGetValue(partType, out List<ShopOffering> offerings) && offerings != null)
+        {
+            return offerings.Remove(offering);
+        }
+
+        return false;
+    }
     
     /// <summary>
     /// Generate a single offering (Phase 1)
