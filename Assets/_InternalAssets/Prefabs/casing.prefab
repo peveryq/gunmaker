@@ -122,8 +122,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2eeb75d5d3934ceabcd262fe3bca9919, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lifetime: 2
-  fadeTime: 1
+  lifetime: 1
+  fadeTime: 0
   useFadeOut: 1
   useScaleFade: 1
   randomTorque: 5

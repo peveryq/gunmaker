@@ -359,7 +359,15 @@ public class ShopOfferingGenerator : MonoBehaviour
         {
             if (!stats.ContainsKey(influence.stat))
             {
-                stats[influence.stat] = 0f;
+                float value = 0f;
+                
+                // Magazine starter should have minimum ammo capacity
+                if (partType == PartType.Magazine && influence.stat == StatInfluence.StatType.Ammo)
+                {
+                    value = 8f;
+                }
+                
+                stats[influence.stat] = value;
             }
         }
         starter.SetCustomStats(stats);
