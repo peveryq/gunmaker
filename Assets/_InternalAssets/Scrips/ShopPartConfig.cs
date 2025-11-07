@@ -12,6 +12,9 @@ public class PartMeshData
     
     [Tooltip("2D icon sprite for UI display")]
     public Sprite icon;
+    
+    [Tooltip("Optional lens overlay prefab (for scopes). Will be instantiated as child with preserved transform.")]
+    public GameObject lensOverlayPrefab;
 }
 
 /// <summary>

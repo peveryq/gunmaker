@@ -11,6 +11,7 @@ public class ShopOffering
     public int price;
     public Mesh partMesh; // Mesh to apply to universal prefab
     public Sprite partIcon; // Icon sprite for UI display
+    public GameObject lensOverlayPrefab; // Optional lens overlay for scopes
     public Sprite manufacturerLogo;
     public PartType partType;
     
@@ -312,6 +313,7 @@ public class ShopOfferingGenerator : MonoBehaviour
             price = price,
             partMesh = meshData.mesh,
             partIcon = meshData.icon,
+            lensOverlayPrefab = meshData.lensOverlayPrefab,
             manufacturerLogo = manufacturerLogo,
             partType = partType
         };
@@ -350,6 +352,7 @@ public class ShopOfferingGenerator : MonoBehaviour
             price = 0,
             partMesh = meshData.mesh,
             partIcon = meshData.icon,
+            lensOverlayPrefab = meshData.lensOverlayPrefab,
             manufacturerLogo = shopConfig != null ? shopConfig.GetRandomManufacturerLogo() : null,
             partType = partType
         };

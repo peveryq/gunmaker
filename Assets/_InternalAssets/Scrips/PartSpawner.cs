@@ -53,7 +53,7 @@ public class PartSpawner : MonoBehaviour
     /// <summary>
     /// Spawn a weapon part with calculated stats and specific mesh
     /// </summary>
-    public GameObject SpawnPart(GameObject universalPrefab, Mesh partMesh, PartType partType, Dictionary<StatInfluence.StatType, float> stats, string partName = null)
+    public GameObject SpawnPart(GameObject universalPrefab, Mesh partMesh, PartType partType, Dictionary<StatInfluence.StatType, float> stats, string partName = null, GameObject lensOverlayPrefab = null)
     {
         if (universalPrefab == null)
         {
@@ -84,6 +84,15 @@ public class PartSpawner : MonoBehaviour
             
             // Update collider to match new mesh geometry
             UpdateCollider(spawnedPart, partMesh);
+            
+            // Adjust position so geometry center aligns with spawn point
+            // Use mesh local bounds and transform to world space through the MeshFilter's transform
+            Vector3 localBoundsCenter = partMesh.bounds.center;
+            Vector3 worldBoundsCenter = meshFilter.transform.TransformPoint(localBoundsCenter);
+            
+            // Calculate how much to move the root object
+            Vector3 offset = worldBoundsCenter - spawnPoint.position;
+            spawnedPart.transform.position -= offset;
         }
         else
         {
@@ -113,22 +122,13 @@ public class PartSpawner : MonoBehaviour
             Debug.LogWarning("Universal part prefab doesn't have WeaponPart component!");
         }
         
-        // Setup physics for drop effect
-        Rigidbody rb = spawnedPart.GetComponent<Rigidbody>();
-        if (rb == null)
+        // Instantiate lens overlay if provided (for scopes)
+        if (lensOverlayPrefab != null)
         {
-            rb = spawnedPart.AddComponent<Rigidbody>();
+            GameObject lensOverlay = Instantiate(lensOverlayPrefab, spawnedPart.transform);
+            // Lens overlay prefab should have its local position/rotation pre-configured
+            // No need to modify transform here
         }
-        
-        rb.isKinematic = false;
-        rb.useGravity = true;
-        
-        // Apply spawn force (slight upward and forward)
-        Vector3 forceDirection = (spawnPoint.forward * spawnForce + Vector3.up * upwardForce).normalized;
-        rb.AddForce(forceDirection * (spawnForce + upwardForce), ForceMode.Impulse);
-        
-        // Add slight random rotation for visual variety
-        rb.AddTorque(Random.insideUnitSphere * 2f, ForceMode.Impulse);
         
         // Play spawn sound
         PlaySpawnSound();

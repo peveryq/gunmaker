@@ -340,8 +340,8 @@ public class PurchaseConfirmationUI : MonoBehaviour
                 ? currentGeneratedName
                 : currentOffering.GetGeneratedName(offeringGenerator.Config);
             
-            // Spawn part with universal prefab, specific mesh, part type, and stats
-            PartSpawner.Instance.SpawnPart(universalPrefab, currentOffering.partMesh, currentPartType, stats, partName);
+            // Spawn part with universal prefab, specific mesh, part type, stats, and optional lens overlay
+            PartSpawner.Instance.SpawnPart(universalPrefab, currentOffering.partMesh, currentPartType, stats, partName, currentOffering.lensOverlayPrefab);
 
             // Remove offering so it disappears from the shop list
             offeringGenerator.RemoveOffering(currentPartType, currentOffering);
