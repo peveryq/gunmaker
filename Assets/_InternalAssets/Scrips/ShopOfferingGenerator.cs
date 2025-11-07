@@ -17,6 +17,8 @@ public class ShopOffering
     // Cached stats (Phase 2: calculated on-demand)
     private Dictionary<StatInfluence.StatType, float> cachedStats;
     private bool statsCalculated = false;
+    private string cachedName;
+    private bool nameGenerated = false;
     
     public Dictionary<StatInfluence.StatType, float> GetStats(ShopPartConfig config)
     {
@@ -118,6 +120,40 @@ public class ShopOffering
     {
         cachedStats = null;
         statsCalculated = false;
+    }
+
+    /// <summary>
+    /// Get or generate a display name for this offering
+    /// </summary>
+    public string GetGeneratedName(ShopPartConfig config)
+    {
+        if (nameGenerated && !string.IsNullOrEmpty(cachedName))
+            return cachedName;
+        
+        string firstPart = null;
+        if (config != null)
+        {
+            firstPart = config.GetRandomNameFragment(partType, rarity);
+        }
+        
+        if (string.IsNullOrWhiteSpace(firstPart))
+        {
+            firstPart = $"{rarity}-star";
+        }
+        
+        string typeLabel = config != null ? config.GetPartTypeLabel(partType) : partType.ToString().ToLowerInvariant();
+        cachedName = $"{firstPart} {typeLabel}".Trim();
+        nameGenerated = true;
+        return cachedName;
+    }
+
+    /// <summary>
+    /// Reset cached name (when refreshing offerings)
+    /// </summary>
+    public void ResetName()
+    {
+        cachedName = null;
+        nameGenerated = false;
     }
 }
 

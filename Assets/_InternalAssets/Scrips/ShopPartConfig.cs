@@ -47,6 +47,10 @@ public class RarityTier
     [Tooltip("Part meshes with their corresponding icon sprites")]
     public List<PartMeshData> partMeshData = new List<PartMeshData>();
     
+    [Header("Name Pool")]
+    [Tooltip("Unique name fragments for this rarity tier (first part of the generated name)")]
+    public List<string> partNamePool = new List<string>();
+    
     [Header("Price Range")]
     public int minPrice = 20;
     public int maxPrice = 100;
@@ -72,6 +76,8 @@ public class PartTypeConfig
 {
     [Header("Part Type")]
     public PartType partType;
+    [Tooltip("Display name for this part type (localized label). If empty defaults will be used.")]
+    public string partTypeDisplayName = string.Empty;
     
     [Header("Rarity Tiers")]
     [Tooltip("Configure 5 rarity tiers (1-5 stars)")]
@@ -107,6 +113,45 @@ public class PartTypeConfig
                 return true;
         }
         return false;
+    }
+    
+    /// <summary>
+    /// Get random name fragment for a specific rarity tier
+    /// </summary>
+    public string GetRandomNameFragment(int rarity)
+    {
+        RarityTier tier = GetRarityTier(rarity);
+        if (tier != null && tier.partNamePool != null && tier.partNamePool.Count > 0)
+        {
+            int index = Random.Range(0, tier.partNamePool.Count);
+            return tier.partNamePool[index];
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Get display label for this part type
+    /// </summary>
+    public string GetDisplayName()
+    {
+        if (!string.IsNullOrWhiteSpace(partTypeDisplayName))
+        {
+            return partTypeDisplayName;
+        }
+
+        switch (partType)
+        {
+            case PartType.Barrel:
+                return "barrel";
+            case PartType.Magazine:
+                return "magazine";
+            case PartType.Stock:
+                return "stock";
+            case PartType.Scope:
+                return "scope";
+            default:
+                return partType.ToString().ToLowerInvariant();
+        }
     }
 }
 
@@ -147,6 +192,24 @@ public class ShopPartConfig : ScriptableObject
         
         Debug.LogWarning($"No configuration found for part type: {type}");
         return null;
+    }
+    
+    /// <summary>
+    /// Get a random name fragment for a specific part type and rarity
+    /// </summary>
+    public string GetRandomNameFragment(PartType type, int rarity)
+    {
+        PartTypeConfig config = GetPartTypeConfig(type);
+        return config != null ? config.GetRandomNameFragment(rarity) : null;
+    }
+    
+    /// <summary>
+    /// Get display label for part type (lowercase string)
+    /// </summary>
+    public string GetPartTypeLabel(PartType type)
+    {
+        PartTypeConfig config = GetPartTypeConfig(type);
+        return config != null ? config.GetDisplayName() : type.ToString().ToLowerInvariant();
     }
     
     /// <summary>

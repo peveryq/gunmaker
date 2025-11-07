@@ -13,6 +13,7 @@ public class PurchaseConfirmationUI : MonoBehaviour
     [SerializeField] private GameObject overlay;
     
     [Header("Part Display")]
+    [SerializeField] private TextMeshProUGUI modalHeaderText;
     [SerializeField] private Image partIconImage;
     
     [Header("Stats Display")]
@@ -37,6 +38,7 @@ public class PurchaseConfirmationUI : MonoBehaviour
     private int currentOfferingIndex;
     private System.Action onPurchaseComplete;
     private bool listenersInitialized = false;
+    private string currentGeneratedName;
     
     private void Awake()
     {
@@ -124,6 +126,13 @@ public class PurchaseConfirmationUI : MonoBehaviour
             Debug.LogError("Cannot populate UI: currentOffering is null!");
             HideModal();
             return;
+        }
+        
+        // Generate and display part name
+        currentGeneratedName = currentOffering.GetGeneratedName(offeringGenerator.Config);
+        if (modalHeaderText != null)
+        {
+            modalHeaderText.text = currentGeneratedName;
         }
         
         // Set part icon
@@ -326,9 +335,12 @@ public class PurchaseConfirmationUI : MonoBehaviour
         {
             // Get calculated stats
             Dictionary<StatInfluence.StatType, float> stats = offeringGenerator.GetOfferingStats(currentPartType, currentOfferingIndex);
+            string partName = !string.IsNullOrEmpty(currentGeneratedName)
+                ? currentGeneratedName
+                : currentOffering.GetGeneratedName(offeringGenerator.Config);
             
             // Spawn part with universal prefab, specific mesh, part type, and stats
-            PartSpawner.Instance.SpawnPart(universalPrefab, currentOffering.partMesh, currentPartType, stats);
+            PartSpawner.Instance.SpawnPart(universalPrefab, currentOffering.partMesh, currentPartType, stats, partName);
             
             // Play purchase sound
             PlayPurchaseSound();
@@ -361,6 +373,7 @@ public class PurchaseConfirmationUI : MonoBehaviour
             overlay.SetActive(false);
         
         currentOffering = null;
+        currentGeneratedName = null;
     }
     
     /// <summary>

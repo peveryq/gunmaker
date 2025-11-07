@@ -15,6 +15,7 @@ MonoBehaviour:
   universalPartPrefab: {fileID: 7997086904584838352, guid: f51523ad756e1f44da52f0117cc5745b, type: 3}
   partTypeConfigs:
   - partType: 0
+    partTypeDisplayName: barrel
     rarityTiers:
     - rarity: 1
       partMeshData:
@@ -22,6 +23,12 @@ MonoBehaviour:
         icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
       - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      partNamePool:
+      - rusty
+      - low-grade
+      - old
+      - "\u0441rude"
+      - damaged
       minPrice: 20
       maxPrice: 100
       minStatValue: 0
@@ -34,6 +41,11 @@ MonoBehaviour:
         icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
       - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      partNamePool:
+      - used
+      - battle-tested
+      - standard-issue
+      - refurbished
       minPrice: 101
       maxPrice: 500
       minStatValue: 20
@@ -46,6 +58,11 @@ MonoBehaviour:
         icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
       - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      partNamePool:
+      - reinforced
+      - reliable
+      - serviceable
+      - improved
       minPrice: 501
       maxPrice: 2000
       minStatValue: 40
@@ -58,6 +75,11 @@ MonoBehaviour:
         icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
       - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      partNamePool:
+      - enhanced
+      - tuned
+      - precision
+      - upgraded
       minPrice: 2001
       maxPrice: 5000
       minStatValue: 60
@@ -70,6 +92,11 @@ MonoBehaviour:
         icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
       - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
         icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      partNamePool:
+      - mastercrafted
+      - elite
+      - premium
+      - spec-ops
       minPrice: 5001
       maxPrice: 10000
       minStatValue: 80
@@ -80,9 +107,11 @@ MonoBehaviour:
     - stat: 0
     - stat: 1
   - partType: 2
+    partTypeDisplayName: 
     rarityTiers:
     - rarity: 1
       partMeshData: []
+      partNamePool: []
       minPrice: 20
       maxPrice: 100
       minStatValue: 0
@@ -91,6 +120,7 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 2
       partMeshData: []
+      partNamePool: []
       minPrice: 101
       maxPrice: 500
       minStatValue: 20
@@ -99,6 +129,7 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 3
       partMeshData: []
+      partNamePool: []
       minPrice: 501
       maxPrice: 2000
       minStatValue: 40
@@ -107,6 +138,7 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 4
       partMeshData: []
+      partNamePool: []
       minPrice: 2001
       maxPrice: 5000
       minStatValue: 60
@@ -115,6 +147,7 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 5
       partMeshData: []
+      partNamePool: []
       minPrice: 5001
       maxPrice: 10000
       minStatValue: 80

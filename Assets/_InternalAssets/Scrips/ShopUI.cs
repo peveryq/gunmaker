@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
@@ -43,6 +44,7 @@ public class ShopUI : MonoBehaviour
     [Header("Item Grid")]
     [SerializeField] private Transform itemGridContainer;
     [SerializeField] private GameObject itemTilePrefab;
+    [SerializeField] private ScrollRect itemScrollRect;
     
     [Header("References")]
     [SerializeField] private ShopOfferingGenerator offeringGenerator;
@@ -57,6 +59,7 @@ public class ShopUI : MonoBehaviour
     private FirstPersonController fpsController;
     private bool wasControllerEnabled;
     private Button currentSelectedButton;
+    private Coroutine scrollResetRoutine;
     
     private void Awake()
     {
@@ -297,6 +300,44 @@ public class ShopUI : MonoBehaviour
         {
             CreateTile(offerings[i], i);
         }
+
+        ResetScrollPosition();
+    }
+
+    private void ResetScrollPosition()
+    {
+        if (itemScrollRect == null)
+            return;
+
+        itemScrollRect.verticalNormalizedPosition = 1f;
+        itemScrollRect.horizontalNormalizedPosition = 0f;
+
+        if (scrollResetRoutine != null)
+        {
+            StopCoroutine(scrollResetRoutine);
+        }
+        scrollResetRoutine = StartCoroutine(EnsureScrollPositionNextFrame());
+    }
+
+    private IEnumerator EnsureScrollPositionNextFrame()
+    {
+        yield return null;
+
+        if (itemScrollRect != null)
+        {
+            itemScrollRect.verticalNormalizedPosition = 1f;
+            itemScrollRect.horizontalNormalizedPosition = 0f;
+        }
+
+        yield return new WaitForEndOfFrame();
+
+        if (itemScrollRect != null)
+        {
+            itemScrollRect.verticalNormalizedPosition = 1f;
+            itemScrollRect.horizontalNormalizedPosition = 0f;
+        }
+
+        scrollResetRoutine = null;
     }
     
     /// <summary>

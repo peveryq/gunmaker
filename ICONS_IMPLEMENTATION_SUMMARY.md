@@ -40,17 +40,43 @@ public List<Mesh> partMeshes;
 public List<PartMeshData> partMeshData;
 ```
 
-### 3. Обновлен класс `ShopOffering`
+### 3. Расширен `PartTypeConfig`
+
+**Файл:** `ShopPartConfig.cs`
+
+- Добавлено поле `partTypeDisplayName` для настраиваемого/локализуемого названия типа
+- В `RarityTier` появился список `partNamePool` (фразы первого слова для названий деталей)
+
+```csharp
+public class PartTypeConfig
+{
+    public string partTypeDisplayName;
+    // ...
+}
+
+public class RarityTier
+{
+    public List<string> partNamePool = new List<string>();
+}
+```
+
+### 4. Обновлен класс `ShopOffering`
 
 **Файл:** `ShopOfferingGenerator.cs`
 
-Добавлено поле для хранения иконки:
+- Добавлен `partIcon` для UI
+- Реализовано кэшированное именование `GetGeneratedName()`
 
 ```csharp
-public Sprite partIcon; // Icon sprite for UI display
+public string GetGeneratedName(ShopPartConfig config)
+{
+    string firstPart = config.GetRandomNameFragment(partType, rarity);
+    string typeLabel = config.GetPartTypeLabel(partType);
+    return $"{firstPart} {typeLabel}";
+}
 ```
 
-### 4. Обновлен метод генерации
+### 5. Обновлен метод генерации
 
 **Файл:** `ShopOfferingGenerator.cs`
 
@@ -69,7 +95,7 @@ private ShopOffering GenerateOffering(...)
 }
 ```
 
-### 5. Обновлен UI плитки товара
+### 6. Обновлен UI плитки товара
 
 **Файл:** `ShopItemTile.cs`
 
@@ -89,7 +115,7 @@ if (partIconImage != null)
 }
 ```
 
-### 6. Обновлен UI модального окна
+### 7. Обновлен UI модального окна
 
 **Файл:** `PurchaseConfirmationUI.cs`
 
@@ -107,6 +133,13 @@ if (partIconImage != null)
         partIconImage.enabled = false;
     }
 }
+```
+
+Модальное окно также выводит сгенерированное имя и передаёт его в `PartSpawner`:
+
+```csharp
+modalHeaderText.text = generatedName;
+PartSpawner.Instance.SpawnPart(..., partName: generatedName);
 ```
 
 ---
@@ -195,6 +228,7 @@ if (partIconImage != null)
 - [ ] Импортировать PNG иконки
 - [ ] Настроить Texture Type: Sprite (2D and UI)
 - [ ] Открыть ShopPartConfig
+- [ ] Для каждого типа детали задать **Part Type Display Name** (если нужен локализованный заголовок)
 - [ ] Для каждого типа детали:
   - [ ] Barrel
   - [ ] Magazine
@@ -204,6 +238,7 @@ if (partIconImage != null)
   - [ ] Добавить элементы PartMeshData
   - [ ] Назначить Mesh
   - [ ] Назначить Icon
+  - [ ] Заполнить `Part Name Pool`
 
 ### Проверка:
 
@@ -223,12 +258,13 @@ if (partIconImage != null)
 
 | Файл | Изменения | Строки |
 |------|-----------|--------|
-| `ShopPartConfig.cs` | + класс `PartMeshData`<br>~ `RarityTier.partMeshData` | +10 |
-| `ShopOfferingGenerator.cs` | ~ `ShopOffering.partIcon`<br>~ `GenerateOffering()` | +5 |
+| `ShopPartConfig.cs` | + `PartMeshData`<br>+ `partTypeDisplayName`, `partNamePool` | +35 |
+| `ShopOfferingGenerator.cs` | + `partIcon`<br>+ генерация названий | +25 |
 | `ShopItemTile.cs` | ~ отображение `partIcon` | +10 |
-| `PurchaseConfirmationUI.cs` | ~ отображение `partIcon` | +10 |
+| `PurchaseConfirmationUI.cs` | + заголовок с именем<br>+ проброс имени в спавнер | +25 |
+| `PartSpawner.cs` | + установка `weaponPart.partName` | +10 |
 
-**Всего:** ~35 строк кода
+**Всего:** ~105 строк кода
 
 ### Обратная совместимость:
 

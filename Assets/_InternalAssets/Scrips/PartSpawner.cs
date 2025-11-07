@@ -53,7 +53,7 @@ public class PartSpawner : MonoBehaviour
     /// <summary>
     /// Spawn a weapon part with calculated stats and specific mesh
     /// </summary>
-    public GameObject SpawnPart(GameObject universalPrefab, Mesh partMesh, PartType partType, Dictionary<StatInfluence.StatType, float> stats)
+    public GameObject SpawnPart(GameObject universalPrefab, Mesh partMesh, PartType partType, Dictionary<StatInfluence.StatType, float> stats, string partName = null)
     {
         if (universalPrefab == null)
         {
@@ -96,6 +96,11 @@ public class PartSpawner : MonoBehaviour
         {
             // Set part type
             weaponPart.partType = partType;
+            
+            if (!string.IsNullOrEmpty(partName))
+            {
+                weaponPart.partName = partName;
+            }
             
             // Apply stats
             if (stats != null)
