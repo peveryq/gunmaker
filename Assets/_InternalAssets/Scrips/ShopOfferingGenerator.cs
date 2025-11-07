@@ -19,9 +19,15 @@ public class ShopOffering
     private bool statsCalculated = false;
     private string cachedName;
     private bool nameGenerated = false;
+    private bool hasCustomStats = false;
+    private Dictionary<StatInfluence.StatType, float> customStats;
+    private string overrideName;
     
     public Dictionary<StatInfluence.StatType, float> GetStats(ShopPartConfig config)
     {
+        if (hasCustomStats && customStats != null)
+            return customStats;
+        
         if (statsCalculated && cachedStats != null)
             return cachedStats;
         
@@ -127,6 +133,9 @@ public class ShopOffering
     /// </summary>
     public string GetGeneratedName(ShopPartConfig config)
     {
+        if (!string.IsNullOrWhiteSpace(overrideName))
+            return overrideName;
+        
         if (nameGenerated && !string.IsNullOrEmpty(cachedName))
             return cachedName;
         
@@ -142,7 +151,8 @@ public class ShopOffering
         }
         
         string typeLabel = config != null ? config.GetPartTypeLabel(partType) : partType.ToString().ToLowerInvariant();
-        cachedName = $"{firstPart} {typeLabel}".Trim();
+        string combinedName = string.IsNullOrWhiteSpace(typeLabel) ? firstPart : $"{firstPart} {typeLabel}";
+        cachedName = combinedName.Trim();
         nameGenerated = true;
         return cachedName;
     }
@@ -152,6 +162,25 @@ public class ShopOffering
     /// </summary>
     public void ResetName()
     {
+        cachedName = null;
+        nameGenerated = false;
+    }
+    
+    /// <summary>
+    /// Assign custom stat overrides (skips automatic calculation)
+    /// </summary>
+    public void SetCustomStats(Dictionary<StatInfluence.StatType, float> stats)
+    {
+        customStats = stats != null ? new Dictionary<StatInfluence.StatType, float>(stats) : null;
+        hasCustomStats = customStats != null;
+    }
+    
+    /// <summary>
+    /// Force specific display name
+    /// </summary>
+    public void SetOverrideName(string name)
+    {
+        overrideName = name;
         cachedName = null;
         nameGenerated = false;
     }
@@ -210,14 +239,27 @@ public class ShopOfferingGenerator : MonoBehaviour
         }
         
         List<ShopOffering> offerings = new List<ShopOffering>();
-        
-        for (int i = 0; i < offeringsPerCategory; i++)
+        int targetCount = Mathf.Max(offeringsPerCategory, 1);
+
+        if (RequiresStarterOffering(partType))
+        {
+            ShopOffering starter = CreateStarterOffering(partType, partConfig);
+            if (starter != null)
+            {
+                offerings.Add(starter);
+            }
+        }
+
+        int safety = 0;
+        int maxAttempts = Mathf.Max(offeringsPerCategory * 5, offeringsPerCategory + 5);
+        while (offerings.Count < targetCount && safety < maxAttempts)
         {
             ShopOffering offering = GenerateOffering(partType, partConfig);
             if (offering != null)
             {
                 offerings.Add(offering);
             }
+            safety++;
         }
         
         currentOfferings[partType] = offerings;
@@ -257,6 +299,65 @@ public class ShopOfferingGenerator : MonoBehaviour
             manufacturerLogo = manufacturerLogo,
             partType = partType
         };
+    }
+
+    private bool RequiresStarterOffering(PartType partType)
+    {
+        return partType == PartType.Barrel || partType == PartType.Magazine;
+    }
+
+    private ShopOffering CreateStarterOffering(PartType partType, PartTypeConfig partConfig)
+    {
+        if (partConfig == null)
+            return null;
+
+        RarityTier baseTier = partConfig.GetRarityTier(1);
+        if (baseTier == null)
+        {
+            Debug.LogWarning($"No rarity tier 1 configured for {partType}, starter offering skipped.");
+            return null;
+        }
+
+        PartMeshData meshData = (baseTier.partMeshData != null && baseTier.partMeshData.Count > 0)
+            ? baseTier.partMeshData[0]
+            : null;
+
+        if (meshData == null || meshData.mesh == null)
+        {
+            Debug.LogWarning($"No mesh data available for starter offering in {partType} tier 1.");
+            return null;
+        }
+
+        ShopOffering starter = new ShopOffering
+        {
+            rarity = Mathf.Clamp(baseTier.rarity, 1, 5),
+            price = 0,
+            partMesh = meshData.mesh,
+            partIcon = meshData.icon,
+            manufacturerLogo = shopConfig != null ? shopConfig.GetRandomManufacturerLogo() : null,
+            partType = partType
+        };
+
+        Dictionary<StatInfluence.StatType, float> stats = new Dictionary<StatInfluence.StatType, float>();
+        foreach (StatInfluence influence in partConfig.statInfluences)
+        {
+            if (!stats.ContainsKey(influence.stat))
+            {
+                stats[influence.stat] = 0f;
+            }
+        }
+        starter.SetCustomStats(stats);
+
+        string firstPart = partConfig.GetRandomNameFragment(baseTier.rarity);
+        if (string.IsNullOrWhiteSpace(firstPart))
+        {
+            firstPart = "basic";
+        }
+        string typeLabel = shopConfig != null ? shopConfig.GetPartTypeLabel(partType) : partType.ToString().ToLowerInvariant();
+        string starterName = string.IsNullOrWhiteSpace(typeLabel) ? firstPart : $"{firstPart} {typeLabel}";
+        starter.SetOverrideName(starterName.Trim());
+
+        return starter;
     }
     
     /// <summary>
