@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// Example interactable object - computer that opens shop UI
+/// Interactable computer that opens the weapon parts shop UI
 /// </summary>
 public class ShopComputer : MonoBehaviour, IInteractable
 {
@@ -10,8 +10,20 @@ public class ShopComputer : MonoBehaviour, IInteractable
     [SerializeField] private float interactionRange = 3f;
     [SerializeField] private bool requiresWeaponInHand = false;
     
+    [Header("Shop UI")]
+    [SerializeField] private ShopUI shopUI;
+    
     [Header("Events")]
     [SerializeField] private UnityEvent onShopOpened;
+    
+    private void Start()
+    {
+        // Find ShopUI if not assigned
+        if (shopUI == null)
+        {
+            shopUI = FindFirstObjectByType<ShopUI>();
+        }
+    }
     
     public bool Interact(InteractionHandler player)
     {
@@ -24,8 +36,7 @@ public class ShopComputer : MonoBehaviour, IInteractable
         }
         
         // Open shop UI
-        Debug.Log("Opening weapon parts shop");
-        onShopOpened?.Invoke();
+        OpenShop();
         
         return true;
     }
@@ -50,6 +61,19 @@ public class ShopComputer : MonoBehaviour, IInteractable
         }
         
         return "[E] Open Shop";
+    }
+    
+    private void OpenShop()
+    {
+        if (shopUI != null)
+        {
+            shopUI.OpenShop();
+            onShopOpened?.Invoke();
+        }
+        else
+        {
+            Debug.LogError("ShopUI not found! Make sure ShopUI component exists in the scene.");
+        }
     }
     
     public Transform Transform => transform;

@@ -1,0 +1,132 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2266713afa65fe4ca0bbc7f8895f4aa, type: 3}
+  m_Name: ShopPartConfig
+  m_EditorClassIdentifier: 
+  universalPartPrefab: {fileID: 7997086904584838352, guid: f51523ad756e1f44da52f0117cc5745b, type: 3}
+  partTypeConfigs:
+  - partType: 0
+    rarityTiers:
+    - rarity: 1
+      partMeshData:
+      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
+        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
+      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      minPrice: 20
+      maxPrice: 100
+      minStatValue: 0
+      maxStatValue: 19
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 2
+      partMeshData:
+      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
+        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
+      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      minPrice: 101
+      maxPrice: 500
+      minStatValue: 20
+      maxStatValue: 39
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 3
+      partMeshData:
+      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
+        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
+      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      minPrice: 501
+      maxPrice: 2000
+      minStatValue: 40
+      maxStatValue: 59
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 4
+      partMeshData:
+      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
+        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
+      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      minPrice: 2001
+      maxPrice: 5000
+      minStatValue: 60
+      maxStatValue: 79
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 5
+      partMeshData:
+      - mesh: {fileID: 375840638074260036, guid: dd2176bd48715cc4c88d515a7e13f96e, type: 3}
+        icon: {fileID: 21300000, guid: a1ad7eade6930004eacdf6108347129d, type: 3}
+      - mesh: {fileID: 7946524652529686908, guid: b9a587e08e3527045a74762fdae4a870, type: 3}
+        icon: {fileID: 21300000, guid: fd15521949eb2324eb42f86d696dff94, type: 3}
+      minPrice: 5001
+      maxPrice: 10000
+      minStatValue: 80
+      maxStatValue: 100
+      minAmmo: 0
+      maxAmmo: 0
+    statInfluences:
+    - stat: 0
+    - stat: 1
+  - partType: 2
+    rarityTiers:
+    - rarity: 1
+      partMeshData: []
+      minPrice: 20
+      maxPrice: 100
+      minStatValue: 0
+      maxStatValue: 19
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 2
+      partMeshData: []
+      minPrice: 101
+      maxPrice: 500
+      minStatValue: 20
+      maxStatValue: 39
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 3
+      partMeshData: []
+      minPrice: 501
+      maxPrice: 2000
+      minStatValue: 40
+      maxStatValue: 59
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 4
+      partMeshData: []
+      minPrice: 2001
+      maxPrice: 5000
+      minStatValue: 60
+      maxStatValue: 79
+      minAmmo: 0
+      maxAmmo: 0
+    - rarity: 5
+      partMeshData: []
+      minPrice: 5001
+      maxPrice: 10000
+      minStatValue: 80
+      maxStatValue: 100
+      minAmmo: 0
+      maxAmmo: 0
+    statInfluences:
+    - stat: 3
+    - stat: 1
+  manufacturerLogos:
+  - {fileID: 21300000, guid: 8513aacf4abe16649b9a2435df48cf43, type: 3}
+  - {fileID: 21300000, guid: 28b8341ee511fa141a9c8c8f3609cc4b, type: 3}
+  - {fileID: 21300000, guid: 18fe3a9313a2f9d469b466c996e7f018, type: 3}
+  filledStarIcon: {fileID: 21300000, guid: 3b5c59eca7093f442b9c3554cd0b30f6, type: 3}
+  emptyStarIcon: {fileID: 21300000, guid: 54a73a774f78fbc4ebb4646fa5c36a19, type: 3}
