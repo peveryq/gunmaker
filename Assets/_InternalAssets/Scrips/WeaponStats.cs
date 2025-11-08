@@ -52,7 +52,7 @@ public class WeaponStats
     public float GetAimFOV()
     {
         // scope: 1->40, 100->10
-        return Mathf.Lerp(40f, 10f, (scope - 1f) / 99f);
+        return Mathf.Lerp(45f, 5f, (scope - 1f) / 99f);
     }
     
     public int GetMagSize()

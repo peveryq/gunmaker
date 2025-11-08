@@ -23,7 +23,7 @@ MonoBehaviour:
   reloadTime: 3
   autoReload: 0
   canAim: 1
-  aimFOV: 40
+  aimFOV: 45
   aimSpeed: 12
   aimPosition: {x: 0, y: -0.27, z: 0.5}
   enableWeaponSway: 1

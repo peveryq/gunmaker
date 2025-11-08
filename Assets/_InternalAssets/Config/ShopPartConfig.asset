@@ -337,7 +337,7 @@ MonoBehaviour:
     - rarity: 1
       partMeshData:
       - mesh: {fileID: -37581281621201495, guid: db33a96b1b6764648a74f36b5e0f0ab9, type: 3}
-        icon: {fileID: 21300000, guid: 1e0d3df9a486cde4da3f19cf8af2e84e, type: 3}
+        icon: {fileID: 21300000, guid: 36dc530dbf1a43b4bbfffe39f32303e2, type: 3}
         lensOverlayPrefab: {fileID: 6411083956894633722, guid: 7c0a74d631890d14a89deba35a6806d9, type: 3}
       partNamePool:
       - worn
@@ -353,8 +353,11 @@ MonoBehaviour:
     - rarity: 2
       partMeshData:
       - mesh: {fileID: -37581281621201495, guid: db33a96b1b6764648a74f36b5e0f0ab9, type: 3}
-        icon: {fileID: 21300000, guid: 9af19e3f9354baf479613d0599df0559, type: 3}
-        lensOverlayPrefab: {fileID: 6411083956894633722, guid: 7c0a74d631890d14a89deba35a6806d9, type: 3}
+        icon: {fileID: 21300000, guid: 36dc530dbf1a43b4bbfffe39f32303e2, type: 3}
+        lensOverlayPrefab: {fileID: 0}
+      - mesh: {fileID: -2498082048320466622, guid: 5be27e37bcb3a7b4f9300a0dd87cf4ca, type: 3}
+        icon: {fileID: 21300000, guid: 9b6cb47628bdebe449bc4f69d20086fd, type: 3}
+        lensOverlayPrefab: {fileID: 0}
       partNamePool:
       - used
       - battle-tested
@@ -368,8 +371,11 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 3
       partMeshData:
-      - mesh: {fileID: -37581281621201495, guid: db33a96b1b6764648a74f36b5e0f0ab9, type: 3}
-        icon: {fileID: 21300000, guid: b0625aa05f429e64d9b57b9c327b2119, type: 3}
+      - mesh: {fileID: 5924347133901903146, guid: 0eacdb8e667f8f9468c3c14806e28cf5, type: 3}
+        icon: {fileID: 21300000, guid: 0bfde2ef0522ff84eaf4e4cc58759efe, type: 3}
+        lensOverlayPrefab: {fileID: 5217766290570255652, guid: 6c7595db38d509b439e50db2e986be2c, type: 3}
+      - mesh: {fileID: 5602570897447271377, guid: 1ffdef11eedf9b3448be78918705c082, type: 3}
+        icon: {fileID: 21300000, guid: 3e3a11f6b9b8aa74fa3c73b01e288940, type: 3}
         lensOverlayPrefab: {fileID: 6411083956894633722, guid: 7c0a74d631890d14a89deba35a6806d9, type: 3}
       partNamePool:
       - reinforced
@@ -384,9 +390,9 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 4
       partMeshData:
-      - mesh: {fileID: -37581281621201495, guid: db33a96b1b6764648a74f36b5e0f0ab9, type: 3}
-        icon: {fileID: 21300000, guid: 1b9ae05c513d7b2479ee53751673bdec, type: 3}
-        lensOverlayPrefab: {fileID: 6411083956894633722, guid: 7c0a74d631890d14a89deba35a6806d9, type: 3}
+      - mesh: {fileID: -3645041709769818409, guid: 68f5907cecf32fd46b65403370d9c073, type: 3}
+        icon: {fileID: 21300000, guid: 5e0491c07da1536408f6616856f781be, type: 3}
+        lensOverlayPrefab: {fileID: 968758213993920633, guid: 50aed13be4304e043854739de4e06930, type: 3}
       partNamePool:
       - enhanced
       - tuned
@@ -400,9 +406,9 @@ MonoBehaviour:
       maxAmmo: 0
     - rarity: 5
       partMeshData:
-      - mesh: {fileID: -37581281621201495, guid: db33a96b1b6764648a74f36b5e0f0ab9, type: 3}
-        icon: {fileID: 21300000, guid: 1cabcb8cb57134a4096eefd07c41e871, type: 3}
-        lensOverlayPrefab: {fileID: 6411083956894633722, guid: 7c0a74d631890d14a89deba35a6806d9, type: 3}
+      - mesh: {fileID: -3228899803779775749, guid: b176179a006defc44a9e28d65aa65a5f, type: 3}
+        icon: {fileID: 21300000, guid: 3f3d8a5e52a58804780b6c0353a932fc, type: 3}
+        lensOverlayPrefab: {fileID: 56483578528300374, guid: a432eeb34090e2a42bbe36061f83d006, type: 3}
       partNamePool:
       - mastercrafted
       - elite
