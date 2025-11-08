@@ -81,7 +81,21 @@ Before starting, ensure you have:
    - Child Force Expand: Width ✓
    - Spacing: 0
 
-### 2.4 Create Category Buttons (Repeat for each)
+### 2.4 Enable Category Scrolling
+
+1. Select **CategoriesArea**
+2. Add Component → **Rect Mask 2D** (clips overflowing buttons)
+3. Add Component → **ScrollRect**
+   - Horizontal: FALSE
+   - Vertical: TRUE
+   - Movement Type: Clamped
+   - Inertia: FALSE (optional, for crisp scrolling)
+   - Scroll Sensitivity: 20
+   - Viewport: drag **CategoriesArea** itself into the field
+   - Content: drag **CategoryButtons**
+4. Remove any automatically added Scrollbars (not needed)
+
+### 2.5 Create Category Buttons (Repeat for each)
 
 Create 6 buttons: **Stocks**, **Barrels**, **Magazines**, **Scopes**, **Lasers**, **Foregrips**
 
@@ -466,6 +480,9 @@ Select **ShopPanel**, in **ShopUI** component assign:
 - Lasers Button → **LasersButton**
 - Foregrips Button → **ForegripsButton**
 
+**Category Scroll:**
+- Category Scroll Rect → **CategoriesArea ScrollRect**
+
 **Category Visuals:**
 - Stocks Selected Indicator → **StocksButton/SelectedIndicator**
 - Barrels Selected Indicator → **BarrelsButton/SelectedIndicator**
@@ -585,6 +602,107 @@ Select **ShopPanel**, in **ShopUI** component assign:
    - Stats calculate correctly
    - Purchasing works and spawns parts
    - Money deducts properly
+
+---
+
+## Part 10: Shop Data Configuration
+
+### 10.1 ShopPartConfig overview
+- Located at `Assets/_InternalAssets/Config/ShopPartConfig.asset`
+- Each `PartTypeConfig` contains:
+  - `partTypeDisplayName` (lowercase label used in UI and names)
+  - Five `RarityTier` entries (1–5 stars)
+  - `statInfluences` describing which stats the part modifies
+- Every `RarityTier` defines:
+  - `priceRange` (min/max cost used during Phase 1)
+  - `statRange` (min/max values used during Phase 2)
+  - `ammoRange` overrides (magazines only)
+  - `manufacturerLogos` pool (shared across tiers if desired)
+  - `partMeshData` list with `Mesh`, `Sprite icon`, optional `lensOverlayPrefab`
+  - `partNamePool` containing name fragments per rarity
+
+### 10.2 Adding a new mesh/icon pair
+1. Import the FBX mesh into `Assets/_InternalAssets/Models/<Category>/`
+2. Import the PNG icon into `Assets/_InternalAssets/UI/Sprites/Shop/`
+3. Select the PNG and set `Texture Type = Sprite (2D and UI)`
+4. Open `ShopPartConfig` → locate the correct `PartTypeConfig`
+5. Expand the target `RarityTier` → `Part Meshes & Icons`
+6. Increase `Size`, then assign `Mesh`, `Icon`, and `Lens Overlay Prefab` (for scopes)
+7. If needed, add a matching entry to `partNamePool`
+
+### 10.3 Name fragment guidelines
+- Use lowercase descriptors (e.g., `reinforced`, `battle-tested`, `precision`)
+- Populate four unique fragments per rarity tier for each part type
+- Generated names follow `<fragment> <partTypeDisplayName>` (e.g., `elite stock`)
+
+### 10.4 Manufacturer logos & star sprites
+- Manufacturer logos live in the same config for easy randomisation
+- Bright/dim star sprites are assigned once and reused by all tiles
+- Ensure arrays remain aligned (5 entries for stars)
+
+### 10.5 Starter offerings
+- Barrel and magazine categories reserve slot 0 for a starter part
+- Starter barrels: zero stats, cost 0
+- Starter magazines: zero stats except ammo = 8, cost 0
+
+## Part 11: Activation & Scene Checklist
+
+### 11.1 Objects that stay enabled
+- `Canvas`, `EventSystem`, `ShopPanel`, all child containers (categories, header, grid)
+- `MoneySystem`, `ShopOfferingGenerator`, `PartSpawner`, `ShopComputer`, Player
+- `ShopPanel` must remain enabled in the Inspector so `ShopUI.Awake()` runs; it will hide itself at runtime
+
+### 11.2 Objects disabled by default
+- Only `PurchaseOverlay` starts inactive; its children (`PurchaseModal`, buttons) stay enabled
+- Optional: keep debugging aids disabled until needed
+
+### 11.3 Quick scene audit
+- Hierarchy colors: all white (active) except `PurchaseOverlay` (grey/inactive)
+- `EventSystem` present once
+- `ShopComputer` references `ShopUI`
+- `PartSpawner` has a `SpawnPoint` child assigned
+
+## Part 12: Troubleshooting & Diagnostics
+
+### 12.1 First click on tile does nothing
+- Ensure `ShopOfferingGenerator` is active in the scene (lazy init depends on Awake)
+- Verify `PurchaseConfirmationUI` reference is assigned on `ShopUI`
+- Confirm `ShopPanel` starts enabled so listeners are wired
+
+### 12.2 Modal close button unresponsive
+- `PurchaseConfirmationUI` → `Close Button` field must reference `ModalCloseButton`
+- `ModalCloseButton` needs active `Button` + `Image (Raycast Target = true)`
+- Console should log `CloseButton listener added` on first open; if not, call `InitializeListeners()` via code or reassign references
+
+### 12.3 Shop fails to open / controls stay locked
+- Check `ShopPanel` is enabled, `PurchaseOverlay` disabled
+- Confirm `ShopComputer` points to the correct `ShopUI` instance
+- Ensure no duplicate EventSystem intercepts input
+
+### 12.4 Category selection visuals lost
+- `ShopUI` maintains button selection each frame; missing highlight usually means the button reference or text color fields are unassigned
+- Verify `SelectedIndicator` objects exist and are linked
+
+### 12.5 Collider doesn’t match spawned mesh
+- Universal part prefab must include a `BoxCollider` or `MeshCollider`
+- `PartSpawner.UpdateCollider()` recalculates bounds; missing collider logs a warning
+
+### 12.6 Scroll position feels wrong
+- Item grid scroll resets via coroutine; confirm `itemScrollRect` is assigned
+- Category list requires `ScrollRect` + `RectMask2D` with the new `categoryScrollRect` reference set
+
+## Part 13: QA Checklist (Play Mode)
+
+1. Interact with shop computer → panel opens, cursor unlocks, player input disabled
+2. Switch through categories → tiles refresh, scroll resets to top
+3. Verify starter barrel/magazine offerings appear in slot 0
+4. Open purchase modal → stats, icon, generated name reflect selection
+5. Close modal via X button and ESC shortcut
+6. Buy part with sufficient funds → money deducts, tile removed, part spawns centred at `SpawnPoint`
+7. Collider matches geometry; part type, name, and stats set on `WeaponPart`
+8. Attempt purchase without funds → buy button becomes non-interactable
+9. Press ESC from shop root → modal closes (if open) or entire shop closes and control returns
+10. Refresh offerings → 15 tiles regenerated, starter slots retained
 
 ---
 

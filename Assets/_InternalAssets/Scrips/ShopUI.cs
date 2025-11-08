@@ -20,6 +20,9 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private Button lasersButton; // Locked
     [SerializeField] private Button foregripsButton; // Locked
     
+    [Header("Category Scroll")]
+    [SerializeField] private ScrollRect categoryScrollRect;
+
     [Header("Category Button Visuals")]
     [SerializeField] private GameObject stocksSelectedIndicator;
     [SerializeField] private GameObject barrelsSelectedIndicator;
@@ -164,6 +167,8 @@ public class ShopUI : MonoBehaviour
             wasControllerEnabled = fpsController.enabled;
             fpsController.enabled = false;
         }
+        
+        ResetCategoryScrollPosition();
         
         // Populate with default category
         SwitchCategory(currentCategory);
@@ -335,6 +340,15 @@ public class ShopUI : MonoBehaviour
             StopCoroutine(scrollResetRoutine);
         }
         scrollResetRoutine = StartCoroutine(EnsureScrollPositionNextFrame(verticalPosition, horizontalPosition));
+    }
+
+    private void ResetCategoryScrollPosition()
+    {
+        if (categoryScrollRect == null)
+            return;
+
+        categoryScrollRect.verticalNormalizedPosition = 1f;
+        categoryScrollRect.horizontalNormalizedPosition = 0f;
     }
 
     private IEnumerator EnsureScrollPositionNextFrame(float verticalPosition, float horizontalPosition)
