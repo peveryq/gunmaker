@@ -9531,6 +9531,7 @@ GameObject:
   - component: {fileID: 562671937}
   - component: {fileID: 562671936}
   - component: {fileID: 562671940}
+  - component: {fileID: 562671941}
   m_Layer: 5
   m_Name: Content
   m_TagString: Untagged
@@ -9577,7 +9578,7 @@ MonoBehaviour:
   m_ChildAlignment: 1
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 436, y: 282}
+  m_CellSize: {x: 251.33333, y: 162.61267}
   m_Spacing: {x: 15, y: 15}
   m_Constraint: 1
   m_ConstraintCount: 3
@@ -9633,6 +9634,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &562671941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562671932}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d437b940ea6f40840949995663259716, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  columns: 3
+  cellWidthRange: {x: 200, y: 436}
+  heightToWidthRatio: 0.647
+  clampWidth: 1
 --- !u!1 &563634279
 GameObject:
   m_ObjectHideFlags: 0
