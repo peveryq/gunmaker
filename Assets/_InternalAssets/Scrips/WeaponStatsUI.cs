@@ -110,39 +110,21 @@ public class WeaponStatsUI : MonoBehaviour
                 MonoBehaviour targetBehaviour = currentTarget as MonoBehaviour;
                 if (targetBehaviour != null)
                 {
-                    Workbench workbench = targetBehaviour.GetComponent<Workbench>();
-                    if (workbench != null)
+                    WeaponBody weaponBody = targetBehaviour.GetComponent<WeaponBody>();
+                    if (weaponBody != null)
                     {
-                        WeaponBody mountedWeapon = workbench.GetMountedWeapon();
-                        if (mountedWeapon != null)
-                        {
-                            itemName = mountedWeapon.WeaponName;
-                            
-                            bool allowPreview = heldPart != null &&
-                                                ReferenceEquals(interactionHandler.CurrentTarget, workbench);
-                            
-                            BuildEntriesForWeaponBody(mountedWeapon, allowPreview ? heldPart : null, allowPreview);
-                            showPanel = true;
-                        }
+                        itemName = weaponBody.WeaponName;
+                        BuildEntriesForWeaponBody(weaponBody, null, false);
+                        showPanel = true;
                     }
                     else
                     {
-                        WeaponBody weaponBody = targetBehaviour.GetComponent<WeaponBody>();
-                        if (weaponBody != null)
+                        WeaponPart weaponPart = targetBehaviour.GetComponent<WeaponPart>();
+                        if (weaponPart != null)
                         {
-                            itemName = weaponBody.WeaponName;
-                            BuildEntriesForWeaponBody(weaponBody, null, false);
-                            showPanel = true;
-                        }
-                        else
-                        {
-                            WeaponPart weaponPart = targetBehaviour.GetComponent<WeaponPart>();
-                            if (weaponPart != null)
-                            {
-                                itemName = weaponPart.PartName;
-                                BuildEntriesForWeaponPart(weaponPart);
-                                showPanel = statEntriesBuffer.Count > 0;
-                            }
+                            itemName = weaponPart.PartName;
+                            BuildEntriesForWeaponPart(weaponPart);
+                            showPanel = statEntriesBuffer.Count > 0;
                         }
                     }
                 }
