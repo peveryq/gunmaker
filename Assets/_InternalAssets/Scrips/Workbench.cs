@@ -29,7 +29,6 @@ public class Workbench : MonoBehaviour, IInteractable
     private GameObject currentPreview;
     private InteractionHandler interactionHandler;
     private int originalWeaponLayer = 0; // Store original layer to restore later
-    private WeldingSystem currentWeldingTarget; // Part being welded
     private bool isCreatingWeapon = false; // Flag to prevent input conflicts
     
     private void Start()
@@ -49,6 +48,8 @@ public class Workbench : MonoBehaviour, IInteractable
         {
             weldingSparks.Stop();
         }
+        
+        RefreshWeldingUI(null);
     }
     
     private void Update()
@@ -82,15 +83,11 @@ public class Workbench : MonoBehaviour, IInteractable
         
         // Find unwelded barrel on mounted weapon
         WeldingSystem unweldedBarrel = FindUnweldedBarrel();
+        RefreshWeldingUI(unweldedBarrel);
         
         // Show welding UI if holding blowtorch and looking at workbench with unwelded barrel
         if (blowtorch != null && isLookingAtWorkbench && unweldedBarrel != null)
         {
-            if (weldingUI != null)
-            {
-                weldingUI.ShowWeldingUI(unweldedBarrel.WeldingProgress);
-            }
-            
             // Start welding on LMB
             if (Input.GetMouseButton(0))
             {
@@ -99,12 +96,7 @@ public class Workbench : MonoBehaviour, IInteractable
                 if (blowtorch.IsWorking)
                 {
                     float progressAdded = blowtorch.WeldingSpeed * Time.deltaTime;
-                    float newProgress = unweldedBarrel.AddWeldingProgress(progressAdded);
-                    
-                    if (weldingUI != null)
-                    {
-                        weldingUI.ShowWeldingUI(newProgress);
-                    }
+                    unweldedBarrel.AddWeldingProgress(progressAdded);
                     
                     // Show sparks at welding point
                     ShowWeldingSparks(unweldedBarrel);
@@ -118,12 +110,6 @@ public class Workbench : MonoBehaviour, IInteractable
         }
         else
         {
-            // Hide welding UI
-            if (weldingUI != null)
-            {
-                weldingUI.HideWeldingUI();
-            }
-            
             // Stop blowtorch if not looking at workbench
             if (blowtorch != null)
             {
@@ -364,6 +350,8 @@ public class Workbench : MonoBehaviour, IInteractable
         
         // Play install sound
         PlayInstallSound();
+        
+        RefreshWeldingUI();
     }
     
     private void UnmountWeapon()
@@ -385,6 +373,7 @@ public class Workbench : MonoBehaviour, IInteractable
         }
         
         mountedWeapon = null;
+        RefreshWeldingUI(null);
     }
     
     private void InstallPart(WeaponPart part)
@@ -407,6 +396,8 @@ public class Workbench : MonoBehaviour, IInteractable
             // Play install sound
             PlayInstallSound();
         }
+        
+        RefreshWeldingUI();
     }
     
     private void ShowWeaponBodyPreview(WeaponBody weaponBody)
@@ -754,6 +745,19 @@ public class Workbench : MonoBehaviour, IInteractable
         }
         
         return "[E] Workbench";
+    }
+    
+    private void RefreshWeldingUI()
+    {
+        RefreshWeldingUI(FindUnweldedBarrel());
+    }
+    
+    private void RefreshWeldingUI(WeldingSystem target)
+    {
+        if (weldingUI != null)
+        {
+            weldingUI.SetTarget(target);
+        }
     }
     
     // For WeaponStatsUI to display mounted weapon stats

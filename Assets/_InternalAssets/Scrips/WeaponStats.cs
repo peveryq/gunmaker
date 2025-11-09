@@ -11,6 +11,10 @@ public class WeaponStats
     [Range(1, 100)] public float reloadSpeed = 1f;
     [Range(1, 100)] public float scope = 1f;
     public int ammo = 0;
+
+    [Header("Economy")]
+    [Tooltip("Accumulated cost of all installed parts contributing to these stats.")]
+    public int totalPartCost = 0;
     
     // Convert stats to weapon settings values
     public float GetBulletSpeed()
@@ -73,6 +77,7 @@ public class WeaponStats
         settings.reloadTime = GetReloadTime();
         settings.aimFOV = GetAimFOV();
         settings.magSize = GetMagSize();
+        settings.totalPartCost = totalPartCost;
     }
     
     // Clone stats
@@ -86,7 +91,8 @@ public class WeaponStats
             recoil = this.recoil,
             reloadSpeed = this.reloadSpeed,
             scope = this.scope,
-            ammo = this.ammo
+            ammo = this.ammo,
+            totalPartCost = this.totalPartCost
         };
     }
 }

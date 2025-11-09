@@ -13,6 +13,8 @@ public class WeaponPart : MonoBehaviour
     [Header("Part Info")]
     public PartType partType;
     public string partName = "Part";
+    [Tooltip("Purchase cost assigned when the part is created by the shop system.")]
+    [SerializeField] private int partCost = 0;
     
     [Header("Stat Modifiers")]
     [Tooltip("Change in power (-100 to +100)")]
@@ -53,6 +55,9 @@ public class WeaponPart : MonoBehaviour
         {
             stats.ammo = magazineCapacity;
         }
+
+        int costToAdd = Mathf.Max(0, partCost);
+        stats.totalPartCost = Mathf.Max(0, stats.totalPartCost + costToAdd);
     }
     
     // Get description of modifiers for UI
@@ -104,5 +109,11 @@ public class WeaponPart : MonoBehaviour
     // Properties
     public PartType Type => partType;
     public string PartName => partName;
+    public int PartCost => partCost;
+
+    public void SetCost(int cost)
+    {
+        partCost = Mathf.Max(0, cost);
+    }
 }
 

@@ -38,4 +38,8 @@ public class WeaponSettings : ScriptableObject
     public AudioClip reloadStartSound;
     public AudioClip reloadEndSound;
     public AudioClip emptySound;
+
+    [Header("Economy")]
+    [Tooltip("Combined cost of all installed weapon parts.")]
+    public int totalPartCost = 0;
 }

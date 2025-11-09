@@ -5,52 +5,95 @@ public class WeldingUI : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private GameObject weldingPanel;
-    [SerializeField] private TextMeshProUGUI weldingText;
+    [SerializeField] private TextMeshProUGUI statusText;
+    [SerializeField] private TextMeshProUGUI progressText;
+    [SerializeField] private UnityEngine.UI.Image progressFill;
     
     [Header("Settings")]
+    [SerializeField] private string needsWeldingLabel = "Needs Welding";
     [SerializeField] private float updateInterval = 0.05f; // Update UI every 50ms
     
+    private WeldingSystem currentTarget;
     private float lastUpdateTime;
     private float lastDisplayedProgress = -1f;
     
     private void Start()
     {
-        if (weldingPanel != null)
+        if (statusText != null)
         {
-            weldingPanel.SetActive(false);
-        }
-    }
-    
-    public void ShowWeldingUI(float progress)
-    {
-        if (weldingPanel != null && !weldingPanel.activeSelf)
-        {
-            weldingPanel.SetActive(true);
+            statusText.text = needsWeldingLabel;
         }
         
-        // Throttle updates for performance
-        if (Time.time - lastUpdateTime < updateInterval && Mathf.Approximately(lastDisplayedProgress, progress))
+        SetPanelActive(false);
+    }
+    
+    private void Update()
+    {
+        Refresh(false);
+    }
+    
+    public void SetTarget(WeldingSystem target)
+    {
+        if (currentTarget == target)
+        {
+            Refresh(true);
+            return;
+        }
+        
+        currentTarget = target;
+        lastDisplayedProgress = -1f;
+        Refresh(true);
+    }
+    
+    private void Refresh(bool force)
+    {
+        if (currentTarget == null || currentTarget.IsWelded || !currentTarget.RequiresWelding)
+        {
+            if (force)
+            {
+                SetPanelActive(false);
+            }
+            return;
+        }
+        
+        SetPanelActive(true);
+        
+        if (!force && Time.time - lastUpdateTime < updateInterval)
         {
             return;
         }
         
         lastUpdateTime = Time.time;
-        lastDisplayedProgress = progress;
         
-        if (weldingText != null)
+        float rawProgress = Mathf.Clamp(currentTarget.WeldingProgress, 0f, 100f);
+        float normalized = rawProgress / 100f;
+        
+        if (!force && Mathf.Approximately(lastDisplayedProgress, rawProgress))
         {
-            weldingText.text = $"Welding {Mathf.RoundToInt(progress)}%";
+            return;
+        }
+        
+        lastDisplayedProgress = rawProgress;
+        
+        if (progressFill != null)
+        {
+            progressFill.fillAmount = normalized;
+        }
+        
+        if (progressText != null)
+        {
+            progressText.text = $"{Mathf.RoundToInt(rawProgress)}%";
         }
     }
     
-    public void HideWeldingUI()
+    private void SetPanelActive(bool active)
     {
-        if (weldingPanel != null && weldingPanel.activeSelf)
-        {
-            weldingPanel.SetActive(false);
-        }
+        if (weldingPanel == null) return;
         
-        lastDisplayedProgress = -1f;
+        if (weldingPanel.activeSelf != active)
+        {
+            weldingPanel.SetActive(active);
+        }
     }
 }
 
