@@ -81,6 +81,26 @@ public class WeaponPart : MonoBehaviour
         return sb.ToString();
     }
     
+    public void PopulateModifierEntries(System.Action<string, float> addEntry)
+    {
+        if (addEntry == null) return;
+
+        if (powerModifier != 0f)
+            addEntry.Invoke("Power", powerModifier);
+        if (accuracyModifier != 0f)
+            addEntry.Invoke("Accuracy", accuracyModifier);
+        if (rapidityModifier != 0f)
+            addEntry.Invoke("Rapidity", rapidityModifier);
+        if (recoilModifier != 0f)
+            addEntry.Invoke("Recoil", recoilModifier);
+        if (reloadSpeedModifier != 0f)
+            addEntry.Invoke("Reload Speed", reloadSpeedModifier);
+        if (scopeModifier != 0f)
+            addEntry.Invoke("Scope", scopeModifier);
+        if (partType == PartType.Magazine)
+            addEntry.Invoke("Ammo", magazineCapacity);
+    }
+    
     // Properties
     public PartType Type => partType;
     public string PartName => partName;

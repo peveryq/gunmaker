@@ -338,7 +338,7 @@ MonoBehaviour:
       partMeshData:
       - mesh: {fileID: -37581281621201495, guid: db33a96b1b6764648a74f36b5e0f0ab9, type: 3}
         icon: {fileID: 21300000, guid: 36dc530dbf1a43b4bbfffe39f32303e2, type: 3}
-        lensOverlayPrefab: {fileID: 6411083956894633722, guid: 7c0a74d631890d14a89deba35a6806d9, type: 3}
+        lensOverlayPrefab: {fileID: 0}
       partNamePool:
       - worn
       - crude

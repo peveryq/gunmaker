@@ -111,14 +111,7 @@ public class WeaponBody : MonoBehaviour
     // Calculate current stats based on installed parts
     public void UpdateWeaponStats()
     {
-        // Start with base stats
-        currentStats = baseStats.Clone();
-        
-        // Apply modifiers from each installed part
-        if (barrelPart != null) barrelPart.ApplyModifiers(currentStats);
-        if (magazinePart != null) magazinePart.ApplyModifiers(currentStats);
-        if (stockPart != null) stockPart.ApplyModifiers(currentStats);
-        if (scopePart != null) scopePart.ApplyModifiers(currentStats);
+        currentStats = CalculateCombinedStats(barrelPart, magazinePart, stockPart, scopePart);
         
         // Apply stats to weapon settings if available
         if (weaponSettings != null)
@@ -196,5 +189,57 @@ public class WeaponBody : MonoBehaviour
     public WeaponStats CurrentStats => currentStats;
     public bool HasBarrel => barrelPart != null;
     public bool HasMagazine => magazinePart != null;
+
+    public bool TryCalculatePreviewStats(WeaponPart candidatePart, out WeaponStats previewStats)
+    {
+        previewStats = null;
+        if (candidatePart == null) return false;
+        
+        WeaponPart previewBarrel = barrelPart;
+        WeaponPart previewMagazine = magazinePart;
+        WeaponPart previewStock = stockPart;
+        WeaponPart previewScope = scopePart;
+        bool partApplied = false;
+        
+        switch (candidatePart.Type)
+        {
+            case PartType.Barrel:
+                previewBarrel = candidatePart;
+                partApplied = true;
+                break;
+            case PartType.Magazine:
+                previewMagazine = candidatePart;
+                partApplied = true;
+                break;
+            case PartType.Stock:
+                previewStock = candidatePart;
+                partApplied = true;
+                break;
+            case PartType.Scope:
+                previewScope = candidatePart;
+                partApplied = true;
+                break;
+        }
+        
+        if (!partApplied)
+        {
+            return false;
+        }
+        
+        previewStats = CalculateCombinedStats(previewBarrel, previewMagazine, previewStock, previewScope);
+        return previewStats != null;
+    }
+    
+    private WeaponStats CalculateCombinedStats(WeaponPart barrel, WeaponPart magazine, WeaponPart stock, WeaponPart scope)
+    {
+        WeaponStats combinedStats = baseStats.Clone();
+        
+        if (barrel != null) barrel.ApplyModifiers(combinedStats);
+        if (magazine != null) magazine.ApplyModifiers(combinedStats);
+        if (stock != null) stock.ApplyModifiers(combinedStats);
+        if (scope != null) scope.ApplyModifiers(combinedStats);
+        
+        return combinedStats;
+    }
 }
 
