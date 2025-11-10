@@ -10,8 +10,6 @@ public class PartSpawner : MonoBehaviour
     
     [Header("Spawn Settings")]
     [SerializeField] private Transform spawnPoint;
-    [SerializeField] private float spawnForce = 2f;
-    [SerializeField] private float upwardForce = 1f;
     
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;

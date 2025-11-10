@@ -2,9 +2,9 @@
 
 ## Project Snapshot
 - **Scene in focus:** `Assets/_InternalAssets/Scenes/Main.unity`
-- **Active gameplay scripts:** 31 C# files across `_InternalAssets/Scrips`
-- **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `WeaponSettings/*`
-- **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes
+- **Active gameplay scripts:** 37 C# files across `_InternalAssets/Scrips`
+- **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`
+- **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets
 - **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, this analysis document
 
 ---
@@ -14,14 +14,14 @@
 ### Core Player Layer
 | Feature | Components | Notes |
 |---------|------------|-------|
-| First-person control | `FirstPersonController`, input actions | Cursor and controller state managed when UI panels open |
-| Interaction framework | `InteractionHandler`, `IInteractable` implementers | Shop computer, workbench, pickups share the same entry point |
-| Item handling | `ItemPickup`, `WeaponBody`, `WeaponPart` | Reflection is used to bridge private fields in third-party assets |
+| First-person control | `FirstPersonController`, input actions | Cursor/controller gating shared with slot, locker, shop UI |
+| Interaction framework | `InteractionHandler`, `IInteractable`, `ICustomInteractionUI` | Supports bespoke UI overlays (locker buttons, slot picker, prompts) |
+| Item handling | `ItemPickup`, `WeaponBody`, `WeaponPart` | Each body now owns a unique `WeaponSettings` clone updated per install |
 
 ### Weapon & Workbench Layer
 | System | Key Scripts | Highlights |
 |--------|-------------|-----------|
-| Modular weapon assembly | `WeaponBody`, `WeaponPart`, `PartTypeDefaultSettings` | Runtime swapping of meshes, stat aggregation |
+| Modular weapon assembly | `WeaponBody`, `WeaponPart`, `PartTypeDefaultSettings` | Runtime swapping of meshes, stat aggregation, per-part cost tracking |
 | Welding gameplay | `Blowtorch`, `WeldingSystem`, `WeldingUI` | Event-driven transitions, pooled VFX |
 | Ballistics & impact FX | `WeaponController`, `Bullet`, `BulletHoleManager` | Bullet holes pooled for WebGL friendliness |
 
@@ -30,8 +30,16 @@
 |-----------|-------|---------|
 | Currency | `MoneySystem` | Singleton ledger with UI binding, reload-safe (no persistence yet) |
 | Offering generation | `ShopOfferingGenerator`, `ShopPartConfig` | Two-phase randomisation (visual pass, stat pass) with rarity tiers, price clamps, starter offerings |
-| UI & UX | `ShopUI`, `ShopItemTile`, `PurchaseConfirmationUI` | Full-screen modal flow, category scroller, rich stat text, ESC handling |
-| Spawning & visuals | `PartSpawner` | Universal prefab, runtime mesh swap, collider recalculation, scope lens child, geometry-centred placement |
+| UI & UX | `ShopUI`, `ShopItemTile`, `PurchaseConfirmationUI`, `WeaponStatsUI` | Modal flow + hover stats (three-column split, preview deltas, pooling) |
+| Spawning & visuals | `PartSpawner` | Universal prefab, runtime mesh swap, collider recalculation, scope lens child, geometry-centred placement, cost propagation |
+
+### Locker & Storage Layer (2025 Update)
+| System | Key Scripts | Highlights |
+|--------|-------------|-----------|
+| Slot management | `WeaponSlotManager`, `GameBalanceConfig` | Singleton with configurable capacity, compacting records, UI events |
+| Creation flow | `WeaponNameInputUI`, `WeaponSlotSelectionUI`, `GunNameModal`, `WeaponStatRowUI` | Slot-first workflow with validation, naming constraints, reuse of stat rows |
+| Locker UX | `WeaponLockerInteractable`, `WeaponLockerSystem`, `WeaponLockerUI`, `WeaponSellModal` | Dual-button prompts (E/F), stashing, per-weapon sell modal, take/close coherence |
+| Camera presentation | `LockerCameraController`, Cinemachine virtual cams | Priority-based blends between player POV and locker POV (optional when CINEMACHINE defined) |
 
 ---
 
@@ -45,9 +53,28 @@ Player → ShopComputer (IInteractable)
             ↳ ShopItemTile (icon, rarity, refresh button)
             ↳ PurchaseConfirmationUI (stat calculation on demand)
                  ↳ PartSpawner.SpawnPart()
-                      ↳ WeaponPart reflection patch
+                      ↳ WeaponPart reflection patch + price injection
                       ↳ Collider + optional scope lens setup
                       ↳ MoneySystem.Deduct()
+
+Player → Workbench (IInteractable)
+       → WeaponSlotSelectionUI.BeginWeaponCreation()
+            ↳ WeaponSlotManager.TryAssignSlot()
+            ↳ GunNameModal (validation 1–15 chars, placeholders)
+       → Workbench.MountWeapon()
+            ↳ WeaponBody (unique WeaponSettings clone, per-slot snapshots)
+
+Player → WeaponLockerInteractable (ICustomInteractionUI)
+       → Button F (stash) ↴
+            ↳ WeaponLockerSystem.TryStashHeldWeapon()
+                 ↳ WeaponSlotManager.TryAssignNextAvailableSlot()
+                 ↳ WeaponLockerSystem.PrepareWeaponForStorage()
+       → Button/E key (open) ↴
+            ↳ WeaponLockerSystem.OpenLocker()
+                 ↳ LockerCameraController.EnterLockerView()
+                 ↳ WeaponLockerUI.Show()
+                 ↳ WeaponSellModal (per-slot sell)
+                 ↳ WeaponLockerSystem.RequestTakeWeapon()
 ```
 
 - **Two-phase randomisation:** Tile generation caches rarity, price, mesh, icon, manufacturer. Stat roll occurs when the player inspects a tile, preventing unnecessary calculations.
@@ -71,7 +98,8 @@ Player → ShopComputer (IInteractable)
 **Operational considerations:**
 - Shop resets scroll positions through coroutine double-writes to avoid frame delays in WebGL builds.
 - Rich text colour tags tested against TextMeshPro WebGL subset; no unsupported glyphs used.
-- Reflection calls run once per spawn; cached `FieldInfo` to avoid per-frame lookups.
+- Reflection calls run once per spawn; cached `FieldInfo` to avoid per-frame lookups. Part price is stored on the spawned `WeaponPart` for future resale UI.
+- Locker cameras require Cinemachine; `LockerCameraController` is no-op if define symbol `CINEMACHINE` absent.
 
 ---
 
@@ -83,10 +111,11 @@ Player → ShopComputer (IInteractable)
 - **Documentation cleanup:** Legacy temporary markdown files removed; setup guide kept canonical.
 
 ### Known Limitations / Next Steps
-1. **Persistence** – Money and shop state reset on scene reload. Hook into future save system once defined.
+1. **Persistence** – Money, slot occupancy, and stored weapon data reset on scene reload. Hook into future save system once defined.
 2. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
-3. **Analytics hooks** – Consider emitting events when purchases occur for telemetry or tutorials.
-4. **Localization** – Part names support localisation-ready fragments; remaining UI strings still hardcoded English.
+3. **Analytics hooks** – Consider emitting events when purchases or locker interactions occur for telemetry or tutorials.
+4. **Localization** – Part and slot UI strings remain hardcoded English.
+5. **Locker/mobile UI** – Buttons exist for touch adaptation; input abstraction pending.
 
 ---
 
@@ -104,6 +133,7 @@ Player → ShopComputer (IInteractable)
 - **Stat formula:** `value = a + ((b - a) * ((price - c) / (d - c)))`, rounded up; recoil values are negated, ammo uses tier-specific ranges (8–12, 13–20, 21–40, 41–70, 71–120).
 - **Two-phase randomisation:** Phase 1 (refresh) caches rarity, price, mesh/icon, manufacturer; Phase 2 (modal open) calculates stats and generates names on demand.
 - **`PartMeshData`:** couples `Mesh`, `Sprite icon`, optional `lensOverlayPrefab` for scopes. All configured per rarity tier inside `ShopPartConfig`.
+- **Cost tracking:** `PurchaseConfirmationUI` feeds offering price into `PartSpawner`, `WeaponPart` stores it, and `WeaponStats` aggregates into `WeaponSettings.totalPartCost`.
 - **Name generation:** Combines rarity-specific descriptors from `partNamePool` with `partTypeDisplayName` defined in config (lowercase for localisation readiness).
 - **Starter items:** Barrel and magazine categories reserve index 0 for zero-cost offerings (magazines grant 8 ammo baseline).
 - **UI behaviour:** Category list uses a scrollbar-less `ScrollRect`; tiles and modal use TextMeshPro rich text for coloured stat deltas; ESC closes modal first then shop.
@@ -126,6 +156,13 @@ Player → ShopComputer (IInteractable)
 - Safety checks: `WeaponController` verifies barrel is welded before firing; unwelded barrels eject as a fail-safe.
 - Setup recap: ensure weld points and progress thresholds are defined on `WeaponBody`, with default part positions pulled from `PartTypeDefaultSettings`.
 
+### Appendix E – Locker & Slot Implementation
+- **WeaponSlotManager:** Singleton with `DontDestroyOnLoad`; compacts slot list, exposes `SlotsChanged`, defends against domain reload duplication.
+- **WeaponBody ownership:** Each body clones `weaponSettingsTemplate` in `Awake`, updates snapshots on stat recalculation, and reports back to slot records.
+- **Locker storage:** `WeaponLockerSystem` re-parents stored weapons to `storageRoot`, zeroes velocities before toggling kinematic state to avoid physics warnings, and re-enables renderers/colliders on extraction.
+- **Interaction handling:** `WeaponLockerInteractable` implements `ICustomInteractionUI` to drive button visibility; `InteractionHandler` calls `TryStash` on secondary key-up (F).
+- **Camera control:** `LockerCameraController` raises Cinemachine virtual cam priority when locker opens; define symbol `CINEMACHINE` activates the integration.
+
 ---
 
 ## Change Log (since initial analysis)
@@ -135,8 +172,12 @@ Player → ShopComputer (IInteractable)
 4. Introduced randomised, rarity-sensitive part naming and rich stat display
 5. Ensured category buttons retain selection state and now reside in a scrollable container
 6. Cleaned documentation set to a single authoritative setup guide
+7. Weapon parts now retain purchase price; aggregated into `WeaponSettings.totalPartCost` for resale and economy features.
+8. Added weapon slot selection, naming modal, and unique `WeaponSettings` per body tied to slots
+9. Implemented locker storage pipeline with stashing, selling, and Cinemachine-powered inspection view
+10. Upgraded `WeaponStatsUI` to split columns, preview deltas, and support world-space panels
 
 ---
 
-_Last updated: 08 Nov 2025_
+_Last updated: 10 Nov 2025_
 

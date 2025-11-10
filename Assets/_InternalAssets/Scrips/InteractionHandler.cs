@@ -24,6 +24,7 @@ public class InteractionHandler : MonoBehaviour
     [SerializeField] private Transform itemHoldPoint;
     
     private IInteractable currentTarget;
+    private ICustomInteractionUI currentTargetUI;
     private ItemPickup currentItem;
     
     private void Start()
@@ -67,12 +68,16 @@ public class InteractionHandler : MonoBehaviour
         {
             currentTarget.Interact(this);
         }
+
+        HandleSecondaryInteractions();
         
         // Handle drop
         if (Input.GetKeyDown(dropKey) && currentItem != null)
         {
             DropCurrentItem();
         }
+
+        currentTargetUI?.UpdateInteractionUI(this);
     }
     
     private void DetectInteractable()
@@ -82,6 +87,8 @@ public class InteractionHandler : MonoBehaviour
         {
             DisableOutline(currentTarget);
             HidePrompt();
+            currentTargetUI?.HideInteractionUI();
+            currentTargetUI = null;
             
             // Hide workbench preview if leaving workbench
             Workbench prevWorkbench = currentTarget as Workbench;
@@ -121,7 +128,7 @@ public class InteractionHandler : MonoBehaviour
             {
                 interactable = hit.collider.GetComponentInParent<IInteractable>();
             }
-            
+
             if (interactable != null)
             {
                 detected = interactable;
@@ -182,7 +189,16 @@ public class InteractionHandler : MonoBehaviour
                     EnableOutline(detected);
                 }
                 
-                ShowPrompt(detected.GetInteractionPrompt(this));
+                currentTargetUI = detected as ICustomInteractionUI;
+                if (currentTargetUI != null)
+                {
+                    HidePrompt();
+                    currentTargetUI.ShowInteractionUI(this);
+                }
+                else
+                {
+                    ShowPrompt(detected.GetInteractionPrompt(this));
+                }
                 
                 // Show workbench preview if looking at workbench
                 Workbench workbench = detected as Workbench;
@@ -225,7 +241,7 @@ public class InteractionHandler : MonoBehaviour
         if (interactionPromptText != null)
         {
             interactionPromptText.text = text;
-            interactionPromptText.gameObject.SetActive(true);
+            interactionPromptText.gameObject.SetActive(!string.IsNullOrEmpty(text));
         }
     }
     
@@ -234,6 +250,20 @@ public class InteractionHandler : MonoBehaviour
         if (interactionPromptText != null)
         {
             interactionPromptText.gameObject.SetActive(false);
+        }
+    }
+
+    private void HandleSecondaryInteractions()
+    {
+        if (currentTarget == null) return;
+
+        WeaponLockerInteractable locker = currentTarget as WeaponLockerInteractable;
+        if (locker != null && Input.GetKeyDown(locker.StashKey))
+        {
+            if (locker.TryStash(this))
+            {
+                locker.UpdateInteractionUI(this);
+            }
         }
     }
     

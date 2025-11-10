@@ -244,6 +244,21 @@ public class WeaponController : MonoBehaviour
             StartReload();
         }
     }
+
+    public void SetSettings(WeaponSettings newSettings)
+    {
+        settings = newSettings;
+
+        if (settings == null)
+        {
+            Debug.LogError($"WeaponController on {name} received null WeaponSettings reference.");
+            enabled = false;
+            return;
+        }
+
+        enabled = true;
+        currentAmmo = settings.magSize;
+    }
     
     private void EjectBarrel(WeaponPart barrel, WeaponBody weaponBody)
     {

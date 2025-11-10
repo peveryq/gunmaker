@@ -174,7 +174,11 @@ public class ItemPickup : MonoBehaviour, IInteractable
             rb.useGravity = true;
             
             // Reset velocities first
+#if UNITY_6000_0_OR_NEWER
             rb.linearVelocity = Vector3.zero;
+#else
+            rb.velocity = Vector3.zero;
+#endif
             rb.angularVelocity = Vector3.zero;
             
             // Apply force only if not zero

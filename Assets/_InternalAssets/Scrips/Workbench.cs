@@ -29,6 +29,7 @@ public class Workbench : MonoBehaviour, IInteractable
     private GameObject currentPreview;
     private InteractionHandler interactionHandler;
     private int originalWeaponLayer = 0; // Store original layer to restore later
+    [SerializeField] private string interactableLayerName = "Interactable";
     private bool isCreatingWeapon = false; // Flag to prevent input conflicts
     
     private void Start()
@@ -209,45 +210,62 @@ public class Workbench : MonoBehaviour, IInteractable
         if (isCreatingWeapon) return;
         
         isCreatingWeapon = true;
-        
-        // Show name input UI
-        weaponNameInputUI.ShowInputUI(
-            "Enter weapon name:",
-            OnWeaponNameConfirmed,
-            OnWeaponCreationCancelled
-        );
+        weaponNameInputUI.BeginWeaponCreation(this);
     }
     
-    private void OnWeaponNameConfirmed(string weaponName)
+    internal void CompleteWeaponCreation(int slotIndex, string weaponName)
     {
         isCreatingWeapon = false;
         
-        // Spawn weapon body
+        if (emptyWeaponBodyPrefab == null)
+        {
+            Debug.LogError("Workbench: emptyWeaponBodyPrefab is missing.");
+            return;
+        }
+        
+        WeaponSlotManager slotManager = WeaponSlotManager.Instance;
+        if (slotManager == null)
+        {
+            Debug.LogError("Workbench: WeaponSlotManager instance not found.");
+            return;
+        }
+        
+        if (slotManager.GetSlotState(slotIndex) != WeaponSlotState.Available)
+        {
+            Debug.LogWarning("Workbench: Selected slot is not available for creation.");
+            return;
+        }
+        
         GameObject newWeaponObj = Instantiate(emptyWeaponBodyPrefab);
         WeaponBody newWeaponBody = newWeaponObj.GetComponent<WeaponBody>();
         
-        if (newWeaponBody != null)
-        {
-            // Set weapon name using reflection (weaponName is private)
-            var weaponNameField = typeof(WeaponBody).GetField("weaponName", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (weaponNameField != null)
-            {
-                weaponNameField.SetValue(newWeaponBody, weaponName);
-            }
-            
-            // Mount the newly created weapon
-            MountWeapon(newWeaponBody);
-        }
-        else
+        if (newWeaponBody == null)
         {
             Debug.LogError("emptyWeaponBodyPrefab does not have WeaponBody component!");
             Destroy(newWeaponObj);
-        }
+            return;
     }
     
-    private void OnWeaponCreationCancelled()
+        newWeaponBody.SetWeaponName(weaponName);
+        newWeaponBody.UpdateWeaponStats();
+        
+        WeaponRecord record = new WeaponRecord(
+            newWeaponBody.WeaponName,
+            newWeaponBody,
+            newWeaponBody.Settings,
+            newWeaponBody.CurrentStats != null ? newWeaponBody.CurrentStats.Clone() : null);
+        
+        if (!slotManager.TryAssignSlot(slotIndex, record))
+        {
+            Debug.LogWarning("Workbench: Unable to assign weapon to the selected slot.");
+            Destroy(newWeaponObj);
+            return;
+        }
+        
+        MountWeapon(newWeaponBody);
+    }
+    
+    internal void CancelWeaponCreation()
     {
         isCreatingWeapon = false;
     }
@@ -315,15 +333,13 @@ public class Workbench : MonoBehaviour, IInteractable
         }
         
         // Mount weapon on workbench
+        weaponBody.transform.SetParent(weaponMountPoint);
+        weaponBody.transform.localPosition = Vector3.zero;
+        weaponBody.transform.localRotation = Quaternion.Euler(weaponMountRotation);
+        
         ItemPickup pickup = weaponBody.GetComponent<ItemPickup>();
         if (pickup != null)
         {
-            // Unparent from player
-            pickup.transform.SetParent(weaponMountPoint);
-            pickup.transform.localPosition = Vector3.zero;
-            pickup.transform.localRotation = Quaternion.Euler(weaponMountRotation);
-            
-            // Mark as held to prevent pickup system from detecting it
             pickup.SetHeldState(true);
         }
         
@@ -353,6 +369,31 @@ public class Workbench : MonoBehaviour, IInteractable
         
         RefreshWeldingUI();
     }
+
+    public void DetachMountedWeapon(WeaponBody weaponBody)
+    {
+        if (mountedWeapon != null && mountedWeapon == weaponBody)
+        {
+            mountedWeapon = null;
+            RefreshWeldingUI(null);
+        }
+    }
+
+    public void ResetMountState()
+    {
+        if (mountedWeapon != null)
+        {
+            mountedWeapon = null;
+            RefreshWeldingUI(null);
+        }
+    }
+
+    public int DefaultInteractableLayer => LayerMask.NameToLayer(interactableLayerName);
+
+    public void RecordLastMountedLayer(int layer)
+    {
+        originalWeaponLayer = layer;
+    }
     
     private void UnmountWeapon()
     {
@@ -360,7 +401,6 @@ public class Workbench : MonoBehaviour, IInteractable
         
         // Restore original layer before unmounting
         SetLayerRecursively(mountedWeapon.gameObject, originalWeaponLayer);
-        
         // Get ItemPickup
         ItemPickup pickup = mountedWeapon.GetComponent<ItemPickup>();
         if (pickup != null)

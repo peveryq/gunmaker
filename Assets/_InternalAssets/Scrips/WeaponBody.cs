@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 public class WeaponBody : MonoBehaviour
 {
@@ -17,19 +18,57 @@ public class WeaponBody : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private WeaponController weaponController;
-    [SerializeField] private WeaponSettings weaponSettings;
+    [FormerlySerializedAs("weaponSettings")]
+    [SerializeField] private WeaponSettings weaponSettingsTemplate;
     
     private WeaponStats currentStats;
+    private WeaponSettings weaponSettingsInstance;
     
     // Properties
     public string WeaponName => weaponName;
     
-    private void Start()
+    public void SetWeaponName(string newName)
     {
-        // Get references if not assigned
+        weaponName = newName;
+    }
+    
+    private void Awake()
+    {
+        if (weaponSettingsTemplate != null)
+        {
+            weaponSettingsInstance = Instantiate(weaponSettingsTemplate);
+        }
+        else
+        {
+            weaponSettingsInstance = ScriptableObject.CreateInstance<WeaponSettings>();
+        }
+        
+        if (weaponSettingsInstance != null)
+        {
+            weaponSettingsInstance.totalPartCost = 0;
+        }
+        
         if (weaponController == null)
         {
             weaponController = GetComponent<WeaponController>();
+        }
+        
+        if (weaponController != null)
+        {
+            weaponController.SetSettings(weaponSettingsInstance);
+        }
+    }
+    
+    private void Start()
+    {
+        if (weaponController == null)
+        {
+            weaponController = GetComponent<WeaponController>();
+            
+            if (weaponController != null)
+            {
+                weaponController.SetSettings(weaponSettingsInstance);
+            }
         }
         
         UpdateWeaponStats();
@@ -113,10 +152,9 @@ public class WeaponBody : MonoBehaviour
     {
         currentStats = CalculateCombinedStats(barrelPart, magazinePart, stockPart, scopePart);
         
-        // Apply stats to weapon settings if available
-        if (weaponSettings != null)
+        if (weaponSettingsInstance != null)
         {
-            currentStats.ApplyToSettings(weaponSettings);
+            currentStats.ApplyToSettings(weaponSettingsInstance);
         }
         
         // Update weapon controller ammo
@@ -124,6 +162,8 @@ public class WeaponBody : MonoBehaviour
         {
             weaponController.RefreshAmmo();
         }
+        
+        UpdateSlotRecordSnapshot();
     }
     
     // Check if weapon can function
@@ -189,6 +229,7 @@ public class WeaponBody : MonoBehaviour
     public WeaponStats CurrentStats => currentStats;
     public bool HasBarrel => barrelPart != null;
     public bool HasMagazine => magazinePart != null;
+    public WeaponSettings Settings => weaponSettingsInstance;
 
     public bool TryCalculatePreviewStats(WeaponPart candidatePart, out WeaponStats previewStats)
     {
@@ -233,6 +274,7 @@ public class WeaponBody : MonoBehaviour
     private WeaponStats CalculateCombinedStats(WeaponPart barrel, WeaponPart magazine, WeaponPart stock, WeaponPart scope)
     {
         WeaponStats combinedStats = baseStats.Clone();
+        combinedStats.totalPartCost = 0;
         
         if (barrel != null) barrel.ApplyModifiers(combinedStats);
         if (magazine != null) magazine.ApplyModifiers(combinedStats);
@@ -240,6 +282,23 @@ public class WeaponBody : MonoBehaviour
         if (scope != null) scope.ApplyModifiers(combinedStats);
         
         return combinedStats;
+    }
+    
+    private void UpdateSlotRecordSnapshot()
+    {
+        WeaponSlotManager manager = WeaponSlotManager.Instance;
+        if (manager == null) return;
+        
+        int index = manager.IndexOf(this);
+        if (index < 0) return;
+        
+        WeaponRecord record = manager.GetRecord(index);
+        if (record == null) return;
+        
+        record.WeaponBody = this;
+        record.WeaponSettings = weaponSettingsInstance;
+        record.StatsSnapshot = currentStats != null ? currentStats.Clone() : null;
+        record.WeaponName = weaponName;
     }
 }
 
