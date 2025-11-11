@@ -659,7 +659,7 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    WebGL: NODECANVAS
+    WebGL: NODECANVAS;CINEMACHINE
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
