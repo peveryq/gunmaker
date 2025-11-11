@@ -9,6 +9,7 @@ public class WeaponLockerUI : MonoBehaviour
     [Header("Root")]
     [SerializeField] private GameObject rootPanel;
     [SerializeField] private CanvasGroup rootCanvasGroup;
+    [SerializeField] private GameObject uiContentRoot;
     [SerializeField] private Button closeButton;
 
     [Header("Navigation")]
@@ -46,6 +47,7 @@ public class WeaponLockerUI : MonoBehaviour
     private bool fpsWasEnabled;
     private CursorLockMode previousCursorLock;
     private bool previousCursorVisible;
+    private bool controlCaptured;
 
     private void Awake()
     {
@@ -118,41 +120,126 @@ public class WeaponLockerUI : MonoBehaviour
         }
     }
 
+    public void EnsureControlCaptured()
+    {
+        if (!controlCaptured)
+        {
+            CapturePlayerControl();
+        }
+    }
+
+    public void PreparePreviewForOpen()
+    {
+        if (slotManager == null)
+        {
+            slotManager = WeaponSlotManager.Instance;
+            if (slotManager == null)
+            {
+                Debug.LogError("WeaponLockerUI: WeaponSlotManager instance not found.");
+                return;
+            }
+        }
+
+        SubscribeToSlots();
+
+        if (isVisible)
+        {
+            SetVisible(false);
+        }
+        else
+        {
+            ApplyHiddenVisualState();
+        }
+
+        if (cachedRecords.Count == 0)
+        {
+            RefreshRecords();
+        }
+        else
+        {
+            int clampedIndex = Mathf.Clamp(currentIndex, 0, cachedRecords.Count - 1);
+            UpdateSelection(clampedIndex);
+        }
+    }
+
     public void Show(Action closeCallback, Action<WeaponRecord> takeCallback, Action<WeaponRecord> sellCallback)
     {
         onCloseRequested = closeCallback;
         onTakeRequested = takeCallback;
         onSellRequested = sellCallback;
 
-        slotManager = WeaponSlotManager.Instance;
         if (slotManager == null)
         {
-            Debug.LogError("WeaponLockerUI: WeaponSlotManager instance not found.");
-            return;
+            slotManager = WeaponSlotManager.Instance;
+            if (slotManager == null)
+            {
+                Debug.LogError("WeaponLockerUI: WeaponSlotManager instance not found.");
+                return;
+            }
         }
 
         SubscribeToSlots();
-        CapturePlayerControl();
+        EnsureControlCaptured();
         SetVisible(true);
 
-        RefreshRecords();
-        UpdateSelection(0);
+        if (cachedRecords.Count == 0)
+        {
+            RefreshRecords();
+        }
+        else
+        {
+            int clampedIndex = Mathf.Clamp(currentIndex, 0, cachedRecords.Count - 1);
+            UpdateSelection(clampedIndex);
+        }
     }
 
-    public void Hide()
+    public void Hide(bool releaseControl = true, bool clearPreview = true)
     {
-        if (!isVisible) return;
+        if (!isVisible && (!releaseControl || !controlCaptured))
+        {
+            if (releaseControl && controlCaptured)
+            {
+                ReleasePlayerControl();
+            }
+
+            if (clearPreview)
+            {
+                ClearPreview();
+            }
+
+            return;
+        }
 
         SetVisible(false);
-        DestroyPreviewInstance();
-        ReleasePlayerControl();
+
+        if (clearPreview)
+        {
+            ClearPreview();
+        }
+
         UnsubscribeFromSlots();
 
         onCloseRequested = null;
         onTakeRequested = null;
         onSellRequested = null;
-        cachedRecords.Clear();
-        currentIndex = -1;
+
+        if (releaseControl && controlCaptured)
+        {
+            ReleasePlayerControl();
+        }
+    }
+
+    public void Hide()
+    {
+        Hide(true, true);
+    }
+
+    public void ReleaseCapturedControl()
+    {
+        if (controlCaptured)
+        {
+            ReleasePlayerControl();
+        }
     }
 
     private void HandleCloseClicked()
@@ -313,9 +400,21 @@ public class WeaponLockerUI : MonoBehaviour
         }
     }
 
+    public void ClearPreview()
+    {
+        DestroyPreviewInstance();
+        cachedRecords.Clear();
+        currentIndex = -1;
+    }
+
     private void SetVisible(bool visible)
     {
         isVisible = visible;
+
+        if (rootPanel != null && !rootPanel.activeSelf)
+        {
+            rootPanel.SetActive(true);
+        }
 
         if (rootCanvasGroup != null)
         {
@@ -324,13 +423,29 @@ public class WeaponLockerUI : MonoBehaviour
             rootCanvasGroup.blocksRaycasts = visible;
         }
 
-        if (rootPanel != null)
+        if (uiContentRoot != null)
         {
-            rootPanel.SetActive(visible);
+            uiContentRoot.SetActive(visible);
         }
-        else
+    }
+
+    private void ApplyHiddenVisualState()
+    {
+        if (rootPanel != null && !rootPanel.activeSelf)
         {
-            gameObject.SetActive(visible);
+            rootPanel.SetActive(true);
+        }
+
+        if (rootCanvasGroup != null)
+        {
+            rootCanvasGroup.alpha = 0f;
+            rootCanvasGroup.interactable = false;
+            rootCanvasGroup.blocksRaycasts = false;
+        }
+
+        if (uiContentRoot != null)
+        {
+            uiContentRoot.SetActive(false);
         }
     }
 
@@ -396,6 +511,8 @@ public class WeaponLockerUI : MonoBehaviour
             fpsWasEnabled = fpsController.enabled;
             fpsController.enabled = false;
         }
+
+        controlCaptured = true;
     }
 
     private void ReleasePlayerControl()
@@ -407,6 +524,8 @@ public class WeaponLockerUI : MonoBehaviour
         {
             fpsController.enabled = true;
         }
+
+        controlCaptured = false;
     }
 }
 

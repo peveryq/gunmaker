@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -21,7 +22,10 @@ public class LockerCameraController : MonoBehaviour
 
     private Coroutine transitionRoutine;
     private bool isInLockerView;
+    private bool transitionInProgress;
     private readonly List<CameraChildState> hiddenCameraChildren = new List<CameraChildState>();
+    private Action enterCompletedCallback;
+    private Action exitCompletedCallback;
 
     private struct CameraChildState
     {
@@ -34,41 +38,50 @@ public class LockerCameraController : MonoBehaviour
         ResolveCameraReference();
     }
 
-    public void EnterLockerView()
+    public void EnterLockerView(Action onCompleted = null)
     {
-        if (lockerViewPoint == null || cameraTransform == null)
+        if (lockerViewPoint == null || cameraTransform == null || transitionInProgress || isInLockerView)
         {
             return;
         }
 
         StopCurrentTransition();
+        transitionInProgress = true;
+        enterCompletedCallback = onCompleted;
 
-        // Cache original transform state
         originalParent = cameraTransform.parent;
         originalLocalPosition = cameraTransform.localPosition;
         originalLocalRotation = cameraTransform.localRotation;
         originalWorldPosition = cameraTransform.position;
         originalWorldRotation = cameraTransform.rotation;
 
-        // Detach to world space for smooth transition
-        cameraTransform.SetParent(transform, true);
+        cameraTransform.SetParent(null, true);
         HideCameraChildren();
 
         transitionRoutine = StartCoroutine(AnimateCamera(originalWorldPosition,
                                                          originalWorldRotation,
                                                          lockerViewPoint.position,
                                                          lockerViewPoint.rotation,
-                                                         () => isInLockerView = true));
+                                                         OnEnterCompleted));
     }
 
-    public void ExitLockerView()
+    public void ExitLockerView(Action onCompleted = null)
     {
-        if (!isInLockerView || cameraTransform == null)
+        if (cameraTransform == null)
         {
+            onCompleted?.Invoke();
+            return;
+        }
+
+        if (!isInLockerView && !transitionInProgress)
+        {
+            onCompleted?.Invoke();
             return;
         }
 
         StopCurrentTransition();
+        transitionInProgress = true;
+        exitCompletedCallback = onCompleted;
 
         Vector3 targetPosition = originalParent != null
             ? originalParent.TransformPoint(originalLocalPosition)
@@ -82,7 +95,7 @@ public class LockerCameraController : MonoBehaviour
                                                          cameraTransform.rotation,
                                                          targetPosition,
                                                          targetRotation,
-                                                         RestoreOriginalParent));
+                                                         OnExitCompleted));
     }
 
     private void RestoreOriginalParent()
@@ -102,6 +115,7 @@ public class LockerCameraController : MonoBehaviour
         }
 
         isInLockerView = false;
+        transitionInProgress = false;
         RestoreCameraChildren();
     }
 
@@ -109,7 +123,7 @@ public class LockerCameraController : MonoBehaviour
                                       Quaternion startRot,
                                       Vector3 endPos,
                                       Quaternion endRot,
-                                      System.Action onComplete)
+                                      Action onComplete)
     {
         float elapsed = 0f;
         float duration = Mathf.Max(0.01f, transitionDuration);
@@ -129,6 +143,7 @@ public class LockerCameraController : MonoBehaviour
         cameraTransform.position = endPos;
         cameraTransform.rotation = endRot;
 
+        transitionInProgress = false;
         onComplete?.Invoke();
     }
 
@@ -139,6 +154,10 @@ public class LockerCameraController : MonoBehaviour
             StopCoroutine(transitionRoutine);
             transitionRoutine = null;
         }
+
+        transitionInProgress = false;
+        enterCompletedCallback = null;
+        exitCompletedCallback = null;
     }
 
     private void ResolveCameraReference()
@@ -197,5 +216,23 @@ public class LockerCameraController : MonoBehaviour
 
         hiddenCameraChildren.Clear();
     }
+
+    private void OnEnterCompleted()
+    {
+        isInLockerView = true;
+        transitionInProgress = false;
+        enterCompletedCallback?.Invoke();
+        enterCompletedCallback = null;
+    }
+
+    private void OnExitCompleted()
+    {
+        RestoreOriginalParent();
+        exitCompletedCallback?.Invoke();
+        exitCompletedCallback = null;
+    }
+
+    public bool IsTransitionInProgress => transitionInProgress;
+    public bool IsInLockerView => isInLockerView;
 }
 

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class WeaponLockerSystem : MonoBehaviour
 {
     public static WeaponLockerSystem Instance { get; private set; }
 
-    [Header("References")]
     [SerializeField] private Transform storageRoot;
     [SerializeField] private WeaponLockerUI lockerUI;
     [SerializeField] private WeaponSellModal sellModal;
@@ -22,21 +22,8 @@ public class WeaponLockerSystem : MonoBehaviour
     private InteractionHandler interactionHandler;
     private bool isInitialized;
     private WeaponLockerInteractable activeLockerInteractable;
-    private readonly Dictionary<WeaponBody, List<RigidbodyState>> rigidbodyStateCache = new Dictionary<WeaponBody, List<RigidbodyState>>();
-    private readonly Dictionary<WeaponBody, List<ColliderState>> colliderStateCache = new Dictionary<WeaponBody, List<ColliderState>>();
-
-    private struct RigidbodyState
-    {
-        public Rigidbody Rigidbody;
-        public bool IsKinematic;
-        public bool UseGravity;
-    }
-
-    private struct ColliderState
-    {
-        public Collider Collider;
-        public bool Enabled;
-    }
+    private readonly Dictionary<WeaponBody, List<RigidbodyState>> rigidbodyStateCache = new();
+    private readonly Dictionary<WeaponBody, List<ColliderState>> colliderStateCache = new();
 
     private void Awake()
     {
@@ -80,26 +67,41 @@ public class WeaponLockerSystem : MonoBehaviour
     {
         if (!isInitialized || lockerUI == null) return;
 
+        if (lockerCameraController != null)
+        {
+            if (lockerCameraController.IsTransitionInProgress || lockerCameraController.IsInLockerView)
+            {
+                return;
+            }
+        }
+
         if (interactionHandler == null)
         {
             interactionHandler = FindFirstObjectByType<InteractionHandler>();
         }
 
-        PlayLockerAnimation(openAnimationTrigger);
-        lockerCameraController?.EnterLockerView();
-        lockerUI.Show(
-            HandleLockerClosed,
-            HandleTakeRequested,
-            HandleSellRequested);
+        activeLockerInteractable = source;
+        activeLockerInteractable?.NotifyLockerOpened();
 
-        if (source != null)
+        lockerUI?.EnsureControlCaptured();
+        lockerUI?.PreparePreviewForOpen();
+        PlayLockerAnimation(openAnimationTrigger);
+
+        Action showLockerUI = () =>
         {
-            activeLockerInteractable = source;
-            activeLockerInteractable.NotifyLockerOpened();
+            lockerUI.Show(
+                HandleLockerClosed,
+                HandleTakeRequested,
+                HandleSellRequested);
+        };
+
+        if (lockerCameraController != null)
+        {
+            lockerCameraController.EnterLockerView(showLockerUI);
         }
         else
         {
-            activeLockerInteractable = null;
+            showLockerUI();
         }
     }
 
@@ -118,35 +120,48 @@ public class WeaponLockerSystem : MonoBehaviour
         WeaponBody weaponBody = heldItem.GetComponent<WeaponBody>();
         if (weaponBody == null) return false;
 
-        DetachFromWorkbenchIfMounted(weaponBody);
+        return TryStashWeapon(weaponBody);
+    }
 
-        WeaponRecord existingRecord = FindRecordForWeapon(weaponBody);
-        if (existingRecord == null)
+    private bool TryStashWeapon(WeaponBody weaponBody)
+    {
+        if (weaponBody == null) return false;
+
+        WeaponSlotManager slotManager = WeaponSlotManager.Instance;
+        if (slotManager == null) return false;
+
+        WeaponRecord record = FindRecordForWeapon(weaponBody);
+        if (record == null)
         {
-            existingRecord = CreateRecordForWeapon(weaponBody);
-            if (!TryAssignRecordToSlot(existingRecord))
-            {
-                return false;
-            }
+            return false;
         }
-        else
-        {
-            existingRecord.WeaponBody = weaponBody;
-            existingRecord.StatsSnapshot = weaponBody.CurrentStats.Clone();
-        }
-        
-        interactionHandler.ClearCurrentItem();
 
         ItemPickup pickup = weaponBody.GetComponent<ItemPickup>();
         if (pickup != null)
         {
             pickup.SetHeldState(false);
+
+            if (interactionHandler != null && interactionHandler.CurrentItem == pickup)
+            {
+                WeaponController weaponController = pickup.GetComponent<WeaponController>();
+                if (weaponController != null)
+                {
+                    weaponController.Unequip();
+                }
+
+                weaponBody.transform.SetParent(null, true);
+                interactionHandler.ClearCurrentItem();
+            }
         }
 
-        PrepareWeaponForStorage(weaponBody);
+        if (PrepareWeaponForStorage(weaponBody))
+        {
+            PlaySound(stashSound);
+            weaponBody.gameObject.SetActive(false);
+            return true;
+        }
 
-        PlaySound(stashSound);
-        return true;
+        return false;
     }
 
     public bool RequestTakeWeapon(WeaponRecord record)
@@ -227,28 +242,7 @@ public class WeaponLockerSystem : MonoBehaviour
         }
     }
 
-    private WeaponRecord CreateRecordForWeapon(WeaponBody weaponBody)
-    {
-        WeaponSettings settings = weaponBody.Settings;
-        WeaponStats stats = weaponBody.CurrentStats != null ? weaponBody.CurrentStats.Clone() : null;
-        return new WeaponRecord(weaponBody.WeaponName, weaponBody, settings, stats);
-    }
-
-    private bool TryAssignRecordToSlot(WeaponRecord record)
-    {
-        WeaponSlotManager manager = WeaponSlotManager.Instance;
-        if (manager == null) return false;
-
-        if (!manager.TryAssignNextAvailableSlot(record, out int _))
-        {
-            Debug.LogWarning("WeaponLockerSystem: No available slot for weapon.");
-            return false;
-        }
-
-        return true;
-    }
-
-    private void PrepareWeaponForStorage(WeaponBody weaponBody)
+    private bool PrepareWeaponForStorage(WeaponBody weaponBody)
     {
         GameObject go = weaponBody.gameObject;
 
@@ -263,6 +257,7 @@ public class WeaponLockerSystem : MonoBehaviour
         CacheAndDisableColliders(weaponBody, go);
 
         weaponBody.gameObject.SetActive(false);
+        return true;
     }
 
     private void RestoreWeaponFromStorage(WeaponBody weaponBody)
@@ -321,26 +316,47 @@ public class WeaponLockerSystem : MonoBehaviour
 
     private void HandleLockerClosed()
     {
-        PlayLockerAnimation(closeAnimationTrigger);
-        lockerUI?.Hide();
-        lockerCameraController?.ExitLockerView();
-        if (activeLockerInteractable != null)
+        if (lockerCameraController != null && lockerCameraController.IsTransitionInProgress)
         {
-            activeLockerInteractable.NotifyLockerClosed();
-            activeLockerInteractable = null;
+            return;
+        }
+
+        PlayLockerAnimation(closeAnimationTrigger);
+
+        Action onExitCompleted = () =>
+        {
+            lockerUI?.ClearPreview();
+            lockerUI?.ReleaseCapturedControl();
+            if (activeLockerInteractable != null)
+            {
+                activeLockerInteractable.NotifyLockerClosed();
+                activeLockerInteractable = null;
+            }
+        };
+
+        if (lockerCameraController != null)
+        {
+            lockerUI?.Hide(false, false);
+            lockerCameraController.ExitLockerView(onExitCompleted);
+        }
+        else
+        {
+            lockerUI?.Hide();
+            onExitCompleted();
         }
     }
 
     private void HandleTakeRequested(WeaponRecord record)
     {
-        if (RequestTakeWeapon(record))
-        {
-            HandleLockerClosed();
-        }
+        if (record == null) return;
+
+        RequestTakeWeapon(record);
     }
 
     private void HandleSellRequested(WeaponRecord record)
     {
+        if (record == null) return;
+
         RequestSellWeapon(record);
     }
 
@@ -464,6 +480,19 @@ public class WeaponLockerSystem : MonoBehaviour
         }
 
         colliderStateCache.Remove(weaponBody);
+    }
+
+    private struct RigidbodyState
+    {
+        public Rigidbody Rigidbody;
+        public bool IsKinematic;
+        public bool UseGravity;
+    }
+
+    private struct ColliderState
+    {
+        public Collider Collider;
+        public bool Enabled;
     }
 }
 
