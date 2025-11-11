@@ -14,6 +14,8 @@ public class WeaponLockerSystem : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip stashSound;
     [SerializeField] private AudioClip withdrawSound;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
     [Header("Locker Animations")]
     [SerializeField] private Animator lockerAnimator;
     [SerializeField] private string openAnimationTrigger = "Open";
@@ -85,6 +87,7 @@ public class WeaponLockerSystem : MonoBehaviour
 
         lockerUI?.EnsureControlCaptured();
         lockerUI?.PreparePreviewForOpen();
+        PlaySound(openSound);
         PlayLockerAnimation(openAnimationTrigger);
 
         Action showLockerUI = () =>
@@ -321,6 +324,7 @@ public class WeaponLockerSystem : MonoBehaviour
             return;
         }
 
+        PlaySound(closeSound);
         PlayLockerAnimation(closeAnimationTrigger);
 
         Action onExitCompleted = () =>

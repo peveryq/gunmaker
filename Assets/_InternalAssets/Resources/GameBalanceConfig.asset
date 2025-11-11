@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97433e3f1b1a4291b5fcaa2dbb91e25f, type: 3}
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: 
-  weaponSlotCapacity: 15
+  weaponSlotCapacity: 5

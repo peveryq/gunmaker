@@ -36,28 +36,50 @@ public class ItemPickup : MonoBehaviour, IInteractable
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
     private float lastImpactSoundTime = -999f;
-    
+
+    private void Awake()
+    {
+        EnsureAudioSource();
+    }
+
+    private void OnEnable()
+    {
+        EnsureAudioSource();
+    }
+
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         itemCollider = GetComponent<Collider>();
-        
-        audioSource = GetComponent<AudioSource>();
+
+        if (pickupPrompt != null)
+        {
+            pickupPrompt.SetActive(false);
+        }
+
+        // Apply part type defaults if enabled
+        if (usePartTypeDefaults)
+        {
+            ApplyPartTypeDefaults();
+        }
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+        }
+
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.spatialBlend = 1f; // 3D sound
         }
-        
-        if (pickupPrompt != null)
+
+        if (!audioSource.enabled)
         {
-            pickupPrompt.SetActive(false);
-        }
-        
-        // Apply part type defaults if enabled
-        if (usePartTypeDefaults)
-        {
-            ApplyPartTypeDefaults();
+            audioSource.enabled = true;
         }
     }
     
@@ -137,9 +159,13 @@ public class ItemPickup : MonoBehaviour, IInteractable
         }
         
         // Play sound
-        if (pickupSound != null && audioSource != null)
+        if (pickupSound != null)
         {
-            audioSource.PlayOneShot(pickupSound);
+            EnsureAudioSource();
+            if (audioSource != null)
+            {
+                audioSource.PlayOneShot(pickupSound);
+            }
         }
         
         isHeld = true;
@@ -209,14 +235,17 @@ public class ItemPickup : MonoBehaviour, IInteractable
             {
                 AudioClip impactClip = impactSounds[Random.Range(0, impactSounds.Length)];
                 
-                if (audioSource != null && impactClip != null)
+                if (impactClip != null)
                 {
-                    // Use 3D sound at the collision point
-                    audioSource.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
-                    audioSource.PlayOneShot(impactClip);
-                    
-                    // Update last impact time
-                    lastImpactSoundTime = Time.time;
+                    EnsureAudioSource();
+                    if (audioSource != null)
+                    {
+                        audioSource.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
+                        audioSource.PlayOneShot(impactClip);
+
+                        // Update last impact time
+                        lastImpactSoundTime = Time.time;
+                    }
                 }
             }
         }

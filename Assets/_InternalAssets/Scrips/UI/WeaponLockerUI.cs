@@ -24,13 +24,16 @@ public class WeaponLockerUI : MonoBehaviour
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TextMeshProUGUI emptyStateLabel;
     [SerializeField] private string emptyStateText = "No stored weapons";
-
+    
     [Header("Actions")]
     [SerializeField] private Button takeButton;
     [SerializeField] private Button sellButton;
-
+    
     [Header("Info")]
     [SerializeField] private TextMeshProUGUI weaponNameLabel;
+    
+    [Header("Stats")]
+    [SerializeField] private WeaponStatsUI statsDisplay;
 
     private readonly List<WeaponRecord> cachedRecords = new();
     private Action onCloseRequested;
@@ -42,6 +45,7 @@ public class WeaponLockerUI : MonoBehaviour
     private GameObject currentPreviewInstance;
     private bool isVisible;
     private bool subscribedToSlots;
+    private Graphic[] emptyStateGraphics;
 
     private FirstPersonController fpsController;
     private bool fpsWasEnabled;
@@ -54,6 +58,12 @@ public class WeaponLockerUI : MonoBehaviour
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(HandleCloseClicked);
+        }
+
+        if (emptyStateRoot != null)
+        {
+            emptyStateGraphics = emptyStateRoot.GetComponentsInChildren<Graphic>(true);
+            SetEmptyStateRaycastTargets(false);
         }
 
         if (previousButton != null)
@@ -77,6 +87,11 @@ public class WeaponLockerUI : MonoBehaviour
         }
 
         SetVisible(false);
+
+        if (statsDisplay != null)
+        {
+            statsDisplay.ClearManualDisplay();
+        }
     }
 
     private void OnDestroy()
@@ -142,6 +157,8 @@ public class WeaponLockerUI : MonoBehaviour
 
         SubscribeToSlots();
 
+        RefreshRecords();
+
         if (isVisible)
         {
             SetVisible(false);
@@ -149,16 +166,6 @@ public class WeaponLockerUI : MonoBehaviour
         else
         {
             ApplyHiddenVisualState();
-        }
-
-        if (cachedRecords.Count == 0)
-        {
-            RefreshRecords();
-        }
-        else
-        {
-            int clampedIndex = Mathf.Clamp(currentIndex, 0, cachedRecords.Count - 1);
-            UpdateSelection(clampedIndex);
         }
     }
 
@@ -180,17 +187,9 @@ public class WeaponLockerUI : MonoBehaviour
 
         SubscribeToSlots();
         EnsureControlCaptured();
-        SetVisible(true);
 
-        if (cachedRecords.Count == 0)
-        {
-            RefreshRecords();
-        }
-        else
-        {
-            int clampedIndex = Mathf.Clamp(currentIndex, 0, cachedRecords.Count - 1);
-            UpdateSelection(clampedIndex);
-        }
+        RefreshRecords();
+        SetVisible(true);
     }
 
     public void Hide(bool releaseControl = true, bool clearPreview = true)
@@ -250,9 +249,13 @@ public class WeaponLockerUI : MonoBehaviour
     private void HandleTakeClicked()
     {
         WeaponRecord record = GetCurrentRecord();
-        if (record == null) return;
+        if (record == null)
+        {
+            return;
+        }
 
         onTakeRequested?.Invoke(record);
+        onCloseRequested?.Invoke();
     }
 
     private void HandleSellClicked()
@@ -270,11 +273,11 @@ public class WeaponLockerUI : MonoBehaviour
         UpdateSelection(nextIndex);
     }
 
-    private void RefreshRecords()
+    private bool RefreshRecords()
     {
         cachedRecords.Clear();
 
-        if (slotManager == null) return;
+        if (slotManager == null) return false;
 
         IReadOnlyList<WeaponRecord> records = slotManager.GetSlotRecords();
         if (records != null)
@@ -289,11 +292,15 @@ public class WeaponLockerUI : MonoBehaviour
             }
         }
 
-        if (cachedRecords.Count == 0)
+        bool hasRecords = cachedRecords.Count > 0;
+
+        if (!hasRecords)
         {
             UpdateSelection(-1);
+            return false;
         }
-        else if (currentIndex >= cachedRecords.Count || currentIndex < 0)
+
+        if (currentIndex >= cachedRecords.Count || currentIndex < 0)
         {
             UpdateSelection(0);
         }
@@ -301,6 +308,8 @@ public class WeaponLockerUI : MonoBehaviour
         {
             UpdateSelection(currentIndex);
         }
+
+        return true;
     }
 
     private void UpdateSelection(int newIndex)
@@ -328,20 +337,47 @@ public class WeaponLockerUI : MonoBehaviour
                 weaponNameLabel.text = string.Empty;
             }
 
+            SetActionButtonsVisible(false);
             SetActionButtonsInteractable(false);
             SetNavigationButtonsVisible(false);
+            SetEmptyStateRaycastTargets(false);
+            if (statsDisplay != null)
+            {
+                statsDisplay.ClearManualDisplay();
+            }
             return;
         }
 
         WeaponRecord record = cachedRecords[currentIndex];
+
+        SetEmptyStateRaycastTargets(true);
+
         if (weaponNameLabel != null)
         {
             weaponNameLabel.text = record?.WeaponName ?? string.Empty;
         }
 
         CreatePreview(record);
+        UpdateStatsPanel(record);
+        SetActionButtonsVisible(true);
         SetActionButtonsInteractable(true);
         SetNavigationButtonsVisible(cachedRecords.Count > 1);
+    }
+
+    private void UpdateStatsPanel(WeaponRecord record)
+    {
+        if (statsDisplay == null)
+        {
+            return;
+        }
+
+        if (record == null)
+        {
+            statsDisplay.ClearManualDisplay();
+            return;
+        }
+
+        statsDisplay.DisplayWeaponRecord(record);
     }
 
     private WeaponRecord GetCurrentRecord()
@@ -405,6 +441,10 @@ public class WeaponLockerUI : MonoBehaviour
         DestroyPreviewInstance();
         cachedRecords.Clear();
         currentIndex = -1;
+        if (statsDisplay != null)
+        {
+            statsDisplay.ClearManualDisplay();
+        }
     }
 
     private void SetVisible(bool visible)
@@ -459,6 +499,32 @@ public class WeaponLockerUI : MonoBehaviour
         if (sellButton != null)
         {
             sellButton.interactable = interactable;
+        }
+    }
+
+    private void SetActionButtonsVisible(bool visible)
+    {
+        if (takeButton != null)
+        {
+            takeButton.gameObject.SetActive(visible);
+        }
+
+        if (sellButton != null)
+        {
+            sellButton.gameObject.SetActive(visible);
+        }
+    }
+
+    private void SetEmptyStateRaycastTargets(bool enabled)
+    {
+        if (emptyStateGraphics == null) return;
+        for (int i = 0; i < emptyStateGraphics.Length; i++)
+        {
+            Graphic graphic = emptyStateGraphics[i];
+            if (graphic != null)
+            {
+                graphic.raycastTarget = enabled;
+            }
         }
     }
 

@@ -17,6 +17,9 @@ public class WeaponStatsUI : MonoBehaviour
     [SerializeField] private bool requireWorkbenchFocusForComparison = true;
     [SerializeField] private float updateInterval = 0.1f;
     
+    [Header("Behaviour")]
+    [SerializeField] private bool manualMode = false;
+    
     [Header("Colours")]
     [SerializeField] private Color neutralColor = Color.white;
     [SerializeField] private Color positiveColor = new Color(0.36f, 0.84f, 0.44f);
@@ -45,30 +48,36 @@ public class WeaponStatsUI : MonoBehaviour
     
     private void Start()
     {
-        interactionHandler = FindFirstObjectByType<InteractionHandler>();
-        
-        if (interactionHandler == null)
+        if (!manualMode)
         {
-            Debug.LogError("InteractionHandler not found! WeaponStatsUI requires InteractionHandler to work.");
-            enabled = false;
-            return;
+            interactionHandler = FindFirstObjectByType<InteractionHandler>();
+
+            if (interactionHandler == null)
+            {
+                Debug.LogError("InteractionHandler not found! WeaponStatsUI requires InteractionHandler to work.");
+                enabled = false;
+                return;
+            }
         }
-        
+
         BootstrapExistingRows();
-        
+
         if (statRowPrefab == null)
         {
             Debug.LogError("WeaponStatsUI requires a statRowPrefab reference. Assign it in the inspector.");
         }
-        
+
         if (statsPanel != null)
         {
             statsPanel.SetActive(false);
+            isPanelActive = false;
         }
     }
     
     private void Update()
     {
+        if (manualMode) return;
+
         if (Time.time - lastUpdateTime < updateInterval) return;
         lastUpdateTime = Time.time;
         
@@ -131,36 +140,7 @@ public class WeaponStatsUI : MonoBehaviour
             }
         }
         
-        bool panelStateChanged = showPanel != isPanelActive;
-        
-        if (statsPanel != null && panelStateChanged)
-        {
-            statsPanel.SetActive(showPanel);
-            isPanelActive = showPanel;
-            
-            if (!showPanel)
-            {
-                ResetCache();
-            }
-        }
-        
-        if (!showPanel) return;
-        
-        bool nameChanged = itemName != lastDisplayedName;
-        string signature = BuildSignature(statEntriesBuffer);
-        bool statsChanged = signature != lastStatsSignature;
-        
-        if (itemNameText != null && nameChanged)
-        {
-            itemNameText.text = itemName;
-            lastDisplayedName = itemName;
-        }
-        
-        if (statsChanged)
-        {
-            ApplyStatEntries(statEntriesBuffer);
-            lastStatsSignature = signature;
-        }
+        PresentEntries(itemName, showPanel);
     }
     
     private WeaponPart GetHeldWeaponPart()
@@ -176,7 +156,7 @@ public class WeaponStatsUI : MonoBehaviour
         if (currentStats == null) return;
         
         bool hasPreview = false;
-        WeaponStats previewStats = currentStats;
+        WeaponStats previewStats = null;
         
         if (allowPreview && previewPart != null && weaponBody.TryCalculatePreviewStats(previewPart, out WeaponStats calculatedStats))
         {
@@ -184,13 +164,7 @@ public class WeaponStatsUI : MonoBehaviour
             hasPreview = true;
         }
         
-        AddStatEntry("Power", currentStats.power, previewStats.power, hasPreview);
-        AddStatEntry("Reload Speed", currentStats.reloadSpeed, previewStats.reloadSpeed, hasPreview);
-        AddStatEntry("Accuracy", currentStats.accuracy, previewStats.accuracy, hasPreview);
-        AddStatEntry("Rapidity", currentStats.rapidity, previewStats.rapidity, hasPreview);
-        AddStatEntry("Recoil", currentStats.recoil, previewStats.recoil, hasPreview);
-        AddStatEntry("Ammo", currentStats.ammo, previewStats.ammo, hasPreview, true);
-        AddStatEntry("Aim", currentStats.scope, previewStats.scope, hasPreview);
+        AddEntriesFromStats(currentStats, hasPreview ? previewStats : null);
     }
     
     private void BuildEntriesForWeaponPart(WeaponPart weaponPart)
@@ -215,6 +189,46 @@ public class WeaponStatsUI : MonoBehaviour
         });
     }
     
+    private void AddEntriesFromStats(WeaponStats currentStats, WeaponStats previewStats = null)
+    {
+        if (currentStats == null) return;
+
+        bool hasPreview = previewStats != null;
+
+        float previewPower = hasPreview ? previewStats.power : currentStats.power;
+        float previewReload = hasPreview ? previewStats.reloadSpeed : currentStats.reloadSpeed;
+        float previewAccuracy = hasPreview ? previewStats.accuracy : currentStats.accuracy;
+        float previewRapidity = hasPreview ? previewStats.rapidity : currentStats.rapidity;
+        float previewRecoil = hasPreview ? previewStats.recoil : currentStats.recoil;
+        float previewAmmo = hasPreview ? previewStats.ammo : currentStats.ammo;
+        float previewScope = hasPreview ? previewStats.scope : currentStats.scope;
+
+        AddStatEntry("Power", currentStats.power, previewPower, hasPreview);
+        AddStatEntry("Reload Speed", currentStats.reloadSpeed, previewReload, hasPreview);
+        AddStatEntry("Accuracy", currentStats.accuracy, previewAccuracy, hasPreview);
+        AddStatEntry("Rapidity", currentStats.rapidity, previewRapidity, hasPreview);
+        AddStatEntry("Recoil", currentStats.recoil, previewRecoil, hasPreview);
+        AddStatEntry("Ammo", currentStats.ammo, previewAmmo, hasPreview, true);
+        AddStatEntry("Aim", currentStats.scope, previewScope, hasPreview);
+    }
+
+    private static WeaponStats BuildStatsFromSettings(WeaponSettings settings)
+    {
+        if (settings == null) return null;
+
+        return new WeaponStats
+        {
+            power = Mathf.Clamp01((settings.bulletSpeed - 50f) / (300f - 50f)) * 99f + 1f,
+            accuracy = Mathf.Clamp01((7f - settings.spreadAngle) / 7f) * 99f + 1f,
+            rapidity = Mathf.Clamp01((0.5f - settings.fireRate) / (0.5f - 0.05f)) * 99f + 1f,
+            recoil = Mathf.Clamp01(settings.recoilUpward / 3f) * 99f + 1f,
+            reloadSpeed = Mathf.Clamp01((3f - settings.reloadTime) / 2f) * 99f + 1f,
+            scope = Mathf.Clamp01((45f - settings.aimFOV) / 40f) * 99f + 1f,
+            ammo = settings.magSize,
+            totalPartCost = settings.totalPartCost
+        };
+    }
+
     private void AddStatEntry(string label, float currentValue, float previewValue, bool previewAvailable, bool forceInteger = false)
     {
         float finalValue = previewAvailable ? previewValue : currentValue;
@@ -399,6 +413,101 @@ public class WeaponStatsUI : MonoBehaviour
         {
             ReleaseRow(rowsToRelease[i]);
         }
+    }
+
+    private void PresentEntries(string itemName, bool showPanel)
+    {
+        bool panelStateChanged = showPanel != isPanelActive;
+
+        if (statsPanel != null && panelStateChanged)
+        {
+            statsPanel.SetActive(showPanel);
+            isPanelActive = showPanel;
+
+            if (!showPanel)
+            {
+                ResetCache();
+            }
+        }
+
+        if (!showPanel) return;
+
+        bool nameChanged = itemName != lastDisplayedName;
+        string signature = BuildSignature(statEntriesBuffer);
+        bool statsChanged = signature != lastStatsSignature;
+
+        if (itemNameText != null && nameChanged)
+        {
+            itemNameText.text = itemName;
+            lastDisplayedName = itemName;
+        }
+
+        if (statsChanged)
+        {
+            ApplyStatEntries(statEntriesBuffer);
+            lastStatsSignature = signature;
+        }
+    }
+
+    public void DisplayWeaponRecord(WeaponRecord record)
+    {
+        if (!manualMode)
+        {
+            Debug.LogWarning("WeaponStatsUI.DisplayWeaponRecord called while manual mode is disabled.");
+            return;
+        }
+
+        string itemName = string.Empty;
+        WeaponStats currentStats = null;
+
+        if (record != null)
+        {
+            itemName = !string.IsNullOrEmpty(record.WeaponName)
+                ? record.WeaponName
+                : record.WeaponBody != null ? record.WeaponBody.WeaponName : string.Empty;
+
+            currentStats = record.StatsSnapshot ?? record.WeaponBody?.CurrentStats;
+
+            if (currentStats == null && record.WeaponSettings != null)
+            {
+                currentStats = BuildStatsFromSettings(record.WeaponSettings);
+            }
+        }
+
+        DisplayStats(itemName, currentStats);
+    }
+
+    public void DisplayStats(string itemName, WeaponStats currentStats, WeaponStats previewStats = null)
+    {
+        if (!manualMode)
+        {
+            Debug.LogWarning("WeaponStatsUI.DisplayStats called while manual mode is disabled.");
+            return;
+        }
+
+        statEntriesBuffer.Clear();
+
+        string displayName = string.IsNullOrEmpty(itemName) ? string.Empty : itemName;
+
+        if (currentStats == null)
+        {
+            PresentEntries(displayName, false);
+            return;
+        }
+
+        AddEntriesFromStats(currentStats, previewStats);
+        PresentEntries(displayName, true);
+    }
+
+    public void ClearManualDisplay()
+    {
+        if (!manualMode)
+        {
+            return;
+        }
+
+        statEntriesBuffer.Clear();
+        PresentEntries(string.Empty, false);
     }
 }
 

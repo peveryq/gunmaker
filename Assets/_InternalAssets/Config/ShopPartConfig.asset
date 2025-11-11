@@ -288,7 +288,7 @@ MonoBehaviour:
       maxAmmo: 40
     - rarity: 4
       partMeshData:
-      - mesh: {fileID: -39232887632736507, guid: 419c37e4474aeca469c804232ad0077d, type: 3}
+      - mesh: {fileID: 2848426035533996536, guid: 4505a593bdb36ab438cf33b20fc0ecb7, type: 3}
         icon: {fileID: 21300000, guid: 1b9ae05c513d7b2479ee53751673bdec, type: 3}
         lensOverlayPrefab: {fileID: 0}
       - mesh: {fileID: 4094119492801274619, guid: 5d77da2ec0b8da14b9f6697230ba004c, type: 3}
