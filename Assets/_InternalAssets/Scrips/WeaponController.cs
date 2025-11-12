@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class WeaponController : MonoBehaviour
 {
@@ -41,6 +43,13 @@ public class WeaponController : MonoBehaviour
     // Weapon Sway
     private Vector3 swayOffset = Vector3.zero;
     private float swayTimer = 0f;
+
+    public event Action<int, int> AmmoChanged;
+
+    private void NotifyAmmoChanged()
+    {
+        AmmoChanged?.Invoke(currentAmmo, MaxAmmo);
+    }
     
     private void Start()
     {
@@ -54,6 +63,7 @@ public class WeaponController : MonoBehaviour
         }
         
         currentAmmo = settings.magSize;
+        NotifyAmmoChanged();
     }
     
     private void Update()
@@ -236,6 +246,7 @@ public class WeaponController : MonoBehaviour
         
         // Update ammo and fire rate
         currentAmmo--;
+        NotifyAmmoChanged();
         nextFireTime = Time.time + settings.fireRate;
         
         // Auto reload if empty and auto reload is enabled
@@ -258,6 +269,7 @@ public class WeaponController : MonoBehaviour
 
         enabled = true;
         currentAmmo = settings.magSize;
+        NotifyAmmoChanged();
     }
     
     private void EjectBarrel(WeaponPart barrel, WeaponBody weaponBody)
@@ -433,6 +445,7 @@ public class WeaponController : MonoBehaviour
         currentAmmo = settings.magSize;
         isReloading = false;
         hasPlayedEmptySound = false; // Reset flag after reload
+        NotifyAmmoChanged();
     }
     
     private void HandleWeaponSway()
@@ -527,6 +540,7 @@ public class WeaponController : MonoBehaviour
         if (settings != null)
         {
             currentAmmo = Mathf.Min(currentAmmo, settings.magSize);
+            NotifyAmmoChanged();
         }
     }
     

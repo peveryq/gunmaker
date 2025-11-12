@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
 /// Interactable computer that opens the weapon parts shop UI
 /// </summary>
-public class ShopComputer : MonoBehaviour, IInteractable
+public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsProvider
 {
     [Header("Computer Settings")]
     [SerializeField] private float interactionRange = 3f;
@@ -61,6 +62,18 @@ public class ShopComputer : MonoBehaviour, IInteractable
         }
         
         return "[E] Open Shop";
+    }
+    
+    public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
+    {
+        if (options == null) return;
+        bool available = CanInteract(handler);
+        options.Add(InteractionOption.Primary(
+            id: "shop.open",
+            label: "shop",
+            key: handler != null ? handler.InteractKey : KeyCode.E,
+            isAvailable: available,
+            callback: h => h.PerformInteraction(this)));
     }
     
     private void OpenShop()

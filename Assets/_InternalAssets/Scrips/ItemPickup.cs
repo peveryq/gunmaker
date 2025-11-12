@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-public class ItemPickup : MonoBehaviour, IInteractable
+public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvider
 {
     [Header("Pickup Settings")]
     [SerializeField] private float pickupRange = 3f;
@@ -81,6 +82,22 @@ public class ItemPickup : MonoBehaviour, IInteractable
         {
             audioSource.enabled = true;
         }
+    }
+    
+    public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
+    {
+        if (handler == null || options == null)
+        {
+            return;
+        }
+
+        bool available = CanInteract(handler);
+        options.Add(InteractionOption.Primary(
+            id: $"pickup.{GetInstanceID()}",
+            label: "grab",
+            key: handler.InteractKey,
+            isAvailable: available,
+            callback: h => h.PerformInteraction(this)));
     }
     
     // Apply default settings based on weapon part type or body

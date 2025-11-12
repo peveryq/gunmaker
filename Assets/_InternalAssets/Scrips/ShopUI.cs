@@ -63,6 +63,7 @@ public class ShopUI : MonoBehaviour
     private bool wasControllerEnabled;
     private Button currentSelectedButton;
     private Coroutine scrollResetRoutine;
+    private bool hudVisibilityCaptured;
     
     private void Awake()
     {
@@ -136,6 +137,12 @@ public class ShopUI : MonoBehaviour
         {
             MoneySystem.Instance.OnMoneyChanged -= UpdateMoneyDisplay;
         }
+
+        if (hudVisibilityCaptured && GameplayUIContext.HasInstance)
+        {
+            GameplayUIContext.Instance.ReleaseHud(this);
+            hudVisibilityCaptured = false;
+        }
     }
     
     /// <summary>
@@ -156,6 +163,12 @@ public class ShopUI : MonoBehaviour
         // Show shop panel
         if (shopPanel != null)
             shopPanel.SetActive(true);
+
+        if (!hudVisibilityCaptured)
+        {
+            GameplayUIContext.Instance.RequestHudHidden(this);
+            hudVisibilityCaptured = true;
+        }
         
         // Unlock cursor
         Cursor.lockState = CursorLockMode.None;
@@ -182,6 +195,12 @@ public class ShopUI : MonoBehaviour
         // Hide shop panel
         if (shopPanel != null)
             shopPanel.SetActive(false);
+
+        if (hudVisibilityCaptured)
+        {
+            GameplayUIContext.Instance.ReleaseHud(this);
+            hudVisibilityCaptured = false;
+        }
         
         // Lock cursor
         Cursor.lockState = CursorLockMode.Locked;

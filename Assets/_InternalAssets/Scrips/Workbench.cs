@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-public class Workbench : MonoBehaviour, IInteractable
+public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvider
 {
     [Header("Workbench Settings")]
     [SerializeField] private Transform weaponMountPoint;
@@ -642,6 +643,52 @@ public class Workbench : MonoBehaviour, IInteractable
                     }
                 }
             }
+        }
+    }
+    
+    public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
+    {
+        if (handler == null || options == null)
+        {
+            return;
+        }
+
+        ItemPickup heldItem = handler.CurrentItem;
+        string label = null;
+
+        if (mountedWeapon == null && heldItem == null)
+        {
+            label = "create new gun";
+        }
+        else if (mountedWeapon == null && heldItem != null && heldItem.GetComponent<WeaponBody>() != null)
+        {
+            label = "place gun";
+        }
+        else if (mountedWeapon != null && heldItem == null)
+        {
+            label = "take gun";
+        }
+        else if (mountedWeapon != null && heldItem != null && heldItem.GetComponent<WeaponPart>() != null)
+        {
+            label = "install part";
+        }
+        else if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
+        {
+            if (FindUnweldedBarrel() != null)
+            {
+                label = "weld";
+            }
+        }
+
+        if (!string.IsNullOrEmpty(label))
+        {
+            bool available = CanInteract(handler);
+            options.Add(InteractionOption.Primary(
+                id: $"workbench.{label.Replace(" ", string.Empty).ToLowerInvariant()}",
+                label: label,
+                key: handler.InteractKey,
+                isAvailable: available,
+                callback: h => h.PerformInteraction(this)));
         }
     }
     

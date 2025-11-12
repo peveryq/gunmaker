@@ -1,6 +1,5 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Collections;
 
 public class InteractionHandler : MonoBehaviour
 {
@@ -10,26 +9,27 @@ public class InteractionHandler : MonoBehaviour
     [SerializeField] private float maxInteractionDistance = 5f;
     [SerializeField] private float aimAssistRadius = 0f;
     [SerializeField] private LayerMask interactableLayer = -1;
-    
+
     [Header("Drop Settings")]
     [Tooltip("Position where items are dropped (relative to camera)")]
     [SerializeField] private Vector3 dropPosition = new Vector3(0f, -0.5f, 1.5f);
     [SerializeField] private float dropForce = 5f;
-    
-    [Header("UI")]
-    [SerializeField] private Text interactionPromptText;
-    
+
     [Header("References")]
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Transform itemHoldPoint;
-    
+
     private IInteractable currentTarget;
-    private ICustomInteractionUI currentTargetUI;
     private ItemPickup currentItem;
-    
+    private WeaponController currentWeaponController;
+
+    private readonly List<InteractionOption> optionsBuffer = new();
+    private readonly List<InteractionOption> activeOptions = new();
+
+    private GameplayHUD gameplayHud;
+
     private void Start()
     {
-        // Get camera from FirstPersonController if not assigned
         if (playerCamera == null)
         {
             FirstPersonController fpsController = GetComponent<FirstPersonController>();
@@ -42,8 +42,7 @@ public class InteractionHandler : MonoBehaviour
                 playerCamera = Camera.main;
             }
         }
-        
-        // Create item hold point if not assigned
+
         if (itemHoldPoint == null && playerCamera != null)
         {
             GameObject holdPointObj = new GameObject("ItemHoldPoint");
@@ -52,77 +51,112 @@ public class InteractionHandler : MonoBehaviour
             holdPointObj.transform.localRotation = Quaternion.identity;
             itemHoldPoint = holdPointObj.transform;
         }
-        
-        if (interactionPromptText != null)
-        {
-            interactionPromptText.gameObject.SetActive(false);
-        }
+
+        BindGameplayHud();
     }
-    
+
     private void Update()
     {
         DetectInteractable();
-        
-        // Handle interaction
-        if (Input.GetKeyDown(interactKey) && currentTarget != null)
-        {
-            currentTarget.Interact(this);
-        }
+        ProcessInteractionInputs();
 
-        HandleSecondaryInteractions();
-        
-        // Handle drop
         if (Input.GetKeyDown(dropKey) && currentItem != null)
         {
             DropCurrentItem();
         }
-
-        currentTargetUI?.UpdateInteractionUI(this);
     }
-    
+
+    private void LateUpdate()
+    {
+        if (gameplayHud == null)
+        {
+            BindGameplayHud();
+        }
+    }
+
+    private void BindGameplayHud()
+    {
+        gameplayHud = GameplayHUD.Instance ?? FindFirstObjectByType<GameplayHUD>();
+        if (gameplayHud != null)
+        {
+            gameplayHud.InteractionPanel?.BindHandler(this);
+            UpdateHudAmmo();
+        }
+    }
+
     private void DetectInteractable()
     {
-        // Clear previous target
+        IInteractable previousTarget = currentTarget;
+        Workbench previousWorkbench = previousTarget as Workbench;
+
+        currentTarget = null;
+        bool canInteractWithTarget = false;
+
+        if (playerCamera == null)
+        {
+            UpdateInteractionOptions(null);
+            return;
+        }
+
+        IInteractable detected = FindInteractable();
+        if (detected != null)
+        {
+            float distance = Vector3.Distance(transform.position, detected.Transform.position);
+            if (distance <= detected.InteractionRange)
+            {
+                currentTarget = detected;
+                canInteractWithTarget = detected.CanInteract(this);
+            }
+        }
+
+        if (previousTarget != null && previousTarget != currentTarget)
+        {
+            DisableOutline(previousTarget);
+            previousWorkbench?.HidePreview();
+        }
+
         if (currentTarget != null)
         {
-            DisableOutline(currentTarget);
-            HidePrompt();
-            currentTargetUI?.HideInteractionUI();
-            currentTargetUI = null;
-            
-            // Hide workbench preview if leaving workbench
-            Workbench prevWorkbench = currentTarget as Workbench;
-            if (prevWorkbench != null)
+            if (currentTarget.ShowOutline)
             {
-                prevWorkbench.HidePreview();
+                EnableOutline(currentTarget);
             }
-            
-            currentTarget = null;
+
+            if (currentTarget is Workbench currentWorkbench)
+            {
+                if (canInteractWithTarget)
+                {
+                    currentWorkbench.ShowPreview();
+                }
+                else
+                {
+                    currentWorkbench.HidePreview();
+                }
+            }
         }
-        
-        if (playerCamera == null) return;
-        
+
+        UpdateInteractionOptions(currentTarget);
+    }
+
+    private IInteractable FindInteractable()
+    {
         IInteractable detected = null;
-        
-        // Primary: Raycast from screen center
+
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit[] hits = Physics.RaycastAll(ray, maxInteractionDistance, interactableLayer);
-        
-        // Sort hits by distance (closest first) for accurate selection
+
         if (hits.Length > 1)
         {
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
         }
-        
-        // Find first valid interactable (now guaranteed to be closest)
+
         foreach (RaycastHit hit in hits)
         {
-            // Skip objects that are children of player/camera (held items)
             if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform.IsChildOf(playerCamera.transform))
             {
                 continue;
             }
-            
+
             IInteractable interactable = hit.collider.GetComponent<IInteractable>();
             if (interactable == null)
             {
@@ -135,28 +169,26 @@ public class InteractionHandler : MonoBehaviour
                 break;
             }
         }
-        
-        // Secondary: Aim assist if enabled and no direct hit
+
         if (detected == null && aimAssistRadius > 0f)
         {
             Vector3 checkPoint = ray.GetPoint(Mathf.Min(maxInteractionDistance * 0.5f, 3f));
             Collider[] nearbyColliders = Physics.OverlapSphere(checkPoint, aimAssistRadius, interactableLayer);
             float closestDistance = float.MaxValue;
-            
+
             foreach (Collider col in nearbyColliders)
             {
-                // Skip held items
                 if (col.transform.IsChildOf(transform) || col.transform.IsChildOf(playerCamera.transform))
                 {
                     continue;
                 }
-                
+
                 IInteractable interactable = col.GetComponent<IInteractable>();
                 if (interactable == null)
                 {
                     interactable = col.GetComponentInParent<IInteractable>();
                 }
-                
+
                 if (interactable != null)
                 {
                     float dist = Vector3.Distance(interactable.Transform.position, checkPoint);
@@ -164,7 +196,6 @@ public class InteractionHandler : MonoBehaviour
                     {
                         Vector3 toTarget = interactable.Transform.position - playerCamera.transform.position;
                         float dotProduct = Vector3.Dot(playerCamera.transform.forward, toTarget.normalized);
-                        
                         if (dotProduct > 0.7f)
                         {
                             detected = interactable;
@@ -174,46 +205,106 @@ public class InteractionHandler : MonoBehaviour
                 }
             }
         }
-        
-        // Process detected interactable
-        if (detected != null)
+
+        return detected;
+    }
+
+    private void UpdateInteractionOptions(IInteractable target)
+    {
+        optionsBuffer.Clear();
+
+        if (target != null)
         {
-            float distance = Vector3.Distance(transform.position, detected.Transform.position);
-            
-            if (distance <= detected.InteractionRange && detected.CanInteract(this))
+            IInteractionOptionsProvider provider = GetOptionsProvider(target);
+            if (provider != null)
             {
-                currentTarget = detected;
-                
-                if (detected.ShowOutline)
+                provider.PopulateInteractionOptions(this, optionsBuffer);
+            }
+
+            if (optionsBuffer.Count == 0)
+            {
+                string prompt = target.GetInteractionPrompt(this);
+                if (!string.IsNullOrEmpty(prompt))
                 {
-                    EnableOutline(detected);
-                }
-                
-                currentTargetUI = detected as ICustomInteractionUI;
-                if (currentTargetUI != null)
-                {
-                    HidePrompt();
-                    currentTargetUI.ShowInteractionUI(this);
-                }
-                else
-                {
-                    ShowPrompt(detected.GetInteractionPrompt(this));
-                }
-                
-                // Show workbench preview if looking at workbench
-                Workbench workbench = detected as Workbench;
-                if (workbench != null)
-                {
-                    workbench.ShowPreview();
+                    string label = NormalizePrompt(prompt);
+                    bool available = target.CanInteract(this);
+                    optionsBuffer.Add(InteractionOption.Primary("default", label, interactKey, available, handler => handler.PerformInteraction(target)));
                 }
             }
         }
+
+        activeOptions.Clear();
+
+        if (optionsBuffer.Count == 0)
+        {
+            gameplayHud?.InteractionPanel?.Hide();
+            return;
+        }
+
+        activeOptions.AddRange(optionsBuffer);
+        if (gameplayHud != null && gameplayHud.InteractionPanel != null)
+        {
+            gameplayHud.InteractionPanel.BindHandler(this);
+            gameplayHud.InteractionPanel.ShowOptions(activeOptions);
+        }
     }
-    
+
+    private static IInteractionOptionsProvider GetOptionsProvider(IInteractable target)
+    {
+        if (target is MonoBehaviour behaviour)
+        {
+            return behaviour.GetComponent<IInteractionOptionsProvider>();
+        }
+
+        return null;
+    }
+
+    private static string NormalizePrompt(string prompt)
+    {
+        if (string.IsNullOrEmpty(prompt)) return string.Empty;
+
+        string trimmed = prompt.Trim();
+        if (trimmed.StartsWith("["))
+        {
+            int closingBracket = trimmed.IndexOf(']');
+            if (closingBracket >= 0 && closingBracket < trimmed.Length - 1)
+            {
+                trimmed = trimmed.Substring(closingBracket + 1).Trim();
+            }
+        }
+
+        return trimmed;
+    }
+
+    private void ProcessInteractionInputs()
+    {
+        bool handled = false;
+
+        for (int i = 0; i < activeOptions.Count; i++)
+        {
+            InteractionOption option = activeOptions[i];
+            if (!option.IsAvailable || option.Key == KeyCode.None)
+            {
+                continue;
+            }
+
+            if (Input.GetKeyDown(option.Key))
+            {
+                option.Callback?.Invoke(this);
+                handled = true;
+                break;
+            }
+        }
+
+        if (!handled && Input.GetKeyDown(interactKey) && currentTarget != null && activeOptions.Count == 0)
+        {
+            PerformInteraction(currentTarget);
+        }
+    }
+
     private void EnableOutline(IInteractable interactable)
     {
-        MonoBehaviour mb = interactable as MonoBehaviour;
-        if (mb != null)
+        if (interactable is MonoBehaviour mb)
         {
             MonoBehaviour outlinable = mb.GetComponent("Outlinable") as MonoBehaviour;
             if (outlinable != null)
@@ -222,11 +313,10 @@ public class InteractionHandler : MonoBehaviour
             }
         }
     }
-    
+
     private void DisableOutline(IInteractable interactable)
     {
-        MonoBehaviour mb = interactable as MonoBehaviour;
-        if (mb != null)
+        if (interactable is MonoBehaviour mb)
         {
             MonoBehaviour outlinable = mb.GetComponent("Outlinable") as MonoBehaviour;
             if (outlinable != null)
@@ -235,105 +325,128 @@ public class InteractionHandler : MonoBehaviour
             }
         }
     }
-    
-    private void ShowPrompt(string text)
+
+    public void PerformInteraction(IInteractable target)
     {
-        if (interactionPromptText != null)
+        if (target == null) return;
+        if (!target.CanInteract(this)) return;
+        if (target.Interact(this))
         {
-            interactionPromptText.text = text;
-            interactionPromptText.gameObject.SetActive(!string.IsNullOrEmpty(text));
-        }
-    }
-    
-    private void HidePrompt()
-    {
-        if (interactionPromptText != null)
-        {
-            interactionPromptText.gameObject.SetActive(false);
+            // interaction may change state; new options will be resolved next frame
         }
     }
 
-    private void HandleSecondaryInteractions()
-    {
-        if (currentTarget == null) return;
-
-        WeaponLockerInteractable locker = currentTarget as WeaponLockerInteractable;
-        if (locker != null && Input.GetKeyDown(locker.StashKey))
-        {
-            if (locker.TryStash(this))
-            {
-                locker.UpdateInteractionUI(this);
-            }
-        }
-    }
-    
     // Item management (for ItemPickup compatibility)
     public bool PickupItem(ItemPickup item)
     {
         if (item == null || itemHoldPoint == null) return false;
-        
-        // Automatically drop current item if holding one
+
         if (currentItem != null)
         {
             DropCurrentItem();
         }
-        
+
         item.Pickup(itemHoldPoint);
         currentItem = item;
-        
-        // Enable weapon controller if item has one
+
         WeaponController weapon = item.GetComponent<WeaponController>();
         if (weapon != null)
         {
             weapon.Equip(playerCamera);
+            AttachWeaponController(weapon);
         }
-        
+        else
+        {
+            DetachWeaponController();
+        }
+
         return true;
     }
-    
+
     public void DropCurrentItem()
     {
         if (currentItem == null || playerCamera == null) return;
-        
-        // Disable weapon controller if item has one
+
         WeaponController weapon = currentItem.GetComponent<WeaponController>();
         if (weapon != null)
         {
             weapon.Unequip();
         }
-        
-        // Calculate drop position in world space (from camera)
-        Vector3 worldDropPosition = playerCamera.transform.position + 
+
+        Vector3 worldDropPosition = playerCamera.transform.position +
                                     playerCamera.transform.right * dropPosition.x +
                                     playerCamera.transform.up * dropPosition.y +
                                     playerCamera.transform.forward * dropPosition.z;
-        
-        // Calculate drop rotation
+
         Quaternion baseRotation = Quaternion.LookRotation(playerCamera.transform.forward);
         Quaternion finalRotation = baseRotation * Quaternion.Euler(currentItem.DropRotation);
-        
-        // Apply force in camera forward direction
+
         Vector3 dropForceVector = playerCamera.transform.forward * dropForce;
-        
+
         currentItem.Drop(worldDropPosition, dropForceVector, finalRotation);
         currentItem = null;
+        DetachWeaponController();
     }
-    
+
     public void ClearCurrentItem()
     {
         currentItem = null;
+        DetachWeaponController();
     }
-    
+
     public void ForcePickupItem(ItemPickup item)
     {
         PickupItem(item);
     }
-    
+
+    private void AttachWeaponController(WeaponController weapon)
+    {
+        if (weapon == null)
+        {
+            return;
+        }
+
+        DetachWeaponController();
+        currentWeaponController = weapon;
+        currentWeaponController.AmmoChanged += HandleAmmoChanged;
+        HandleAmmoChanged(currentWeaponController.CurrentAmmo, currentWeaponController.MaxAmmo);
+    }
+
+    private void DetachWeaponController()
+    {
+        if (currentWeaponController != null)
+        {
+            currentWeaponController.AmmoChanged -= HandleAmmoChanged;
+            currentWeaponController = null;
+        }
+
+        gameplayHud?.ClearAmmo();
+    }
+
+    private void HandleAmmoChanged(int current, int max)
+    {
+        gameplayHud?.SetAmmo(current, max);
+    }
+
+    private void UpdateHudAmmo()
+    {
+        if (currentWeaponController != null)
+        {
+            HandleAmmoChanged(currentWeaponController.CurrentAmmo, currentWeaponController.MaxAmmo);
+        }
+        else
+        {
+            gameplayHud?.ClearAmmo();
+        }
+    }
+
     // Properties
     public bool IsHoldingItem => currentItem != null;
     public ItemPickup CurrentItem => currentItem;
     public Camera PlayerCamera => playerCamera;
     public Transform ItemHoldPoint => itemHoldPoint;
-    public IInteractable CurrentTarget => currentTarget; // For WeaponStatsUI to sync
+    public IInteractable CurrentTarget => currentTarget;
+    public KeyCode InteractKey => interactKey;
+    public KeyCode DropKey => dropKey;
 }
 

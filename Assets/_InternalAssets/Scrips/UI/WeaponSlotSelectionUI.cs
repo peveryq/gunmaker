@@ -39,6 +39,7 @@ public class WeaponSlotSelectionUI : MonoBehaviour
     private bool showingNameModal;
     private int pendingSlotIndex = -1;
     private bool isSubscribedToManager;
+    private bool hudVisibilityCaptured;
 
     private void Awake()
     {
@@ -85,6 +86,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
         AcquireFpsController();
         DisablePlayerControl();
 
+        if (!hudVisibilityCaptured)
+        {
+            GameplayUIContext.Instance.RequestHudHidden(this);
+            hudVisibilityCaptured = true;
+        }
+
         pendingSlotIndex = -1;
         showingNameModal = false;
         isActive = true;
@@ -105,6 +112,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
 
         UnsubscribeFromSlotManager();
         RestorePlayerControl();
+
+        if (hudVisibilityCaptured)
+        {
+            GameplayUIContext.Instance.ReleaseHud(this);
+            hudVisibilityCaptured = false;
+        }
 
         if (gunNameModal != null)
         {
@@ -129,6 +142,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
         showingNameModal = false;
         pendingSlotIndex = -1;
         SetRootVisibility(false);
+
+        if (hudVisibilityCaptured)
+        {
+            GameplayUIContext.Instance.ReleaseHud(this);
+            hudVisibilityCaptured = false;
+        }
 
         if (gunNameModal != null)
         {

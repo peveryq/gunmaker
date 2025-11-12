@@ -85,6 +85,7 @@ public class WeaponLockerSystem : MonoBehaviour
         activeLockerInteractable = source;
         activeLockerInteractable?.NotifyLockerOpened();
 
+        GameplayUIContext.Instance.RequestHudHidden(this);
         lockerUI?.EnsureControlCaptured();
         lockerUI?.PreparePreviewForOpen();
         PlaySound(openSound);
@@ -331,6 +332,7 @@ public class WeaponLockerSystem : MonoBehaviour
         {
             lockerUI?.ClearPreview();
             lockerUI?.ReleaseCapturedControl();
+            GameplayUIContext.Instance.ReleaseHud(this);
             if (activeLockerInteractable != null)
             {
                 activeLockerInteractable.NotifyLockerClosed();

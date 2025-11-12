@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
 /// Example interactable object - door that opens location selection
 /// </summary>
-public class LocationDoor : MonoBehaviour, IInteractable
+public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsProvider
 {
     [Header("Door Settings")]
     [SerializeField] private float interactionRange = 3f;
@@ -38,6 +39,25 @@ public class LocationDoor : MonoBehaviour, IInteractable
         }
         
         return $"[E] Enter {doorName}";
+    }
+    
+    public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
+    {
+        if (options == null) return;
+        bool available = !isLocked;
+        string label = available ? "enter" : "locked";
+        options.Add(InteractionOption.Primary(
+            id: $"door.{doorName}",
+            label: label,
+            key: handler != null ? handler.InteractKey : KeyCode.E,
+            isAvailable: available,
+            callback: h =>
+            {
+                if (available)
+                {
+                    h.PerformInteraction(this);
+                }
+            }));
     }
     
     public Transform Transform => transform;
