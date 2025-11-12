@@ -131,6 +131,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pickupRange: 4
   itemName: ItemName
+  pickupLabel: grab
   usePartTypeDefaults: 1
   heldPosition: {x: 0, y: 0, z: 0}
   heldRotation: {x: 0, y: 0, z: 0}
@@ -139,7 +140,7 @@ MonoBehaviour:
   pickupSound: {fileID: 8300000, guid: 3b780c692dbc67b4fb78674747cc09aa, type: 3}
   impactSounds:
   - {fileID: 8300000, guid: b0eabaa3708b8be43bf4937dfcfb07f7, type: 3}
-  minImpactVelocity: 2
+  minImpactVelocity: 1
   impactSoundCooldown: 0.5
 --- !u!65 &6998741861654205750
 BoxCollider:

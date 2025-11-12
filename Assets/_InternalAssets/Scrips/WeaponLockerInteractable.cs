@@ -8,6 +8,10 @@ public class WeaponLockerInteractable : MonoBehaviour, IInteractable, IInteracti
     [SerializeField] private KeyCode openKey = KeyCode.E;
     [SerializeField] private KeyCode stashKey = KeyCode.F;
 
+    [Header("UI Labels")]
+    [SerializeField] private string openLabel = "open";
+    [SerializeField] private string stashLabel = "stash";
+
     [Header("References")]
     [SerializeField] private WeaponLockerSystem lockerSystem;
 
@@ -36,7 +40,12 @@ public class WeaponLockerInteractable : MonoBehaviour, IInteractable, IInteracti
 
     public string GetInteractionPrompt(InteractionHandler player)
     {
-        return lockerSystem != null && !lockerViewActive ? "[E] open" : string.Empty;
+        if (lockerSystem != null && !lockerViewActive)
+        {
+            return $"[{openKey}] {openLabel}";
+        }
+
+        return string.Empty;
     }
 
     public Transform Transform => transform;
@@ -48,26 +57,26 @@ public class WeaponLockerInteractable : MonoBehaviour, IInteractable, IInteracti
         if (lockerSystem == null || options == null) return;
         if (lockerViewActive) return;
 
+        string resolvedOpenLabel = string.IsNullOrEmpty(openLabel) ? "open" : openLabel;
+        string resolvedStashLabel = string.IsNullOrEmpty(stashLabel) ? "stash" : stashLabel;
+
         options.Add(InteractionOption.Primary(
             id: "locker.open",
-            label: "open",
+            label: resolvedOpenLabel,
             key: openKey,
             isAvailable: true,
             callback: h => lockerSystem.OpenLocker(this)));
 
         bool canStash = handler != null && handler.IsHoldingItem && handler.CurrentItem.GetComponent<WeaponBody>() != null;
-        options.Add(InteractionOption.Secondary(
-            id: "locker.stash",
-            label: "stash",
-            key: stashKey,
-            isAvailable: canStash,
-            callback: h =>
-            {
-                if (canStash)
-                {
-                    lockerSystem.TryStashHeldWeapon();
-                }
-            }));
+        if (canStash)
+        {
+            options.Add(InteractionOption.Secondary(
+                id: "locker.stash",
+                label: resolvedStashLabel,
+                key: stashKey,
+                isAvailable: true,
+                callback: h => lockerSystem.TryStashHeldWeapon()));
+        }
     }
 
     public void NotifyLockerOpened()

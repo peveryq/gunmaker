@@ -2,7 +2,7 @@
 
 ## Project Snapshot
 - **Scene in focus:** `Assets/_InternalAssets/Scenes/Main.unity`
-- **Active gameplay scripts:** 37 C# files across `_InternalAssets/Scrips`
+- **Active gameplay scripts:** 42 C# files across `_InternalAssets/Scrips`
 - **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`
 - **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets
 - **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, this analysis document
@@ -14,8 +14,8 @@
 ### Core Player Layer
 | Feature | Components | Notes |
 |---------|------------|-------|
-| First-person control | `FirstPersonController`, input actions | Cursor/controller gating shared with slot, locker, shop UI |
-| Interaction framework | `InteractionHandler`, `IInteractable`, `ICustomInteractionUI` | Supports bespoke UI overlays (locker buttons, slot picker, prompts) |
+| First-person control | `FirstPersonController`, input actions | Player movement/aim locked by UI systems via `GameplayHUD` control capture |
+| Interaction framework | `InteractionHandler`, `IInteractable`, `IInteractionOptionsProvider`, `InteractionOption` | Option-driven HUD buttons (desktop + future touch); pooled button views on `GameplayHUD`
 | Item handling | `ItemPickup`, `WeaponBody`, `WeaponPart` | Each body now owns a unique `WeaponSettings` clone updated per install |
 
 ### Weapon & Workbench Layer
@@ -25,21 +25,28 @@
 | Welding gameplay | `Blowtorch`, `WeldingSystem`, `WeldingUI` | Event-driven transitions, pooled VFX |
 | Ballistics & impact FX | `WeaponController`, `Bullet`, `BulletHoleManager` | Bullet holes pooled for WebGL friendliness |
 
+### HUD & UX Layer (2025 Update)
+| Subsystem | Files | Summary |
+|-----------|-------|---------|
+| Gameplay HUD | `GameplayHUD`, `GameplayUIContext` | Singleton HUD group for crosshair, money, ammo, interaction buttons; hide/show via requester tokens |
+| Interaction buttons | `HUDInteractionPanel`, `InteractionButtonView`, `InteractionOption` | Pooled UI buttons fed by `IInteractionOptionsProvider` implementations |
+| Economy display | `GameplayHUD`, `MoneySystem`, `WeaponController` | Money/ammo events drive HUD labels, controller subscribe/unsubscribe |
+
 ### Economy & Shop Layer (2025 Update)
 | Subsystem | Files | Summary |
 |-----------|-------|---------|
 | Currency | `MoneySystem` | Singleton ledger with UI binding, reload-safe (no persistence yet) |
 | Offering generation | `ShopOfferingGenerator`, `ShopPartConfig` | Two-phase randomisation (visual pass, stat pass) with rarity tiers, price clamps, starter offerings |
 | UI & UX | `ShopUI`, `ShopItemTile`, `PurchaseConfirmationUI`, `WeaponStatsUI` | Modal flow + hover stats (three-column split, preview deltas, pooling) |
-| Spawning & visuals | `PartSpawner` | Universal prefab, runtime mesh swap, collider recalculation, scope lens child, geometry-centred placement, cost propagation |
+| Spawning & visuals | `PartSpawner` | Universal prefab, runtime mesh swap, collider recalculation, scope lens child, geometry-centred placement |
 
 ### Locker & Storage Layer (2025 Update)
 | System | Key Scripts | Highlights |
 |--------|-------------|-----------|
 | Slot management | `WeaponSlotManager`, `GameBalanceConfig` | Singleton with configurable capacity, compacting records, UI events |
 | Creation flow | `WeaponNameInputUI`, `WeaponSlotSelectionUI`, `GunNameModal`, `WeaponStatRowUI` | Slot-first workflow with validation, naming constraints, reuse of stat rows |
-| Locker UX | `WeaponLockerInteractable`, `WeaponLockerSystem`, `WeaponLockerUI`, `WeaponSellModal` | Dual-button prompts (E/F), stashing, per-weapon sell modal, take/close coherence |
-| Camera presentation | `LockerCameraController`, Cinemachine virtual cams | Priority-based blends between player POV and locker POV (optional when CINEMACHINE defined) |
+| Locker UX | `WeaponLockerInteractable`, `WeaponLockerSystem`, `WeaponLockerUI`, `WeaponSellModal` | Option buttons (E/F), stashing, per-weapon sell modal, take/close coherence |
+| Camera presentation | `LockerCameraController` | Custom coroutine-based fly-in, adjustable speed/curves, auto-hide camera children |
 
 ---
 
@@ -64,15 +71,17 @@ Player → Workbench (IInteractable)
        → Workbench.MountWeapon()
             ↳ WeaponBody (unique WeaponSettings clone, per-slot snapshots)
 
-Player → WeaponLockerInteractable (ICustomInteractionUI)
-       → Button F (stash) ↴
+Player → WeaponLockerInteractable (IInteractionOptionsProvider)
+       → Secondary option "stash" (F)
             ↳ WeaponLockerSystem.TryStashHeldWeapon()
                  ↳ WeaponSlotManager.TryAssignNextAvailableSlot()
                  ↳ WeaponLockerSystem.PrepareWeaponForStorage()
-       → Button/E key (open) ↴
+       → Primary option "open" (E)
             ↳ WeaponLockerSystem.OpenLocker()
                  ↳ LockerCameraController.EnterLockerView()
-                 ↳ WeaponLockerUI.Show()
+                 ↳ WeaponLockerUI.PreparePreviewForOpen()
+                 ↳ GameplayUIContext.RequestHudHidden()
+                 ↳ LockerCameraController (callback) → WeaponLockerUI.Show()
                  ↳ WeaponSellModal (per-slot sell)
                  ↳ WeaponLockerSystem.RequestTakeWeapon()
 ```
@@ -89,25 +98,25 @@ Player → WeaponLockerInteractable (ICustomInteractionUI)
 |------|--------|-------|
 | Instantiation cost | ✅ Minimal | Universal prefab reused; collider updates performed in-place |
 | GC pressure | ✅ Low | Dictionaries cached per offering; no LINQ in hot paths |
-| UI performance | ✅ Stable | ScrollRect usage trimmed; category list uses mask-only scrolling (no extra sliders) |
+| UI performance | ✅ Stable | Gameplay HUD persistent; modal UIs reuse pooled widgets |
 | Physics workload | ✅ Light | No continuous forces on spawned parts; Rigidbody removed for static placement |
-| Audio | ✅ | 2D UI sounds (shop) and optional 3D spawn sound; AudioSource reuse |
+| Audio | ✅ | 3D world sounds reuse AudioSources; HUD sounds routed through shared sources |
 | Randomisation | ✅ | UnityEngine.Random exclusively; no System.Random ambiguities |
-| Pooling | ✅ | Bullet impacts pooled; shop tiles recycled per refresh |
+| Pooling | ✅ | Bullet impacts pooled; shop tiles and interaction buttons recycled |
 
 **Operational considerations:**
 - Shop resets scroll positions through coroutine double-writes to avoid frame delays in WebGL builds.
 - Rich text colour tags tested against TextMeshPro WebGL subset; no unsupported glyphs used.
 - Reflection calls run once per spawn; cached `FieldInfo` to avoid per-frame lookups. Part price is stored on the spawned `WeaponPart` for future resale UI.
-- Locker cameras require Cinemachine; `LockerCameraController` is no-op if define symbol `CINEMACHINE` absent.
+- Locker camera is self-contained; no Cinemachine dependency required in current build.
 
 ---
 
 ## Quality Summary
-- **Architecture:** Loose coupling between offering generator, UI, and spawner (Mediator pattern via events/callbacks).
+- **Architecture:** Loose coupling between offering generator, UI, and spawner; interaction/UI surface via `IInteractionOptionsProvider` contracts.
 - **Robustness:** Null checks on all inspector references; guarded coroutine usage; shop gracefully handles missing config entries.
-- **UX polish:** Category buttons enforce selection state, text colour swapping, and scrollable list without visible scrollbars.
-- **Testing hooks:** `ShopOfferingGenerator.RemoveOffering` allows deterministic test scenarios for post-purchase refresh.
+- **UX polish:** HUD hides automatically when fullscreen UI captures control; locker preview appears with door animation prior to UI reveal.
+- **Testing hooks:** `ShopOfferingGenerator.RemoveOffering` allows deterministic test scenarios; HUD visibility toggles via `GameplayUIContext` requests.
 - **Documentation cleanup:** Legacy temporary markdown files removed; setup guide kept canonical.
 
 ### Known Limitations / Next Steps
@@ -115,15 +124,17 @@ Player → WeaponLockerInteractable (ICustomInteractionUI)
 2. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
 3. **Analytics hooks** – Consider emitting events when purchases or locker interactions occur for telemetry or tutorials.
 4. **Localization** – Part and slot UI strings remain hardcoded English.
-5. **Locker/mobile UI** – Buttons exist for touch adaptation; input abstraction pending.
+5. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet.
 
 ---
 
 ## Quick Reference for Future Work
 - **Open shop workflow:** Interact with `ShopComputer` → `ShopUI.OpenShop()` disables FPS controller, unlocks cursor.
+- **Gameplay HUD control:** Call `GameplayUIContext.Instance.RequestHudHidden(sender)` when a fullscreen UI opens; call `ReleaseHud(sender)` on close.
+- **Adding new interactions:** Implement `IInteractionOptionsProvider`, populate options via `InteractionOption.Primary/Secondary`, HUD handles rendering.
 - **To add new part types:** Extend `ShopPartConfig.PartTypeConfig`, provide mesh/icon/name pools, update enum handling in generator/spawner.
 - **Adding new rarity tiers:** Adjust `RarityTier` ranges and ensure price/stat formula accommodates new bounds.
-- **Integrating saves:** `MoneySystem` already exposes balance events; serialise `MoneySystem.CurrentMoney` and `ShopOfferingGenerator` caches.
+- **Integrating saves:** `MoneySystem` exposes `OnMoneyChanged`; serialise `MoneySystem.CurrentMoney` and `WeaponSlotManager` slot records.
 
 ---
 
@@ -133,7 +144,7 @@ Player → WeaponLockerInteractable (ICustomInteractionUI)
 - **Stat formula:** `value = a + ((b - a) * ((price - c) / (d - c)))`, rounded up; recoil values are negated, ammo uses tier-specific ranges (8–12, 13–20, 21–40, 41–70, 71–120).
 - **Two-phase randomisation:** Phase 1 (refresh) caches rarity, price, mesh/icon, manufacturer; Phase 2 (modal open) calculates stats and generates names on demand.
 - **`PartMeshData`:** couples `Mesh`, `Sprite icon`, optional `lensOverlayPrefab` for scopes. All configured per rarity tier inside `ShopPartConfig`.
-- **Cost tracking:** `PurchaseConfirmationUI` feeds offering price into `PartSpawner`, `WeaponPart` stores it, and `WeaponStats` aggregates into `WeaponSettings.totalPartCost`.
+- **Cost tracking:** `PurchaseConfirmationUI` feeds offering price into `PartSpawner`, `WeaponPart` stores it, and `WeaponSettings` aggregates into `WeaponSettings.totalPartCost`.
 - **Name generation:** Combines rarity-specific descriptors from `partNamePool` with `partTypeDisplayName` defined in config (lowercase for localisation readiness).
 - **Starter items:** Barrel and magazine categories reserve index 0 for zero-cost offerings (magazines grant 8 ammo baseline).
 - **UI behaviour:** Category list uses a scrollbar-less `ScrollRect`; tiles and modal use TextMeshPro rich text for coloured stat deltas; ESC closes modal first then shop.
@@ -159,9 +170,15 @@ Player → WeaponLockerInteractable (ICustomInteractionUI)
 ### Appendix E – Locker & Slot Implementation
 - **WeaponSlotManager:** Singleton with `DontDestroyOnLoad`; compacts slot list, exposes `SlotsChanged`, defends against domain reload duplication.
 - **WeaponBody ownership:** Each body clones `weaponSettingsTemplate` in `Awake`, updates snapshots on stat recalculation, and reports back to slot records.
-- **Locker storage:** `WeaponLockerSystem` re-parents stored weapons to `storageRoot`, zeroes velocities before toggling kinematic state to avoid physics warnings, and re-enables renderers/colliders on extraction.
-- **Interaction handling:** `WeaponLockerInteractable` implements `ICustomInteractionUI` to drive button visibility; `InteractionHandler` calls `TryStash` on secondary key-up (F).
-- **Camera control:** `LockerCameraController` raises Cinemachine virtual cam priority when locker opens; define symbol `CINEMACHINE` activates the integration.
+- **Locker storage:** `WeaponLockerSystem` re-parents stored weapons to `storageRoot`, caches/restores Rigidbody + collider states, zeroes velocities before toggling kinematic state.
+- **Interaction handling:** `WeaponLockerInteractable` feeds `InteractionOption` entries; `InteractionHandler` routes button presses, HUD shows contextual actions.
+- **Camera control:** `LockerCameraController` detaches the camera, hides child visuals, animates to `lockerViewPoint` via `AnimationCurve`, delays UI until arrival, and restores HUD/control on exit.
+
+### Appendix F – Gameplay HUD Integration
+- `GameplayHUD` root canvas holds crosshair, ammo, money, and interaction panel; enable/disable subjects through `SetVisible`/`SetCrosshairVisible`.
+- `GameplayUIContext` tracks hide requests via tokenised HashSet; locker, shop, slot UI call `RequestHudHidden(this)`/`ReleaseHud(this)`.
+- `HUDInteractionPanel` pools `InteractionButtonView` instances; `InteractionHandler` pushes option sets each frame when gaze target changes.
+- `WeaponController` and `MoneySystem` push updates through `OnAmmoChanged`/`OnMoneyChanged` events, keeping labels live without polling.
 
 ---
 
@@ -174,10 +191,11 @@ Player → WeaponLockerInteractable (ICustomInteractionUI)
 6. Cleaned documentation set to a single authoritative setup guide
 7. Weapon parts now retain purchase price; aggregated into `WeaponSettings.totalPartCost` for resale and economy features.
 8. Added weapon slot selection, naming modal, and unique `WeaponSettings` per body tied to slots
-9. Implemented locker storage pipeline with stashing, selling, and Cinemachine-powered inspection view
+9. Implemented locker storage pipeline with stashing, selling, and cinematic inspection view
 10. Upgraded `WeaponStatsUI` to split columns, preview deltas, and support world-space panels
+11. Introduced Gameplay HUD + interaction options system; locker camera migrated to custom coroutine animation
 
 ---
 
-_Last updated: 10 Nov 2025_
+_Last updated: 12 Nov 2025_
 

@@ -196,6 +196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pickupRange: 5
   itemName: Item
+  pickupLabel: grab
   usePartTypeDefaults: 1
   heldPosition: {x: 0.5, y: -0.5, z: 0.6}
   heldRotation: {x: 0, y: 0, z: 0}
@@ -204,7 +205,7 @@ MonoBehaviour:
   pickupSound: {fileID: 8300000, guid: 3d071c90f923a8f47b5d9b0e0856b3aa, type: 3}
   impactSounds:
   - {fileID: 8300000, guid: b0eabaa3708b8be43bf4937dfcfb07f7, type: 3}
-  minImpactVelocity: 2
+  minImpactVelocity: 1
   impactSoundCooldown: 0.5
 --- !u!82 &838883491963731865
 AudioSource:
@@ -561,12 +562,13 @@ MonoBehaviour:
     reloadSpeed: 1
     scope: 1
     ammo: 0
+    totalPartCost: 0
   barrelPart: {fileID: 0}
   magazinePart: {fileID: 0}
   stockPart: {fileID: 0}
   scopePart: {fileID: 0}
   weaponController: {fileID: 1825065320432647414}
-  weaponSettings: {fileID: 11400000, guid: f718d573cafe3b045bea95d60b371b70, type: 2}
+  weaponSettingsTemplate: {fileID: 11400000, guid: f718d573cafe3b045bea95d60b371b70, type: 2}
 --- !u!114 &45929564900488092
 MonoBehaviour:
   m_ObjectHideFlags: 0

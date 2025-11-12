@@ -16,6 +16,9 @@ public class Blowtorch : MonoBehaviour, IInteractable
     [Header("Settings")]
     [SerializeField] private float weldingSpeed = 10f; // Percent per second
     
+    [Header("Controls")]
+    [SerializeField] private KeyCode weldKey = KeyCode.E;
+    
     private bool isWorking = false;
     private bool isStartSoundPlaying = false;
     private ItemPickup itemPickup;
@@ -150,6 +153,7 @@ public class Blowtorch : MonoBehaviour, IInteractable
     
     public bool IsWorking => isWorking;
     public float WeldingSpeed => weldingSpeed;
+    public KeyCode WeldKey => weldKey;
     
     // IInteractable implementation
     public bool Interact(InteractionHandler player)

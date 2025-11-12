@@ -6,6 +6,7 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
     [Header("Pickup Settings")]
     [SerializeField] private float pickupRange = 3f;
     [SerializeField] private string itemName = "Item";
+    [SerializeField] private string pickupLabel = "grab";
     
     [Header("Auto-Settings (Optional)")]
     [Tooltip("If checked, will automatically apply settings from WeaponPart type")]
@@ -82,6 +83,31 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
         {
             audioSource.enabled = true;
         }
+
+        audioSource.playOnAwake = false;
+    }
+
+    private bool TryGetActiveAudioSource(out AudioSource source)
+    {
+        EnsureAudioSource();
+        source = audioSource;
+
+        if (source == null)
+        {
+            return false;
+        }
+
+        if (!source.gameObject.activeInHierarchy)
+        {
+            source.gameObject.SetActive(true);
+        }
+
+        if (!source.enabled)
+        {
+            source.enabled = true;
+        }
+
+        return source.isActiveAndEnabled;
     }
     
     public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
@@ -92,11 +118,17 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
         }
 
         bool available = CanInteract(handler);
+        if (!available)
+        {
+            return;
+        }
+
+        string resolvedLabel = string.IsNullOrEmpty(pickupLabel) ? "grab" : pickupLabel;
         options.Add(InteractionOption.Primary(
             id: $"pickup.{GetInstanceID()}",
-            label: "grab",
+            label: resolvedLabel,
             key: handler.InteractKey,
-            isAvailable: available,
+            isAvailable: true,
             callback: h => h.PerformInteraction(this)));
     }
     
@@ -178,10 +210,13 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
         // Play sound
         if (pickupSound != null)
         {
-            EnsureAudioSource();
-            if (audioSource != null)
+            if (TryGetActiveAudioSource(out AudioSource source))
             {
-                audioSource.PlayOneShot(pickupSound);
+                source.PlayOneShot(pickupSound);
+            }
+            else
+            {
+                AudioSource.PlayClipAtPoint(pickupSound, transform.position);
             }
         }
         
@@ -224,45 +259,50 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
 #endif
             rb.angularVelocity = Vector3.zero;
             
-            // Apply force only if not zero
-            if (dropForce.magnitude > 0.01f)
-            {
-                rb.AddForce(dropForce, ForceMode.Impulse);
-            }
+            // Apply drop force
+            rb.AddForce(dropForce, ForceMode.Impulse);
         }
         
-        // Re-enable collider after physics is set up
-        StartCoroutine(EnableColliderDelayed());
+        if (itemCollider != null)
+        {
+            itemCollider.enabled = true;
+        }
+        
+        if (impactSounds != null && impactSounds.Length > 0)
+        {
+            EnsureAudioSource();
+        }
         
         isHeld = false;
     }
     
     private void OnCollisionEnter(Collision collision)
     {
-        // Play impact sound when item hits something with enough force
         if (!isHeld && impactSounds != null && impactSounds.Length > 0)
         {
-            // Check cooldown to prevent sound spam
-            if (Time.time - lastImpactSoundTime < impactSoundCooldown)
-                return;
-            
-            float impactVelocity = collision.relativeVelocity.magnitude;
-            
-            if (impactVelocity >= minImpactVelocity)
+            if (rb == null || rb.linearVelocity.magnitude < minImpactVelocity)
             {
-                AudioClip impactClip = impactSounds[Random.Range(0, impactSounds.Length)];
-                
-                if (impactClip != null)
-                {
-                    EnsureAudioSource();
-                    if (audioSource != null)
-                    {
-                        audioSource.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
-                        audioSource.PlayOneShot(impactClip);
+                return;
+            }
 
-                        // Update last impact time
-                        lastImpactSoundTime = Time.time;
-                    }
+            if (Time.time - lastImpactSoundTime < impactSoundCooldown)
+            {
+                return;
+            }
+
+            lastImpactSoundTime = Time.time;
+
+            AudioClip impactClip = impactSounds[Random.Range(0, impactSounds.Length)];
+            if (impactClip != null)
+            {
+                if (TryGetActiveAudioSource(out AudioSource source))
+                {
+                    source.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
+                    source.PlayOneShot(impactClip);
+                }
+                else
+                {
+                    AudioSource.PlayClipAtPoint(impactClip, transform.position);
                 }
             }
         }

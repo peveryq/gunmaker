@@ -11,6 +11,7 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     [SerializeField] private float interactionRange = 3f;
     [SerializeField] private string doorName = "Training Range";
     [SerializeField] private bool isLocked = false;
+    [SerializeField] private string unlockedLabel = "enter";
     
     [Header("Events")]
     [SerializeField] private UnityEvent onDoorOpened;
@@ -45,19 +46,18 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     {
         if (options == null) return;
         bool available = !isLocked;
-        string label = available ? "enter" : "locked";
+        if (!available)
+        {
+            return;
+        }
+
+        string resolvedLabel = string.IsNullOrEmpty(unlockedLabel) ? "enter" : unlockedLabel;
         options.Add(InteractionOption.Primary(
             id: $"door.{doorName}",
-            label: label,
+            label: resolvedLabel,
             key: handler != null ? handler.InteractKey : KeyCode.E,
-            isAvailable: available,
-            callback: h =>
-            {
-                if (available)
-                {
-                    h.PerformInteraction(this);
-                }
-            }));
+            isAvailable: true,
+            callback: h => h.PerformInteraction(this)));
     }
     
     public Transform Transform => transform;

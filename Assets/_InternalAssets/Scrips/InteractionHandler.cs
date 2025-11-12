@@ -9,16 +9,16 @@ public class InteractionHandler : MonoBehaviour
     [SerializeField] private float maxInteractionDistance = 5f;
     [SerializeField] private float aimAssistRadius = 0f;
     [SerializeField] private LayerMask interactableLayer = -1;
-
+    
     [Header("Drop Settings")]
     [Tooltip("Position where items are dropped (relative to camera)")]
     [SerializeField] private Vector3 dropPosition = new Vector3(0f, -0.5f, 1.5f);
     [SerializeField] private float dropForce = 5f;
-
+    
     [Header("References")]
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Transform itemHoldPoint;
-
+    
     private IInteractable currentTarget;
     private ItemPickup currentItem;
     private WeaponController currentWeaponController;
@@ -27,7 +27,7 @@ public class InteractionHandler : MonoBehaviour
     private readonly List<InteractionOption> activeOptions = new();
 
     private GameplayHUD gameplayHud;
-
+    
     private void Start()
     {
         if (playerCamera == null)
@@ -42,7 +42,7 @@ public class InteractionHandler : MonoBehaviour
                 playerCamera = Camera.main;
             }
         }
-
+        
         if (itemHoldPoint == null && playerCamera != null)
         {
             GameObject holdPointObj = new GameObject("ItemHoldPoint");
@@ -51,10 +51,10 @@ public class InteractionHandler : MonoBehaviour
             holdPointObj.transform.localRotation = Quaternion.identity;
             itemHoldPoint = holdPointObj.transform;
         }
-
+        
         BindGameplayHud();
     }
-
+    
     private void Update()
     {
         DetectInteractable();
@@ -83,7 +83,7 @@ public class InteractionHandler : MonoBehaviour
             UpdateHudAmmo();
         }
     }
-
+    
     private void DetectInteractable()
     {
         IInteractable previousTarget = currentTarget;
@@ -131,64 +131,64 @@ public class InteractionHandler : MonoBehaviour
                 else
                 {
                     currentWorkbench.HidePreview();
-                }
+            }
             }
         }
 
         UpdateInteractionOptions(currentTarget);
-    }
-
+        }
+        
     private IInteractable FindInteractable()
     {
         IInteractable detected = null;
-
+        
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit[] hits = Physics.RaycastAll(ray, maxInteractionDistance, interactableLayer);
-
+        
         if (hits.Length > 1)
         {
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
         }
-
+        
         foreach (RaycastHit hit in hits)
         {
             if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform.IsChildOf(playerCamera.transform))
             {
                 continue;
             }
-
+            
             IInteractable interactable = hit.collider.GetComponent<IInteractable>();
             if (interactable == null)
             {
                 interactable = hit.collider.GetComponentInParent<IInteractable>();
             }
-
+            
             if (interactable != null)
             {
                 detected = interactable;
                 break;
             }
         }
-
+        
         if (detected == null && aimAssistRadius > 0f)
         {
             Vector3 checkPoint = ray.GetPoint(Mathf.Min(maxInteractionDistance * 0.5f, 3f));
             Collider[] nearbyColliders = Physics.OverlapSphere(checkPoint, aimAssistRadius, interactableLayer);
             float closestDistance = float.MaxValue;
-
+            
             foreach (Collider col in nearbyColliders)
             {
                 if (col.transform.IsChildOf(transform) || col.transform.IsChildOf(playerCamera.transform))
                 {
                     continue;
                 }
-
+                
                 IInteractable interactable = col.GetComponent<IInteractable>();
                 if (interactable == null)
                 {
                     interactable = col.GetComponentInParent<IInteractable>();
                 }
-
+                
                 if (interactable != null)
                 {
                     float dist = Vector3.Distance(interactable.Transform.position, checkPoint);
@@ -205,7 +205,7 @@ public class InteractionHandler : MonoBehaviour
                 }
             }
         }
-
+        
         return detected;
     }
 
@@ -233,15 +233,37 @@ public class InteractionHandler : MonoBehaviour
             }
         }
 
+        if (optionsBuffer.Count > 1)
+        {
+            optionsBuffer.Sort((a, b) =>
+            {
+                int styleComparison = a.Style.CompareTo(b.Style);
+                if (styleComparison != 0)
+                {
+                    return styleComparison;
+                }
+
+                return string.CompareOrdinal(a.Id, b.Id);
+            });
+        }
+
         activeOptions.Clear();
 
-        if (optionsBuffer.Count == 0)
+        for (int i = 0; i < optionsBuffer.Count; i++)
+        {
+            InteractionOption option = optionsBuffer[i];
+            if (option.IsAvailable)
+            {
+                activeOptions.Add(option);
+            }
+        }
+
+        if (activeOptions.Count == 0)
         {
             gameplayHud?.InteractionPanel?.Hide();
             return;
         }
 
-        activeOptions.AddRange(optionsBuffer);
         if (gameplayHud != null && gameplayHud.InteractionPanel != null)
         {
             gameplayHud.InteractionPanel.BindHandler(this);
@@ -297,11 +319,11 @@ public class InteractionHandler : MonoBehaviour
         }
 
         if (!handled && Input.GetKeyDown(interactKey) && currentTarget != null && activeOptions.Count == 0)
-        {
+                {
             PerformInteraction(currentTarget);
         }
     }
-
+    
     private void EnableOutline(IInteractable interactable)
     {
         if (interactable is MonoBehaviour mb)
@@ -313,7 +335,7 @@ public class InteractionHandler : MonoBehaviour
             }
         }
     }
-
+    
     private void DisableOutline(IInteractable interactable)
     {
         if (interactable is MonoBehaviour mb)
@@ -325,30 +347,30 @@ public class InteractionHandler : MonoBehaviour
             }
         }
     }
-
+    
     public void PerformInteraction(IInteractable target)
     {
         if (target == null) return;
         if (!target.CanInteract(this)) return;
         if (target.Interact(this))
-        {
+    {
             // interaction may change state; new options will be resolved next frame
         }
     }
-
+    
     // Item management (for ItemPickup compatibility)
     public bool PickupItem(ItemPickup item)
     {
         if (item == null || itemHoldPoint == null) return false;
-
+        
         if (currentItem != null)
         {
             DropCurrentItem();
         }
-
+        
         item.Pickup(itemHoldPoint);
         currentItem = item;
-
+        
         WeaponController weapon = item.GetComponent<WeaponController>();
         if (weapon != null)
         {
@@ -359,41 +381,41 @@ public class InteractionHandler : MonoBehaviour
         {
             DetachWeaponController();
         }
-
+        
         return true;
     }
-
+    
     public void DropCurrentItem()
     {
         if (currentItem == null || playerCamera == null) return;
-
+        
         WeaponController weapon = currentItem.GetComponent<WeaponController>();
         if (weapon != null)
         {
             weapon.Unequip();
         }
-
-        Vector3 worldDropPosition = playerCamera.transform.position +
+        
+        Vector3 worldDropPosition = playerCamera.transform.position + 
                                     playerCamera.transform.right * dropPosition.x +
                                     playerCamera.transform.up * dropPosition.y +
                                     playerCamera.transform.forward * dropPosition.z;
-
+        
         Quaternion baseRotation = Quaternion.LookRotation(playerCamera.transform.forward);
         Quaternion finalRotation = baseRotation * Quaternion.Euler(currentItem.DropRotation);
-
+        
         Vector3 dropForceVector = playerCamera.transform.forward * dropForce;
-
+        
         currentItem.Drop(worldDropPosition, dropForceVector, finalRotation);
         currentItem = null;
         DetachWeaponController();
     }
-
+    
     public void ClearCurrentItem()
     {
         currentItem = null;
         DetachWeaponController();
     }
-
+    
     public void ForcePickupItem(ItemPickup item)
     {
         PickupItem(item);
@@ -439,7 +461,7 @@ public class InteractionHandler : MonoBehaviour
             gameplayHud?.ClearAmmo();
         }
     }
-
+    
     // Properties
     public bool IsHoldingItem => currentItem != null;
     public ItemPickup CurrentItem => currentItem;

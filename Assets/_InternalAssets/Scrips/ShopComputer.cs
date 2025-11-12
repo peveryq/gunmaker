@@ -10,6 +10,7 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
     [Header("Computer Settings")]
     [SerializeField] private float interactionRange = 3f;
     [SerializeField] private bool requiresWeaponInHand = false;
+    [SerializeField] private string interactLabel = "shop";
     
     [Header("Shop UI")]
     [SerializeField] private ShopUI shopUI;
@@ -68,11 +69,17 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
     {
         if (options == null) return;
         bool available = CanInteract(handler);
+        if (!available)
+        {
+            return;
+        }
+
+        string resolvedLabel = string.IsNullOrEmpty(interactLabel) ? "shop" : interactLabel;
         options.Add(InteractionOption.Primary(
             id: "shop.open",
-            label: "shop",
+            label: resolvedLabel,
             key: handler != null ? handler.InteractKey : KeyCode.E,
-            isAvailable: available,
+            isAvailable: true,
             callback: h => h.PerformInteraction(this)));
     }
     

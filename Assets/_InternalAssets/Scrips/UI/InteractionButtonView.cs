@@ -8,13 +8,21 @@ public class InteractionButtonView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI keyText;
     [SerializeField] private Button button;
     [SerializeField] private Image background;
-    [SerializeField] private Color primaryColor = new Color(1f, 0.55f, 0f);
-    [SerializeField] private Color secondaryColor = Color.gray;
-    [SerializeField] private Color disabledColor = new Color(0.35f, 0.35f, 0.35f);
-    [SerializeField] private float disabledAlpha = 0.6f;
+    [SerializeField] private RectTransform contentRow;
+
+    [Header("Primary Style")]
+    [SerializeField] private Color primaryBackgroundColor = new Color(1f, 0.55f, 0f);
+    [SerializeField] private Color primaryLabelColor = Color.white;
+    [SerializeField] private Color primaryKeyColor = Color.white;
+
+    [Header("Secondary Style")]
+    [SerializeField] private Color secondaryBackgroundColor = Color.gray;
+    [SerializeField] private Color secondaryLabelColor = Color.white;
+    [SerializeField] private Color secondaryKeyColor = Color.white;
 
     private InteractionOption currentOption;
     private InteractionHandler boundHandler;
+    private RectTransform cachedRectTransform;
 
     private void Awake()
     {
@@ -22,6 +30,16 @@ public class InteractionButtonView : MonoBehaviour
         {
             button = GetComponent<Button>();
         }
+
+        if (cachedRectTransform == null)
+        {
+            cachedRectTransform = transform as RectTransform;
+        }
+    }
+
+    private void OnEnable()
+    {
+        ForceLayoutUpdate();
     }
 
     public void Configure(InteractionOption option, InteractionHandler handler)
@@ -46,16 +64,64 @@ public class InteractionButtonView : MonoBehaviour
             button.interactable = option.IsAvailable;
         }
 
+        ApplyStyle(option.Style);
+        ForceLayoutUpdate();
+    }
+
+    private void ApplyStyle(InteractionOptionStyle style)
+    {
+        switch (style)
+        {
+            case InteractionOptionStyle.Primary:
+                ApplyColors(primaryBackgroundColor, primaryLabelColor, primaryKeyColor);
+                break;
+            case InteractionOptionStyle.Secondary:
+                ApplyColors(secondaryBackgroundColor, secondaryLabelColor, secondaryKeyColor);
+                break;
+            default:
+                ApplyColors(primaryBackgroundColor, primaryLabelColor, primaryKeyColor);
+                break;
+        }
+    }
+
+    private void ApplyColors(Color backgroundColor, Color labelColor, Color keyColor)
+    {
         if (background != null)
         {
-            Color targetColor = option.Style == InteractionOptionStyle.Primary ? primaryColor : secondaryColor;
-            if (!option.IsAvailable)
-            {
-                targetColor = disabledColor;
-                targetColor.a = disabledAlpha;
-            }
-            background.color = targetColor;
+            background.color = backgroundColor;
         }
+
+        if (labelText != null)
+        {
+            labelText.color = labelColor;
+        }
+
+        if (keyText != null)
+        {
+            keyText.color = keyColor;
+        }
+    }
+
+    private void ForceLayoutUpdate()
+    {
+        Canvas.ForceUpdateCanvases();
+
+        if (contentRow != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentRow);
+        }
+
+        if (cachedRectTransform == null)
+        {
+            cachedRectTransform = transform as RectTransform;
+        }
+
+        if (cachedRectTransform != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(cachedRectTransform);
+        }
+
+        Canvas.ForceUpdateCanvases();
     }
 
     private void HandleClicked()

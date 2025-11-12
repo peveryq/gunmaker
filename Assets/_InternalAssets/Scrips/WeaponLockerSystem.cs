@@ -42,8 +42,42 @@ public class WeaponLockerSystem : MonoBehaviour
 
     private void Start()
     {
+        EnsureLockerUI();
+        EnsureSellModal();
+        EnsureCameraController();
+
         interactionHandler = FindFirstObjectByType<InteractionHandler>();
         isInitialized = true;
+    }
+
+    private bool EnsureLockerUI()
+    {
+        if (lockerUI == null)
+        {
+            lockerUI = FindFirstObjectByType<WeaponLockerUI>(FindObjectsInactive.Include);
+        }
+
+        return lockerUI != null;
+    }
+
+    private bool EnsureSellModal()
+    {
+        if (sellModal == null)
+        {
+            sellModal = FindFirstObjectByType<WeaponSellModal>(FindObjectsInactive.Include);
+        }
+
+        return sellModal != null;
+    }
+
+    private bool EnsureCameraController()
+    {
+        if (lockerCameraController == null)
+        {
+            lockerCameraController = FindFirstObjectByType<LockerCameraController>(FindObjectsInactive.Include);
+        }
+
+        return lockerCameraController != null;
     }
 
     public InteractionHandler GetInteractionHandler()
@@ -67,7 +101,18 @@ public class WeaponLockerSystem : MonoBehaviour
 
     public void OpenLocker(WeaponLockerInteractable source = null)
     {
-        if (!isInitialized || lockerUI == null) return;
+        if (!isInitialized)
+        {
+            return;
+        }
+
+        if (!EnsureLockerUI())
+        {
+            Debug.LogError("WeaponLockerSystem: Locker UI reference missing.");
+            return;
+        }
+
+        EnsureCameraController();
 
         if (lockerCameraController != null)
         {
@@ -86,8 +131,8 @@ public class WeaponLockerSystem : MonoBehaviour
         activeLockerInteractable?.NotifyLockerOpened();
 
         GameplayUIContext.Instance.RequestHudHidden(this);
-        lockerUI?.EnsureControlCaptured();
-        lockerUI?.PreparePreviewForOpen();
+        lockerUI.EnsureControlCaptured();
+        lockerUI.PreparePreviewForOpen();
         PlaySound(openSound);
         PlayLockerAnimation(openAnimationTrigger);
 
@@ -197,8 +242,15 @@ public class WeaponLockerSystem : MonoBehaviour
 
     public void RequestSellWeapon(WeaponRecord record, Action onSellCompleted = null)
     {
-        if (record == null || sellModal == null)
+        if (record == null)
         {
+            onSellCompleted?.Invoke();
+            return;
+        }
+
+        if (!EnsureSellModal())
+        {
+            Debug.LogWarning("WeaponLockerSystem: Sell modal not found in scene.");
             onSellCompleted?.Invoke();
             return;
         }

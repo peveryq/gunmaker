@@ -3,10 +3,20 @@ using UnityEngine;
 
 public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvider
 {
+    [System.Serializable]
+    private class WorkbenchInteractionLabels
+    {
+        public string emptyHands = "create new gun";
+        public string placeGun = "place gun";
+        public string takeGun = "take gun";
+        public string installPart = "install part";
+        public string weld = "weld";
+    }
+
     [Header("Workbench Settings")]
     [SerializeField] private Transform weaponMountPoint;
     [SerializeField] private Vector3 weaponMountRotation = new Vector3(0, -90, 0);
-    [SerializeField] private float interactionRange = 3f;
+    [SerializeField] private float interactionRange = 3.5f;
     [SerializeField] private string mountedWeaponLayer = "Default"; // Layer for mounted weapons (non-interactable)
     
     [Header("Part Preview")]
@@ -32,6 +42,9 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     private int originalWeaponLayer = 0; // Store original layer to restore later
     [SerializeField] private string interactableLayerName = "Interactable";
     private bool isCreatingWeapon = false; // Flag to prevent input conflicts
+    
+    [Header("Interaction Labels")]
+    [SerializeField] private WorkbenchInteractionLabels interactionLabels = new();
     
     private void Start()
     {
@@ -90,8 +103,8 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         // Show welding UI if holding blowtorch and looking at workbench with unwelded barrel
         if (blowtorch != null && isLookingAtWorkbench && unweldedBarrel != null)
         {
-            // Start welding on LMB
-            if (Input.GetMouseButton(0))
+            bool weldInputActive = IsWeldInputHeld(blowtorch);
+            if (weldInputActive)
             {
                 blowtorch.StartWorking(blowtorchWorkPosition);
                 
@@ -654,40 +667,58 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
 
         ItemPickup heldItem = handler.CurrentItem;
+        Blowtorch heldBlowtorch = heldItem != null ? heldItem.GetComponent<Blowtorch>() : null;
         string label = null;
+        string optionId = null;
 
         if (mountedWeapon == null && heldItem == null)
         {
-            label = "create new gun";
+            label = string.IsNullOrEmpty(interactionLabels.emptyHands) ? "create new gun" : interactionLabels.emptyHands;
+            optionId = "workbench.create";
         }
         else if (mountedWeapon == null && heldItem != null && heldItem.GetComponent<WeaponBody>() != null)
         {
-            label = "place gun";
+            label = string.IsNullOrEmpty(interactionLabels.placeGun) ? "place gun" : interactionLabels.placeGun;
+            optionId = "workbench.place";
         }
         else if (mountedWeapon != null && heldItem == null)
         {
-            label = "take gun";
+            label = string.IsNullOrEmpty(interactionLabels.takeGun) ? "take gun" : interactionLabels.takeGun;
+            optionId = "workbench.take";
         }
         else if (mountedWeapon != null && heldItem != null && heldItem.GetComponent<WeaponPart>() != null)
         {
-            label = "install part";
+            label = string.IsNullOrEmpty(interactionLabels.installPart) ? "install part" : interactionLabels.installPart;
+            optionId = "workbench.install";
         }
-        else if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
+        else if (heldBlowtorch != null)
         {
             if (FindUnweldedBarrel() != null)
             {
-                label = "weld";
+                label = string.IsNullOrEmpty(interactionLabels.weld) ? "weld" : interactionLabels.weld;
+                optionId = "workbench.weld";
             }
         }
 
         if (!string.IsNullOrEmpty(label))
         {
             bool available = CanInteract(handler);
+            if (!available)
+            {
+                return;
+            }
+
+            KeyCode optionKey = handler.InteractKey;
+            if (optionId == "workbench.weld" && heldBlowtorch != null)
+            {
+                optionKey = heldBlowtorch.WeldKey != KeyCode.None ? heldBlowtorch.WeldKey : handler.InteractKey;
+            }
+
             options.Add(InteractionOption.Primary(
-                id: $"workbench.{label.Replace(" ", string.Empty).ToLowerInvariant()}",
+                id: optionId ?? "workbench.generic",
                 label: label,
-                key: handler.InteractKey,
-                isAvailable: available,
+                key: optionKey,
+                isAvailable: true,
                 callback: h => h.PerformInteraction(this)));
         }
     }
@@ -699,11 +730,10 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         
         ItemPickup heldItem = player.CurrentItem;
         
-        // Check if holding blowtorch - don't block interaction, just return false to allow welding
+        // Check for blowtorch - don't block interaction, just return false to allow welding
         if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
         {
-            // Don't interact with E key when holding blowtorch
-            // Welding is handled by HandleWelding() with LMB
+            // Don't interact with dedicated weld key when holding blowtorch
             return false;
         }
         
@@ -758,10 +788,14 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         // 5. Holding blowtorch and there's unwelded barrel (for welding)
         
         // Check for blowtorch - allow interaction for welding
-        if (heldItem != null && heldItem.GetComponent<Blowtorch>() != null)
+        if (heldItem != null)
         {
-            // Can interact if there's an unwelded barrel
-            return FindUnweldedBarrel() != null;
+            Blowtorch blowtorch = heldItem.GetComponent<Blowtorch>();
+            if (blowtorch != null)
+            {
+                // Can interact if there's an unwelded barrel
+                return FindUnweldedBarrel() != null;
+            }
         }
         
         // Allow creating new weapon if workbench is empty and hands are empty
@@ -800,7 +834,8 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
             Blowtorch blowtorch = heldItem.GetComponent<Blowtorch>();
             if (blowtorch != null && FindUnweldedBarrel() != null)
             {
-                return "Weld Barrel (Hold LMB)";
+                string keyLabel = GetKeyDisplay(blowtorch.WeldKey);
+                return $"Hold {keyLabel} to Weld";
             }
         }
         
@@ -873,5 +908,37 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     // Properties
     public bool HasWeapon => mountedWeapon != null;
     public WeaponBody MountedWeapon => mountedWeapon;
+
+    private static string GetKeyDisplay(KeyCode key)
+    {
+        switch (key)
+        {
+            case KeyCode.None:
+            case KeyCode.Mouse0:
+                return "LMB";
+            case KeyCode.Mouse1:
+                return "RMB";
+            case KeyCode.Mouse2:
+                return "MMB";
+            default:
+                return key.ToString().ToUpperInvariant();
+        }
+    }
+
+    private bool IsWeldInputHeld(Blowtorch blowtorch)
+    {
+        if (blowtorch == null)
+        {
+            return false;
+        }
+
+        KeyCode weldKey = blowtorch.WeldKey;
+        if (weldKey == KeyCode.None)
+        {
+            return Input.GetMouseButton(0);
+        }
+
+        return Input.GetKey(weldKey);
+    }
 }
 

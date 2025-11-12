@@ -11,6 +11,11 @@ public class WeaponSellModal : MonoBehaviour
     [SerializeField] private CanvasGroup rootCanvasGroup;
     [SerializeField] private Button closeButton;
 
+    [Header("Canvas")] 
+    [SerializeField] private Canvas modalCanvas;
+    [SerializeField] private bool overrideSorting = true;
+    [SerializeField] private int sortingOrder = 300;
+
     [Header("Content")]
     [SerializeField] private TextMeshProUGUI titleLabel;
     [SerializeField] private TextMeshProUGUI weaponNameLabel;
@@ -29,6 +34,10 @@ public class WeaponSellModal : MonoBehaviour
     private readonly List<WeaponStatRowUI> activeRows = new();
     private readonly List<WeaponStatRowUI> pooledRows = new();
 
+    private int originalSortingOrder;
+    private bool originalOverrideSorting;
+    private bool originalCanvasEnabled;
+
     private Action<WeaponRecord> onConfirm;
     private Action onCancelled;
     private WeaponRecord currentRecord;
@@ -44,6 +53,18 @@ public class WeaponSellModal : MonoBehaviour
         if (sellButton != null)
         {
             sellButton.onClick.AddListener(HandleSellClicked);
+        }
+
+        if (modalCanvas == null)
+        {
+            modalCanvas = GetComponentInParent<Canvas>();
+        }
+
+        if (modalCanvas != null)
+        {
+            originalSortingOrder = modalCanvas.sortingOrder;
+            originalOverrideSorting = modalCanvas.overrideSorting;
+            originalCanvasEnabled = modalCanvas.enabled;
         }
 
         SetVisible(false);
@@ -172,6 +193,33 @@ public class WeaponSellModal : MonoBehaviour
     private void SetVisible(bool visible)
     {
         isVisible = visible;
+
+        if (modalCanvas != null)
+        {
+            if (visible)
+            {
+                if (!modalCanvas.enabled)
+                {
+                    modalCanvas.enabled = true;
+                }
+
+                if (overrideSorting)
+                {
+                    modalCanvas.overrideSorting = true;
+                    modalCanvas.sortingOrder = sortingOrder;
+                }
+            }
+            else
+            {
+                if (overrideSorting)
+                {
+                    modalCanvas.overrideSorting = originalOverrideSorting;
+                    modalCanvas.sortingOrder = originalSortingOrder;
+                }
+
+                modalCanvas.enabled = originalCanvasEnabled;
+            }
+        }
 
         if (rootCanvasGroup != null)
         {

@@ -14,11 +14,16 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private GameObject crosshairRoot;
 
     [Header("Indicators")]
+    [SerializeField] private GameObject moneyBackgroundRoot;
     [SerializeField] private TextMeshProUGUI moneyLabel;
-    [SerializeField] private TextMeshProUGUI ammoLabel;
+    [SerializeField] private GameObject ammoBackgroundRoot;
+    [SerializeField] private TextMeshProUGUI ammoCurrentLabel;
+    [SerializeField] private TextMeshProUGUI ammoMaxLabel;
     [SerializeField] private string moneyFormat = "{0:n0}$";
-    [SerializeField] private string ammoFormat = "{0}/{1}";
-    [SerializeField] private string ammoUnavailableText = "--/--";
+    [SerializeField] private string ammoCurrentFormat = "{0}";
+    [SerializeField] private string ammoMaxFormat = "{0}";
+    [SerializeField] private string ammoUnavailableCurrentText = "--";
+    [SerializeField] private string ammoUnavailableMaxText = "--";
 
     [Header("Interaction")]
     [SerializeField] private HUDInteractionPanel interactionPanel;
@@ -53,16 +58,13 @@ public class GameplayHUD : MonoBehaviour
     private void OnEnable()
     {
         TryConnectMoneySystem();
+
+        GameplayUIContext.Instance.RegisterHud(this);
     }
 
     private void OnDisable()
     {
         DisconnectMoneySystem();
-
-        if (GameplayUIContext.HasInstance)
-        {
-            GameplayUIContext.Instance.UnregisterHud(this);
-        }
     }
 
     private void OnDestroy()
@@ -70,6 +72,11 @@ public class GameplayHUD : MonoBehaviour
         if (Instance == this)
         {
             Instance = null;
+        }
+
+        if (GameplayUIContext.HasInstance)
+        {
+            GameplayUIContext.Instance.UnregisterHud(this);
         }
     }
 
@@ -87,7 +94,7 @@ public class GameplayHUD : MonoBehaviour
     {
         hudVisible = visible;
 
-        if (root != null)
+        if (root != null && root != gameObject)
         {
             root.SetActive(visible);
         }
@@ -122,27 +129,56 @@ public class GameplayHUD : MonoBehaviour
     public void SetMoney(int amount)
     {
         if (moneyLabel == null) return;
+
         moneyLabel.text = string.Format(moneyFormat, Mathf.Max(0, amount));
+
+        if (moneyBackgroundRoot != null && !moneyBackgroundRoot.activeSelf)
+        {
+            moneyBackgroundRoot.SetActive(true);
+        }
     }
 
     public void SetAmmo(int current, int max)
     {
-        if (ammoLabel == null) return;
-
-        if (max <= 0)
+        if (ammoCurrentLabel == null || ammoMaxLabel == null)
         {
-            ammoLabel.text = ammoUnavailableText;
+            return;
+        }
+
+        bool hasWeapon = max > 0;
+        if (ammoBackgroundRoot != null)
+        {
+            ammoBackgroundRoot.SetActive(hasWeapon);
+        }
+
+        if (!hasWeapon)
+        {
+            ammoCurrentLabel.text = ammoUnavailableCurrentText;
+            ammoMaxLabel.text = ammoUnavailableMaxText;
             return;
         }
 
         current = Mathf.Clamp(current, 0, max);
-        ammoLabel.text = string.Format(ammoFormat, current, max);
+        ammoCurrentLabel.text = string.Format(ammoCurrentFormat, current);
+        ammoMaxLabel.text = string.Format(ammoMaxFormat, max);
     }
 
     public void ClearAmmo()
     {
-        if (ammoLabel == null) return;
-        ammoLabel.text = ammoUnavailableText;
+        if (ammoCurrentLabel != null)
+        {
+            ammoCurrentLabel.text = ammoUnavailableCurrentText;
+        }
+
+        if (ammoMaxLabel != null)
+        {
+            ammoMaxLabel.text = ammoUnavailableMaxText;
+        }
+
+        if (ammoBackgroundRoot != null)
+        {
+            ammoBackgroundRoot.SetActive(false);
+        }
     }
 
     private void TryConnectMoneySystem()

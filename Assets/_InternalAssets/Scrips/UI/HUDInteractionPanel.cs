@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class HUDInteractionPanel : MonoBehaviour
 {
@@ -12,6 +13,8 @@ public class HUDInteractionPanel : MonoBehaviour
     private readonly List<InteractionOption> currentOptions = new();
 
     private InteractionHandler boundHandler;
+
+    private RectTransform ContainerRectTransform => (container ?? transform) as RectTransform;
 
     private void Awake()
     {
@@ -38,7 +41,20 @@ public class HUDInteractionPanel : MonoBehaviour
             return;
         }
 
-        currentOptions.AddRange(options);
+        for (int i = 0; i < options.Count; i++)
+        {
+            if (options[i].IsAvailable)
+            {
+                currentOptions.Add(options[i]);
+            }
+        }
+
+        if (currentOptions.Count == 0)
+        {
+            Hide();
+            return;
+        }
+
         EnsureButtonCount(currentOptions.Count);
 
         for (int i = 0; i < currentOptions.Count; i++)
@@ -46,6 +62,7 @@ public class HUDInteractionPanel : MonoBehaviour
             InteractionOption option = currentOptions[i];
             InteractionButtonView view = activeButtons[i];
             view.gameObject.SetActive(true);
+            view.transform.SetSiblingIndex(i);
             view.Configure(option, boundHandler);
         }
 
@@ -53,6 +70,8 @@ public class HUDInteractionPanel : MonoBehaviour
         {
             root.SetActive(true);
         }
+
+        ForceContainerLayoutUpdate();
     }
 
     public void Hide()
@@ -92,6 +111,13 @@ public class HUDInteractionPanel : MonoBehaviour
                 view = Instantiate(buttonPrefab, container != null ? container : transform);
             }
 
+            Transform parentTransform = container != null ? container : transform;
+            if (view.transform.parent != parentTransform)
+            {
+                view.transform.SetParent(parentTransform, false);
+            }
+
+            view.transform.SetAsLastSibling();
             view.gameObject.SetActive(true);
             activeButtons.Add(view);
         }
@@ -102,6 +128,17 @@ public class HUDInteractionPanel : MonoBehaviour
             view.gameObject.SetActive(false);
             pooledButtons.Add(view);
             activeButtons.RemoveAt(i);
+        }
+    }
+
+    private void ForceContainerLayoutUpdate()
+    {
+        RectTransform rectTransform = ContainerRectTransform;
+        if (rectTransform != null)
+        {
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+            Canvas.ForceUpdateCanvases();
         }
     }
 }
