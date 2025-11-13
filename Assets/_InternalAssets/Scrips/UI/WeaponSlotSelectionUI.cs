@@ -21,6 +21,10 @@ public class WeaponSlotSelectionUI : MonoBehaviour
     [Header("Name Modal")]
     [SerializeField] private GunNameModal gunNameModal;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource uiAudioSource;
+    [SerializeField] private AudioClip clickSound;
+
     [Header("Text")]
     [SerializeField] private string headerText = "choose slot";
 
@@ -45,7 +49,7 @@ public class WeaponSlotSelectionUI : MonoBehaviour
     {
         if (closeButton != null)
         {
-            closeButton.onClick.AddListener(CancelFlow);
+            closeButton.onClick.AddListener(HandleCloseButtonClicked);
         }
 
         if (headerLabel != null)
@@ -53,14 +57,20 @@ public class WeaponSlotSelectionUI : MonoBehaviour
             headerLabel.text = headerText;
         }
 
+        ConfigureNameModalAudio();
         HideImmediate();
+    }
+
+    private void OnEnable()
+    {
+        ConfigureNameModalAudio();
     }
 
     private void OnDestroy()
     {
         if (closeButton != null)
         {
-            closeButton.onClick.RemoveListener(CancelFlow);
+            closeButton.onClick.RemoveListener(HandleCloseButtonClicked);
         }
 
         UnsubscribeFromSlotManager();
@@ -163,6 +173,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
         Hide();
     }
 
+    private void HandleCloseButtonClicked()
+    {
+        PlayClickSound();
+        CancelFlow();
+    }
+
     private void RefreshSlots()
     {
         if (!isActive) return;
@@ -197,7 +213,7 @@ public class WeaponSlotSelectionUI : MonoBehaviour
             WeaponRecord record = manager.GetRecord(i);
             string weaponName = record?.WeaponName ?? string.Empty;
 
-            entry.Setup(i, state, weaponName, HandleSlotClicked);
+            entry.Setup(i, state, weaponName, HandleSlotClicked, PlayClickSound);
         }
 
         if (counterLabel != null)
@@ -378,5 +394,34 @@ public class WeaponSlotSelectionUI : MonoBehaviour
             fpsController.enabled = true;
         }
     }
+
+    private void ConfigureNameModalAudio()
+    {
+        if (gunNameModal != null)
+        {
+            gunNameModal.ConfigureClickAudio(uiAudioSource, clickSound);
+        }
+    }
+
+    private void PlayClickSound()
+    {
+        if (clickSound == null) return;
+
+        if (uiAudioSource != null)
+        {
+            uiAudioSource.PlayOneShot(clickSound);
+        }
+        else
+        {
+            AudioSource.PlayClipAtPoint(clickSound, transform.position);
+        }
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ConfigureNameModalAudio();
+    }
+#endif
 }
 

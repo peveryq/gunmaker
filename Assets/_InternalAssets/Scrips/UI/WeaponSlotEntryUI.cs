@@ -15,6 +15,7 @@ public class WeaponSlotEntryUI : MonoBehaviour
     private int slotIndex;
     private WeaponSlotState currentState;
     private Action<int, WeaponSlotState> onClicked;
+    private Action onClickSound;
 
     private void Awake()
     {
@@ -32,11 +33,17 @@ public class WeaponSlotEntryUI : MonoBehaviour
         }
     }
 
-    public void Setup(int index, WeaponSlotState state, string weaponName, Action<int, WeaponSlotState> clickCallback)
+    public void Setup(
+        int index,
+        WeaponSlotState state,
+        string weaponName,
+        Action<int, WeaponSlotState> clickCallback,
+        Action onClickSoundCallback = null)
     {
         slotIndex = index;
         currentState = state;
         onClicked = clickCallback;
+        onClickSound = onClickSoundCallback;
 
         UpdateVisuals(weaponName);
     }
@@ -83,6 +90,7 @@ public class WeaponSlotEntryUI : MonoBehaviour
     private void OnButtonClicked()
     {
         if (currentState == WeaponSlotState.Hidden) return;
+        onClickSound?.Invoke();
         onClicked?.Invoke(slotIndex, currentState);
     }
 }

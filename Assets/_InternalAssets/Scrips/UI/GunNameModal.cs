@@ -13,6 +13,10 @@ public class GunNameModal : MonoBehaviour
     [SerializeField] private Button createButton;
     [SerializeField] private Button closeButton;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource defaultAudioSource;
+    [SerializeField] private AudioClip defaultClickSound;
+
     [Header("Settings")]
     [SerializeField] private string headerText = "enter gun name";
     [SerializeField] private string subtitleText = "from 1 to 15 characters";
@@ -22,6 +26,8 @@ public class GunNameModal : MonoBehaviour
     private Action<string> onCreate;
     private Action onClose;
     private bool isActive;
+    private AudioSource clickAudioSource;
+    private AudioClip clickAudioClip;
 
     private void Awake()
     {
@@ -40,6 +46,7 @@ public class GunNameModal : MonoBehaviour
             nameInputField.onValueChanged.AddListener(HandleInputChanged);
         }
 
+        InitializeClickAudio();
         ApplyStaticLabels();
         SetActive(false);
     }
@@ -88,6 +95,12 @@ public class GunNameModal : MonoBehaviour
     public void Hide()
     {
         SetActive(false);
+    }
+
+    public void ConfigureClickAudio(AudioSource audioSource, AudioClip audioClip)
+    {
+        clickAudioSource = audioSource != null ? audioSource : defaultAudioSource;
+        clickAudioClip = audioClip != null ? audioClip : defaultClickSound;
     }
 
     private void SetActive(bool active)
@@ -151,6 +164,7 @@ public class GunNameModal : MonoBehaviour
         string value = nameInputField.text.Trim();
         if (value.Length == 0) return;
 
+        PlayClickSound();
         onCreate?.Invoke(value);
     }
 
@@ -158,6 +172,7 @@ public class GunNameModal : MonoBehaviour
     {
         if (!isActive) return;
 
+        PlayClickSound();
         onClose?.Invoke();
     }
 
@@ -168,5 +183,26 @@ public class GunNameModal : MonoBehaviour
         string value = nameInputField.text.Trim();
         createButton.interactable = value.Length > 0 && value.Length <= maxCharacters;
     }
+
+    private void InitializeClickAudio()
+    {
+        clickAudioSource = defaultAudioSource;
+        clickAudioClip = defaultClickSound;
+    }
+
+    private void PlayClickSound()
+    {
+        if (clickAudioClip == null) return;
+
+        if (clickAudioSource != null)
+        {
+            clickAudioSource.PlayOneShot(clickAudioClip);
+        }
+        else
+        {
+            AudioSource.PlayClipAtPoint(clickAudioClip, transform.position);
+        }
+    }
+
 }
 

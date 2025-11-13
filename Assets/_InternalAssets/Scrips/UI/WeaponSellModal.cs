@@ -26,6 +26,10 @@ public class WeaponSellModal : MonoBehaviour
     [SerializeField] private Color statsValueColor = Color.white;
     [SerializeField] private Color statsDeltaColor = Color.white;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource clickAudioSource;
+    [SerializeField] private AudioClip clickAudioClip;
+
     private readonly List<WeaponStatRowUI> activeRows = new();
     private readonly List<WeaponStatRowUI> pooledRows = new();
 
@@ -153,6 +157,8 @@ public class WeaponSellModal : MonoBehaviour
     {
         if (!isVisible) return;
 
+        PlayClickSound();
+
         if (currentRecord != null)
         {
             onConfirm?.Invoke(currentRecord);
@@ -164,6 +170,8 @@ public class WeaponSellModal : MonoBehaviour
     private void HandleCloseClicked()
     {
         if (!isVisible) return;
+
+        PlayClickSound();
 
         onCancelled?.Invoke();
         Hide();
@@ -270,6 +278,20 @@ public class WeaponSellModal : MonoBehaviour
         }
 
         return value.ToString("0.##");
+    }
+
+    private void PlayClickSound()
+    {
+        if (clickAudioClip == null) return;
+
+        if (clickAudioSource != null)
+        {
+            clickAudioSource.PlayOneShot(clickAudioClip);
+        }
+        else
+        {
+            AudioSource.PlayClipAtPoint(clickAudioClip, transform.position);
+        }
     }
 }
 
