@@ -23,12 +23,12 @@
 |--------|-------------|-----------|
 | Modular weapon assembly | `WeaponBody`, `WeaponPart`, `PartTypeDefaultSettings` | Runtime swapping of meshes, stat aggregation, per-part cost tracking |
 | Welding gameplay | `Blowtorch`, `WeldingSystem`, `WeldingUI` | Event-driven transitions, pooled VFX |
-| Ballistics & impact FX | `WeaponController`, `Bullet`, `BulletHoleManager` | Bullet holes pooled for WebGL friendliness |
+| Ballistics & impact FX | `WeaponController`, `Bullet`, `BulletHoleManager` | Bullet holes pooled for WebGL friendliness; reload now coroutine-driven with cancellation and HUD update events |
 
 ### HUD & UX Layer (2025 Update)
 | Subsystem | Files | Summary |
 |-----------|-------|---------|
-| Gameplay HUD | `GameplayHUD`, `GameplayUIContext` | Singleton HUD group for crosshair, money, ammo, interaction buttons; hide/show via requester tokens |
+| Gameplay HUD | `GameplayHUD`, `GameplayUIContext` | Singleton HUD group for crosshair, money, ammo, reload indicator (fill + spinner), interaction buttons; hide/show via requester tokens |
 | Interaction buttons | `HUDInteractionPanel`, `InteractionButtonView`, `InteractionOption` | Pooled UI buttons fed by `IInteractionOptionsProvider` implementations |
 | Economy display | `GameplayHUD`, `MoneySystem`, `WeaponController` | Money/ammo events drive HUD labels, controller subscribe/unsubscribe |
 
@@ -115,6 +115,7 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 ## Quality Summary
 - **Architecture:** Loose coupling between offering generator, UI, and spawner; interaction/UI surface via `IInteractionOptionsProvider` contracts.
 - **Robustness:** Null checks on all inspector references; guarded coroutine usage; shop gracefully handles missing config entries.
+- **Reload UX:** Coroutine-driven reload flow cancels when the weapon leaves the player and streams progress events to the HUD.
 - **UX polish:** HUD hides automatically when fullscreen UI captures control; locker preview appears with door animation prior to UI reveal.
 - **Testing hooks:** `ShopOfferingGenerator.RemoveOffering` allows deterministic test scenarios; HUD visibility toggles via `GameplayUIContext` requests.
 - **Documentation cleanup:** Legacy temporary markdown files removed; setup guide kept canonical.
@@ -175,10 +176,10 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 - **Camera control:** `LockerCameraController` detaches the camera, hides child visuals, animates to `lockerViewPoint` via `AnimationCurve`, delays UI until arrival, and restores HUD/control on exit.
 
 ### Appendix F – Gameplay HUD Integration
-- `GameplayHUD` root canvas holds crosshair, ammo, money, and interaction panel; enable/disable subjects through `SetVisible`/`SetCrosshairVisible`.
+- `GameplayHUD` root canvas holds crosshair, money, ammo, reload indicator (fill bar + spinner), and interaction panel; enable/disable subjects through `SetVisible`/`SetCrosshairVisible`.
 - `GameplayUIContext` tracks hide requests via tokenised HashSet; locker, shop, slot UI call `RequestHudHidden(this)`/`ReleaseHud(this)`.
 - `HUDInteractionPanel` pools `InteractionButtonView` instances; `InteractionHandler` pushes option sets each frame when gaze target changes.
-- `WeaponController` and `MoneySystem` push updates through `OnAmmoChanged`/`OnMoneyChanged` events, keeping labels live without polling.
+- `WeaponController` emits `AmmoChanged`, `ReloadStateChanged`, and `ReloadProgressChanged`; `InteractionHandler` relays these to the HUD for instant UI updates.
 
 ---
 
@@ -194,8 +195,10 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 9. Implemented locker storage pipeline with stashing, selling, and cinematic inspection view
 10. Upgraded `WeaponStatsUI` to split columns, preview deltas, and support world-space panels
 11. Introduced Gameplay HUD + interaction options system; locker camera migrated to custom coroutine animation
+12. Reworked `WeaponController` reload to coroutine flow with cancellation, HUD events, and sound timing
+13. Added HUD reload progress bar/spinner, ammo icon swapping, and shared UI click sounds for slot/sell flows
 
 ---
 
-_Last updated: 12 Nov 2025_
+_Last updated: 13 Nov 2025_
 
