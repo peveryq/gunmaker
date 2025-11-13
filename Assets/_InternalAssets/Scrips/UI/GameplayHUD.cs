@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameplayHUD : MonoBehaviour
 {
@@ -19,11 +20,18 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private GameObject ammoBackgroundRoot;
     [SerializeField] private TextMeshProUGUI ammoCurrentLabel;
     [SerializeField] private TextMeshProUGUI ammoMaxLabel;
+    [SerializeField] private GameObject ammoIconRoot;
     [SerializeField] private string moneyFormat = "{0:n0}$";
     [SerializeField] private string ammoCurrentFormat = "{0}";
     [SerializeField] private string ammoMaxFormat = "{0}";
     [SerializeField] private string ammoUnavailableCurrentText = "--";
     [SerializeField] private string ammoUnavailableMaxText = "--";
+
+    [Header("Reload Indicator")]
+    [SerializeField] private GameObject reloadRoot;
+    [SerializeField] private Image reloadFillImage;
+    [SerializeField] private Image reloadSpinnerImage;
+    [SerializeField] private float reloadSpinnerSpeed = 180f;
 
     [Header("Interaction")]
     [SerializeField] private HUDInteractionPanel interactionPanel;
@@ -31,6 +39,10 @@ public class GameplayHUD : MonoBehaviour
     private MoneySystem moneySystem;
     private bool hudVisible = true;
     private bool crosshairVisible = true;
+    private bool reloadIndicatorVisible;
+    private Quaternion reloadSpinnerInitialRotation;
+    private bool reloadSpinnerInitialized;
+    private bool hasWeaponEquipped;
 
     private void Awake()
     {
@@ -52,6 +64,8 @@ public class GameplayHUD : MonoBehaviour
             interactionPanel.Hide();
         }
 
+        CacheReloadSpinnerRotation();
+        SetReloadState(false);
         ClearAmmo();
     }
 
@@ -85,6 +99,17 @@ public class GameplayHUD : MonoBehaviour
         if (moneySystem == null)
         {
             TryConnectMoneySystem();
+        }
+
+        if (reloadIndicatorVisible && reloadSpinnerImage != null && !Mathf.Approximately(reloadSpinnerSpeed, 0f))
+        {
+            float delta = Time.deltaTime;
+            if (delta <= 0f)
+            {
+                delta = Time.unscaledDeltaTime;
+            }
+
+            reloadSpinnerImage.rectTransform.Rotate(0f, 0f, -reloadSpinnerSpeed * delta);
         }
     }
 
@@ -146,6 +171,7 @@ public class GameplayHUD : MonoBehaviour
         }
 
         bool hasWeapon = max > 0;
+        hasWeaponEquipped = hasWeapon;
         if (ammoBackgroundRoot != null)
         {
             ammoBackgroundRoot.SetActive(hasWeapon);
@@ -155,16 +181,19 @@ public class GameplayHUD : MonoBehaviour
         {
             ammoCurrentLabel.text = ammoUnavailableCurrentText;
             ammoMaxLabel.text = ammoUnavailableMaxText;
+            SetReloadState(false);
             return;
         }
 
         current = Mathf.Clamp(current, 0, max);
         ammoCurrentLabel.text = string.Format(ammoCurrentFormat, current);
         ammoMaxLabel.text = string.Format(ammoMaxFormat, max);
+        UpdateAmmoIconVisibility();
     }
 
     public void ClearAmmo()
     {
+        hasWeaponEquipped = false;
         if (ammoCurrentLabel != null)
         {
             ammoCurrentLabel.text = ammoUnavailableCurrentText;
@@ -178,6 +207,73 @@ public class GameplayHUD : MonoBehaviour
         if (ammoBackgroundRoot != null)
         {
             ammoBackgroundRoot.SetActive(false);
+        }
+
+        SetReloadState(false);
+    }
+
+    public void SetReloadState(bool active)
+    {
+        CacheReloadSpinnerRotation();
+
+        reloadIndicatorVisible = active;
+        UpdateAmmoIconVisibility();
+
+        if (reloadRoot != null && reloadRoot.activeSelf != active)
+        {
+            reloadRoot.SetActive(active);
+        }
+
+        if (!active)
+        {
+            if (reloadFillImage != null)
+            {
+                reloadFillImage.fillAmount = 0f;
+            }
+
+            ResetReloadSpinnerRotation();
+        }
+    }
+
+    public void SetReloadProgress(float progress)
+    {
+        if (reloadFillImage == null)
+        {
+            return;
+        }
+
+        reloadFillImage.fillAmount = Mathf.Clamp01(progress);
+    }
+
+    private void UpdateAmmoIconVisibility()
+    {
+        bool showBulletIcon = hasWeaponEquipped && !reloadIndicatorVisible;
+
+        if (ammoIconRoot != null)
+        {
+            ammoIconRoot.SetActive(showBulletIcon);
+        }
+
+        if (reloadSpinnerImage != null)
+        {
+            reloadSpinnerImage.gameObject.SetActive(reloadIndicatorVisible);
+        }
+    }
+
+    private void CacheReloadSpinnerRotation()
+    {
+        if (reloadSpinnerImage != null && !reloadSpinnerInitialized)
+        {
+            reloadSpinnerInitialRotation = reloadSpinnerImage.rectTransform.localRotation;
+            reloadSpinnerInitialized = true;
+        }
+    }
+
+    private void ResetReloadSpinnerRotation()
+    {
+        if (reloadSpinnerImage != null && reloadSpinnerInitialized)
+        {
+            reloadSpinnerImage.rectTransform.localRotation = reloadSpinnerInitialRotation;
         }
     }
 

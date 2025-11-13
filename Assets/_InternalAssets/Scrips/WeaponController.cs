@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -29,6 +30,8 @@ public class WeaponController : MonoBehaviour
     private int currentAmmo;
     private float nextFireTime = 0f;
     private bool isReloading = false;
+    private Coroutine reloadCoroutine;
+    private float reloadProgress;
     
     private Vector3 originalLocalPosition;
     private Vector3 recoilOffset = Vector3.zero;
@@ -45,6 +48,8 @@ public class WeaponController : MonoBehaviour
     private float swayTimer = 0f;
 
     public event Action<int, int> AmmoChanged;
+    public event Action<bool> ReloadStateChanged;
+    public event Action<float> ReloadProgressChanged;
 
     private void NotifyAmmoChanged()
     {
@@ -170,6 +175,8 @@ public class WeaponController : MonoBehaviour
     
     public void Unequip()
     {
+        CancelReload();
+
         // Restore default FOV before unequipping
         if (playerCamera != null && defaultFOV > 0)
         {
@@ -258,6 +265,7 @@ public class WeaponController : MonoBehaviour
 
     public void SetSettings(WeaponSettings newSettings)
     {
+        CancelReload();
         settings = newSettings;
 
         if (settings == null)
@@ -407,45 +415,119 @@ public class WeaponController : MonoBehaviour
     
     private void StartReload()
     {
-        // Check if weapon can reload (has magazine)
         WeaponBody weaponBody = GetComponent<WeaponBody>();
         if (weaponBody != null && !weaponBody.CanReload())
         {
             PlaySound(settings.emptySound);
             return;
         }
-        
-        if (isReloading || currentAmmo >= settings.magSize) return;
-        
+
+        if (!isEquipped || isReloading || settings == null || currentAmmo >= settings.magSize)
+        {
+            return;
+        }
+
+        if (reloadCoroutine != null)
+        {
+            StopCoroutine(reloadCoroutine);
+            reloadCoroutine = null;
+        }
+
         isReloading = true;
-        
-        // Play reload start sound
+        hasPlayedEmptySound = false;
+
+        ReloadStateChanged?.Invoke(true);
+        UpdateReloadProgress(0f);
+
         PlaySound(settings.reloadStartSound);
-        
-        // Schedule reload end sound to play just before reload finishes
+
+        float duration = Mathf.Max(settings.reloadTime, 0f);
+        if (duration <= Mathf.Epsilon)
+        {
+            FinishReload();
+            return;
+        }
+
+        reloadCoroutine = StartCoroutine(ReloadRoutine(duration));
+    }
+
+    private IEnumerator ReloadRoutine(float duration)
+    {
+        float elapsed = 0f;
+        bool playedEndSound = settings.reloadEndSound == null;
+        float endSoundTriggerTime = 0f;
+
         if (settings.reloadEndSound != null)
         {
-            float endSoundDelay = settings.reloadTime - settings.reloadEndSound.length;
-            // Ensure delay is not negative
-            endSoundDelay = Mathf.Max(endSoundDelay, 0f);
-            Invoke(nameof(PlayReloadEndSound), endSoundDelay);
+            endSoundTriggerTime = Mathf.Max(duration - settings.reloadEndSound.length, 0f);
         }
-        
-        // Schedule reload finish
-        Invoke(nameof(FinishReload), settings.reloadTime);
+
+        while (elapsed < duration)
+        {
+            if (!isEquipped)
+            {
+                reloadCoroutine = null;
+                ResetReloadState(false);
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            UpdateReloadProgress(elapsed / duration);
+
+            if (!playedEndSound && elapsed >= endSoundTriggerTime)
+            {
+                PlaySound(settings.reloadEndSound);
+                playedEndSound = true;
+            }
+
+            yield return null;
+        }
+
+        reloadCoroutine = null;
+        FinishReload();
     }
-    
-    private void PlayReloadEndSound()
+
+    public void CancelReload()
     {
-        PlaySound(settings.reloadEndSound);
+        if (!isReloading)
+        {
+            return;
+        }
+
+        if (reloadCoroutine != null)
+        {
+            StopCoroutine(reloadCoroutine);
+            reloadCoroutine = null;
+        }
+
+        ResetReloadState(false);
     }
-    
+
     private void FinishReload()
     {
+        if (!isReloading)
+        {
+            return;
+        }
+
         currentAmmo = settings.magSize;
-        isReloading = false;
-        hasPlayedEmptySound = false; // Reset flag after reload
         NotifyAmmoChanged();
+        ResetReloadState(true);
+    }
+
+    private void ResetReloadState(bool completed)
+    {
+        isReloading = false;
+        hasPlayedEmptySound = false;
+        reloadCoroutine = null;
+        UpdateReloadProgress(completed ? 1f : 0f);
+        ReloadStateChanged?.Invoke(false);
+    }
+
+    private void UpdateReloadProgress(float value)
+    {
+        reloadProgress = Mathf.Clamp01(value);
+        ReloadProgressChanged?.Invoke(reloadProgress);
     }
     
     private void HandleWeaponSway()
@@ -516,6 +598,11 @@ public class WeaponController : MonoBehaviour
         // Update original position based on aiming state (for recoil calculations)
         originalLocalPosition = targetPosition;
     }
+
+    private void OnDisable()
+    {
+        CancelReload();
+    }
     
     private void PlaySound(AudioClip clip)
     {
@@ -548,4 +635,5 @@ public class WeaponController : MonoBehaviour
     public int CurrentAmmo => currentAmmo;
     public int MaxAmmo => settings != null ? settings.magSize : 0;
     public bool IsReloading => isReloading;
+    public float ReloadProgress => reloadProgress;
 }

@@ -431,7 +431,14 @@ public class InteractionHandler : MonoBehaviour
         DetachWeaponController();
         currentWeaponController = weapon;
         currentWeaponController.AmmoChanged += HandleAmmoChanged;
+        currentWeaponController.ReloadStateChanged += HandleReloadStateChanged;
+        currentWeaponController.ReloadProgressChanged += HandleReloadProgressChanged;
         HandleAmmoChanged(currentWeaponController.CurrentAmmo, currentWeaponController.MaxAmmo);
+        HandleReloadStateChanged(currentWeaponController.IsReloading);
+        if (currentWeaponController.IsReloading)
+        {
+            HandleReloadProgressChanged(currentWeaponController.ReloadProgress);
+        }
     }
 
     private void DetachWeaponController()
@@ -439,6 +446,8 @@ public class InteractionHandler : MonoBehaviour
         if (currentWeaponController != null)
         {
             currentWeaponController.AmmoChanged -= HandleAmmoChanged;
+            currentWeaponController.ReloadStateChanged -= HandleReloadStateChanged;
+            currentWeaponController.ReloadProgressChanged -= HandleReloadProgressChanged;
             currentWeaponController = null;
         }
 
@@ -448,6 +457,16 @@ public class InteractionHandler : MonoBehaviour
     private void HandleAmmoChanged(int current, int max)
     {
         gameplayHud?.SetAmmo(current, max);
+    }
+
+    private void HandleReloadStateChanged(bool active)
+    {
+        gameplayHud?.SetReloadState(active);
+    }
+
+    private void HandleReloadProgressChanged(float progress)
+    {
+        gameplayHud?.SetReloadProgress(progress);
     }
 
     private void UpdateHudAmmo()
