@@ -40,20 +40,36 @@ public class Bullet : MonoBehaviour
         if (hasHit) return;
         hasHit = true;
         
-        // Spawn bullet hole using pooling system
-        if (collision.contacts.Length > 0)
+        ContactPoint contact = collision.contacts.Length > 0 ? collision.contacts[0] : default;
+        Vector3 hitPoint = contact.point;
+        Vector3 hitNormal = contact.normal;
+
+        if (collision.contacts.Length == 0 && collision.collider != null)
         {
-            ContactPoint contact = collision.contacts[0];
-            
+            hitPoint = collision.collider.ClosestPoint(transform.position);
+            Vector3 direction = rb != null && rb.linearVelocity != Vector3.zero
+                ? -rb.linearVelocity.normalized
+                : (transform.position - hitPoint).normalized;
+            hitNormal = direction;
+        }
+
+        bool handledByTarget = false;
+        if (collision.collider != null)
+        {
+            handledByTarget = TryHandleTargetHit(hitPoint, hitNormal, collision.collider);
+        }
+
+        if (!handledByTarget && collision.contacts.Length > 0)
+        {
             // Use BulletHoleManager if available
             if (BulletHoleManager.Instance != null)
             {
-                BulletHoleManager.Instance.SpawnBulletHole(contact.point, contact.normal, collision.transform);
+                BulletHoleManager.Instance.SpawnBulletHole(hitPoint, hitNormal, collision.transform);
             }
             else if (hitEffect != null)
             {
                 // Fallback to old system
-                Instantiate(hitEffect, contact.point, Quaternion.LookRotation(contact.normal));
+                Instantiate(hitEffect, hitPoint, Quaternion.LookRotation(hitNormal));
             }
         }
         
@@ -72,10 +88,14 @@ public class Bullet : MonoBehaviour
     {
         if (hasHit) return;
         hasHit = true;
-        
-        // For triggers, we don't have contact point/normal, so skip bullet hole
-        // Or use raycast to find hit point
-        
+
+        Vector3 hitPoint = other.ClosestPoint(transform.position);
+        Vector3 hitNormal = rb != null && rb.linearVelocity != Vector3.zero
+            ? -rb.linearVelocity.normalized
+            : -transform.forward;
+
+        bool handledByTarget = TryHandleTargetHit(hitPoint, hitNormal, other);
+
         // Apply damage if collision has health
         IDamageable damageable = other.gameObject.GetComponent<IDamageable>();
         if (damageable != null)
@@ -85,6 +105,41 @@ public class Bullet : MonoBehaviour
         
         // Destroy bullet
         Destroy(gameObject);
+    }
+
+    private bool TryHandleTargetHit(Vector3 point, Vector3 normal, Collider collider)
+    {
+        if (collider == null)
+        {
+            return false;
+        }
+
+        ShootingTargetZone zone = collider.GetComponent<ShootingTargetZone>();
+        if (zone == null)
+        {
+            zone = collider.GetComponentInParent<ShootingTargetZone>();
+        }
+
+        if (zone == null)
+        {
+            return false;
+        }
+
+        Vector3 resolvedNormal = normal;
+        if (resolvedNormal == Vector3.zero)
+        {
+            if (rb != null && rb.linearVelocity != Vector3.zero)
+            {
+                resolvedNormal = -rb.linearVelocity.normalized;
+            }
+            else
+            {
+                resolvedNormal = -transform.forward;
+            }
+        }
+
+        zone.ReportHit(point, resolvedNormal);
+        return true;
     }
 }
 

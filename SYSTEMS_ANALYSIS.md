@@ -24,6 +24,7 @@
 | Modular weapon assembly | `WeaponBody`, `WeaponPart`, `PartTypeDefaultSettings` | Runtime swapping of meshes, stat aggregation, per-part cost tracking |
 | Welding gameplay | `Blowtorch`, `WeldingSystem`, `WeldingUI` | Event-driven transitions, pooled VFX |
 | Ballistics & impact FX | `WeaponController`, `Bullet`, `BulletHoleManager` | Bullet holes pooled for WebGL friendliness; reload now coroutine-driven with cancellation and HUD update events |
+| Target practice | `ShootingTarget`, `ShootingTargetZone` | Configurable payouts, bullseye multipliers, optional fall/raise via animator, zone-specific audio/VFX |
 
 ### HUD & UX Layer (2025 Update)
 | Subsystem | Files | Summary |
@@ -117,6 +118,7 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 - **Robustness:** Null checks on all inspector references; guarded coroutine usage; shop gracefully handles missing config entries.
 - **Reload UX:** Coroutine-driven reload flow cancels when the weapon leaves the player and streams progress events to the HUD.
 - **UX polish:** HUD hides automatically when fullscreen UI captures control; locker preview appears with door animation prior to UI reveal.
+- **Training targets:** `ShootingTarget` suppresses payouts while down, pools per-zone VFX, and exposes animator triggers for fall/raise loops.
 - **Testing hooks:** `ShopOfferingGenerator.RemoveOffering` allows deterministic test scenarios; HUD visibility toggles via `GameplayUIContext` requests.
 - **Documentation cleanup:** Legacy temporary markdown files removed; setup guide kept canonical.
 
@@ -181,6 +183,12 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 - `HUDInteractionPanel` pools `InteractionButtonView` instances; `InteractionHandler` pushes option sets each frame when gaze target changes.
 - `WeaponController` emits `AmmoChanged`, `ReloadStateChanged`, and `ReloadProgressChanged`; `InteractionHandler` relays these to the HUD for instant UI updates.
 
+### Appendix G – Shooting Target Setup
+- Add `ShootingTarget` to the root of a target prefab; assign base reward, normal/bullseye multipliers, one or more audio clips, and optional `Animator`.
+- Child colliders carry `ShootingTargetZone` (set zone enum) to differentiate normal vs bullseye hits; both can share the same root collider hierarchy.
+- When `enableFalling` is true, set animator trigger names plus `timeDown` for how long the target stays lowered; payouts pause while `IsDown` when suppression is enabled.
+- Assign per-zone particle prefabs to reuse pooled instances for hit feedback; defaults fall back to `BulletHoleManager` behaviour for non-target surfaces.
+
 ---
 
 ## Change Log (since initial analysis)
@@ -197,6 +205,7 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 11. Introduced Gameplay HUD + interaction options system; locker camera migrated to custom coroutine animation
 12. Reworked `WeaponController` reload to coroutine flow with cancellation, HUD events, and sound timing
 13. Added HUD reload progress bar/spinner, ammo icon swapping, and shared UI click sounds for slot/sell flows
+14. Implemented shooting targets with configurable payouts, bullseye support, animator-driven fall/raise, and per-zone audio/VFX hooks
 
 ---
 
