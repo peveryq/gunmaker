@@ -37,6 +37,7 @@ public class WeaponController : MonoBehaviour
     private Vector3 recoilOffset = Vector3.zero;
     
     private bool hasPlayedEmptySound = false; // Track if empty sound was played
+    private bool wasShootingLastFrame = false; // Track shooting state for crosshair
     
     // Aiming
     private bool isAiming = false;
@@ -79,7 +80,37 @@ public class WeaponController : MonoBehaviour
         bool cursorLocked = Cursor.lockState == CursorLockMode.Locked;
         
         // Handle shooting only when cursor is locked
-        if (cursorLocked && Input.GetMouseButton(0) && Time.time >= nextFireTime)
+        bool isShootingThisFrame = cursorLocked && Input.GetMouseButton(0);
+        
+        // Check if we can actually shoot (not empty, not reloading, has barrel, etc.)
+        bool canShoot = isShootingThisFrame && !isReloading && currentAmmo > 0 && Time.time >= nextFireTime;
+        WeaponBody weaponBody = GetComponent<WeaponBody>();
+        if (weaponBody != null && !weaponBody.CanShoot())
+        {
+            canShoot = false;
+        }
+        
+        // Handle shooting state for crosshair (only when actually shooting)
+        if (canShoot && !wasShootingLastFrame)
+        {
+            // Started shooting
+            if (GameplayHUD.Instance != null)
+            {
+                GameplayHUD.Instance.StartCrosshairShooting();
+            }
+        }
+        else if (!canShoot && wasShootingLastFrame)
+        {
+            // Stopped shooting (button released or can't shoot anymore)
+            if (GameplayHUD.Instance != null)
+            {
+                GameplayHUD.Instance.StopCrosshairShooting();
+            }
+        }
+        wasShootingLastFrame = canShoot;
+
+        // Handle shooting only when cursor is locked
+        if (isShootingThisFrame && Time.time >= nextFireTime)
         {
             if (isReloading)
             {
@@ -106,7 +137,7 @@ public class WeaponController : MonoBehaviour
         }
         
         // Reset empty sound flag when button is released
-        if (!Input.GetMouseButton(0))
+        if (!isShootingThisFrame)
         {
             hasPlayedEmptySound = false;
         }
@@ -176,6 +207,13 @@ public class WeaponController : MonoBehaviour
     public void Unequip()
     {
         CancelReload();
+
+        // Stop crosshair shooting animation
+        if (wasShootingLastFrame && GameplayHUD.Instance != null)
+        {
+            GameplayHUD.Instance.StopCrosshairShooting();
+        }
+        wasShootingLastFrame = false;
 
         // Restore default FOV before unequipping
         if (playerCamera != null && defaultFOV > 0)
@@ -249,12 +287,6 @@ public class WeaponController : MonoBehaviour
         if (settings.muzzleFlash != null && firePoint != null)
         {
             Instantiate(settings.muzzleFlash, firePoint.position, firePoint.rotation, firePoint);
-        }
-        
-        // Trigger crosshair animation
-        if (GameplayHUD.Instance != null)
-        {
-            GameplayHUD.Instance.TriggerCrosshairShot();
         }
         
         // Update ammo and fire rate

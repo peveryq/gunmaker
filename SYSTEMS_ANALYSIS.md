@@ -179,16 +179,16 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 
 ### Appendix F – Gameplay HUD Integration
 - `GameplayHUD` root canvas holds crosshair, money, ammo, reload indicator (fill bar + spinner), and interaction panel; enable/disable subjects through `SetVisible`/`SetCrosshairVisible`.
-- `CrosshairController` manages crosshair elements: static dot (always visible), weapon lines (+ pattern, shown when weapon equipped, animated on shot via animator trigger), kill lines (X pattern, shown when target falls, configurable duration).
+- `CrosshairController` manages crosshair elements: static dot (always visible), weapon lines (+ pattern, shown when weapon equipped, animated via DOTween - move away from center when shooting, return smoothly when stopped), kill lines (X pattern, shown on any target hit with separate variants for normal/bullseye zones, configurable duration per zone).
 - `GameplayUIContext` tracks hide requests via tokenised HashSet; locker, shop, slot UI call `RequestHudHidden(this)`/`ReleaseHud(this)`.
 - `HUDInteractionPanel` pools `InteractionButtonView` instances; `InteractionHandler` pushes option sets each frame when gaze target changes.
 - `WeaponController` emits `AmmoChanged`, `ReloadStateChanged`, and `ReloadProgressChanged`; `InteractionHandler` relays these to the HUD for instant UI updates. `WeaponController` triggers crosshair shot animation on fire.
-- `ShootingTarget` triggers kill lines display when falling animation starts (if `enableFalling` is true).
+- `ShootingTarget` triggers kill lines display on any hit (not just when falling), with different visual variants for normal vs bullseye zones.
 
 ### Appendix G – Shooting Target Setup
-- Add `ShootingTarget` to the root of a target prefab; assign base reward, normal/bullseye multipliers, one or more audio clips, and optional `Animator`.
+- Add `ShootingTarget` to the root of a target prefab; assign base reward, normal/bullseye multipliers, one or more audio clips, and optional `DOTweenAnimation` components.
 - Child colliders carry `ShootingTargetZone` (set zone enum) to differentiate normal vs bullseye hits; both can share the same root collider hierarchy.
-- When `enableFalling` is true, set animator trigger names plus `timeDown` for how long the target stays lowered; payouts pause while `IsDown` when suppression is enabled.
+- When `enableFalling` is true, assign `DOTweenAnimation` components for fall and reset animations, plus `timeDown` for how long the target stays lowered; payouts pause while `IsDown` when suppression is enabled. Use DOTween Pro's visual editor to configure animations on child GameObjects.
 - Assign per-zone particle prefabs to reuse pooled instances for hit feedback; defaults fall back to `BulletHoleManager` behaviour for non-target surfaces.
 
 ---
@@ -209,6 +209,8 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 13. Added HUD reload progress bar/spinner, ammo icon swapping, and shared UI click sounds for slot/sell flows
 14. Implemented shooting targets with configurable payouts, bullseye support, animator-driven fall/raise, and per-zone audio/VFX hooks
 15. Added advanced crosshair system with static dot, weapon lines (animated on shot), and kill lines (shown on target fall)
+16. Migrated target fall/raise animations from Unity Animator to DOTween Pro (DOTweenAnimation components)
+17. Migrated weapon lines crosshair animation from Unity Animator to DOTween (real-time recoil feedback while shooting)
 
 ---
 

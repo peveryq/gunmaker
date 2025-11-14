@@ -226,24 +226,35 @@ public class GameplayHUD : MonoBehaviour
     }
     
     /// <summary>
-    /// Triggers crosshair shot animation. Called by WeaponController on fire.
+    /// Called when shooting starts. Moves weapon lines away from center.
     /// </summary>
-    public void TriggerCrosshairShot()
+    public void StartCrosshairShooting()
     {
         if (crosshairController != null)
         {
-            crosshairController.TriggerShotAnimation();
+            crosshairController.StartShooting();
+        }
+    }
+
+    /// <summary>
+    /// Called when shooting stops. Returns weapon lines to original position.
+    /// </summary>
+    public void StopCrosshairShooting()
+    {
+        if (crosshairController != null)
+        {
+            crosshairController.StopShooting();
         }
     }
     
     /// <summary>
-    /// Shows kill lines on crosshair. Called when a target falls.
+    /// Shows kill lines on crosshair based on hit zone. Called when a target is hit.
     /// </summary>
-    public void ShowKillLines()
+    public void ShowKillLines(CrosshairController.HitZone zone)
     {
         if (crosshairController != null)
         {
-            crosshairController.ShowKillLines();
+            crosshairController.ShowKillLines(zone);
         }
     }
 

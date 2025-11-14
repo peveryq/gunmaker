@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// Configurable shooting target with payout, audio, animation, and particle handling.
@@ -32,9 +33,11 @@ public class ShootingTarget : MonoBehaviour
 
     [Header("Falling Behaviour")]
     [SerializeField] private bool enableFalling = false;
-    [SerializeField] private Animator animator;
-    [SerializeField] private string fallTriggerName = "Fall";
-    [SerializeField] private string resetTriggerName = "Reset";
+    [Tooltip("DOTweenAnimation component for falling animation. Should animate target to fallen position (e.g., rotate 90 degrees). Set autoPlay = false in DOTweenAnimation.")]
+    [SerializeField] private DOTweenAnimation fallAnimation;
+    [Tooltip("DOTweenAnimation component for reset/raise animation. Should animate target back to upright position. Set autoPlay = false in DOTweenAnimation.")]
+    [SerializeField] private DOTweenAnimation resetAnimation;
+    [Tooltip("How long the target stays down before automatically raising.")]
     [SerializeField] private float timeDown = 2f;
 
     [Header("Particle Overrides")]
@@ -71,6 +74,15 @@ public class ShootingTarget : MonoBehaviour
 
         PlayHitSound(zone);
         SpawnHitParticles(zone, hitPoint, hitNormal);
+
+        // Show kill lines on crosshair for any hit
+        if (GameplayHUD.Instance != null)
+        {
+            CrosshairController.HitZone crosshairZone = zone == HitZone.Bullseye 
+                ? CrosshairController.HitZone.Bullseye 
+                : CrosshairController.HitZone.Normal;
+            GameplayHUD.Instance.ShowKillLines(crosshairZone);
+        }
 
         if (enableFalling)
         {
@@ -150,47 +162,40 @@ public class ShootingTarget : MonoBehaviour
         resetCoroutine = StartCoroutine(FallRoutine(wasDown));
     }
 
-    private IEnumerator FallRoutine(bool skipFallTrigger)
+    private IEnumerator FallRoutine(bool skipFallAnimation)
     {
         isDown = true;
 
-        if (!skipFallTrigger && animator != null)
+        if (!skipFallAnimation && fallAnimation != null)
         {
-            if (!string.IsNullOrEmpty(resetTriggerName))
+            // Ensure tween is created if autoGenerate is false
+            // CreateTween with regenerateIfExists=false means it won't recreate if already exists
+            fallAnimation.CreateTween(false, false);
+
+            // Rewind reset animation first to ensure clean state
+            if (resetAnimation != null)
             {
-                animator.ResetTrigger(resetTriggerName);
+                resetAnimation.CreateTween(false, false);
+                resetAnimation.DORewind();
             }
 
-            if (!string.IsNullOrEmpty(fallTriggerName))
-            {
-                animator.SetTrigger(fallTriggerName);
-                PlayFallSound();
-                
-                // Show kill lines on crosshair
-                if (GameplayHUD.Instance != null)
-                {
-                    GameplayHUD.Instance.ShowKillLines();
-                }
-            }
+            // Play fall animation
+            fallAnimation.DORestart();
+            PlayFallSound();
         }
 
+        // Wait for the target to stay down
         float wait = Mathf.Max(0f, timeDown);
         if (wait > 0f)
         {
             yield return new WaitForSeconds(wait);
         }
 
-        if (animator != null)
+        // Play reset animation to raise the target
+        if (resetAnimation != null)
         {
-            if (!string.IsNullOrEmpty(fallTriggerName))
-            {
-                animator.ResetTrigger(fallTriggerName);
-            }
-
-            if (!string.IsNullOrEmpty(resetTriggerName))
-            {
-                animator.SetTrigger(resetTriggerName);
-            }
+            resetAnimation.CreateTween(false, false);
+            resetAnimation.DORestart();
         }
 
         isDown = false;
