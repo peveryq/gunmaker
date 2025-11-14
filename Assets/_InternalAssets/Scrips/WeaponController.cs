@@ -251,6 +251,12 @@ public class WeaponController : MonoBehaviour
             Instantiate(settings.muzzleFlash, firePoint.position, firePoint.rotation, firePoint);
         }
         
+        // Trigger crosshair animation
+        if (GameplayHUD.Instance != null)
+        {
+            GameplayHUD.Instance.TriggerCrosshairShot();
+        }
+        
         // Update ammo and fire rate
         currentAmmo--;
         NotifyAmmoChanged();

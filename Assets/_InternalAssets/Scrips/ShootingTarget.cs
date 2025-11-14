@@ -27,6 +27,8 @@ public class ShootingTarget : MonoBehaviour
     [SerializeField] private AudioClip[] normalHitVariants;
     [Tooltip("Optional additional variants for bullseye hits; chosen randomly.")]
     [SerializeField] private AudioClip[] bullseyeHitVariants;
+    [Tooltip("Sound played when target starts falling animation.")]
+    [SerializeField] private AudioClip fallSound;
 
     [Header("Falling Behaviour")]
     [SerializeField] private bool enableFalling = false;
@@ -108,6 +110,14 @@ public class ShootingTarget : MonoBehaviour
         }
     }
 
+    private void PlayFallSound()
+    {
+        if (audioSource != null && fallSound != null)
+        {
+            audioSource.PlayOneShot(fallSound);
+        }
+    }
+
     private void SpawnHitParticles(HitZone zone, Vector3 hitPoint, Vector3 hitNormal)
     {
         ParticleSystem prefab = zone == HitZone.Bullseye ? bullseyeHitParticles : normalHitParticles;
@@ -154,6 +164,13 @@ public class ShootingTarget : MonoBehaviour
             if (!string.IsNullOrEmpty(fallTriggerName))
             {
                 animator.SetTrigger(fallTriggerName);
+                PlayFallSound();
+                
+                // Show kill lines on crosshair
+                if (GameplayHUD.Instance != null)
+                {
+                    GameplayHUD.Instance.ShowKillLines();
+                }
             }
         }
 

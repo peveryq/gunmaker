@@ -13,6 +13,7 @@ public class GameplayHUD : MonoBehaviour
 
     [Header("Crosshair")]
     [SerializeField] private GameObject crosshairRoot;
+    [SerializeField] private CrosshairController crosshairController;
 
     [Header("Indicators")]
     [SerializeField] private GameObject moneyBackgroundRoot;
@@ -172,6 +173,12 @@ public class GameplayHUD : MonoBehaviour
 
         bool hasWeapon = max > 0;
         hasWeaponEquipped = hasWeapon;
+        
+        if (crosshairController != null)
+        {
+            crosshairController.SetWeaponEquipped(hasWeapon);
+        }
+        
         if (ammoBackgroundRoot != null)
         {
             ammoBackgroundRoot.SetActive(hasWeapon);
@@ -194,6 +201,12 @@ public class GameplayHUD : MonoBehaviour
     public void ClearAmmo()
     {
         hasWeaponEquipped = false;
+        
+        if (crosshairController != null)
+        {
+            crosshairController.SetWeaponEquipped(false);
+        }
+        
         if (ammoCurrentLabel != null)
         {
             ammoCurrentLabel.text = ammoUnavailableCurrentText;
@@ -210,6 +223,28 @@ public class GameplayHUD : MonoBehaviour
         }
 
         SetReloadState(false);
+    }
+    
+    /// <summary>
+    /// Triggers crosshair shot animation. Called by WeaponController on fire.
+    /// </summary>
+    public void TriggerCrosshairShot()
+    {
+        if (crosshairController != null)
+        {
+            crosshairController.TriggerShotAnimation();
+        }
+    }
+    
+    /// <summary>
+    /// Shows kill lines on crosshair. Called when a target falls.
+    /// </summary>
+    public void ShowKillLines()
+    {
+        if (crosshairController != null)
+        {
+            crosshairController.ShowKillLines();
+        }
     }
 
     public void SetReloadState(bool active)
