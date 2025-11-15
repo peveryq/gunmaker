@@ -21,7 +21,7 @@ MonoBehaviour:
   recoilRecoverySpeed: 15
   magSize: 30
   reloadTime: 1.5
-  autoReload: 0
+  autoReload: 1
   canAim: 1
   aimFOV: 40
   aimSpeed: 12

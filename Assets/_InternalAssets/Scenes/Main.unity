@@ -12209,7 +12209,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_TargetDisplay: 0
 --- !u!114 &725349666
 MonoBehaviour:
@@ -13829,7 +13829,7 @@ MonoBehaviour:
   returnDuration: 0.5
   normalHitLinesRoot: {fileID: 159255846}
   bullseyeHitLinesRoot: {fileID: 2197845}
-  normalHitLinesDuration: 0.6
+  normalHitLinesDuration: 0.4
   bullseyeHitLinesDuration: 0.6
   killLinesRoot: {fileID: 959570223}
   killLinesDuration: 0.6

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using DamageNumbersPro;
 
 /// <summary>
 /// Configurable shooting target with payout, audio, animation, and particle handling.
@@ -56,6 +57,12 @@ public class ShootingTarget : MonoBehaviour
     [Tooltip("Optional parent transform for spawned particle instances.")]
     [SerializeField] private Transform particleParent;
 
+    [Header("Damage Numbers")]
+    [Tooltip("Prefab for spawning money numbers when target is hit. Uses Damage Numbers Pro.")]
+    [SerializeField] private DamageNumber moneyNumberPrefab;
+    [Tooltip("Offset from hit point where money number should spawn.")]
+    [SerializeField] private Vector3 moneyNumberOffset = Vector3.up * 0.5f;
+
     private readonly Dictionary<HitZone, ParticleSystem> particleInstances = new Dictionary<HitZone, ParticleSystem>();
     private Coroutine resetCoroutine;
     private bool isDown;
@@ -90,12 +97,16 @@ public class ShootingTarget : MonoBehaviour
         }
 
         bool rewardAllowed = !suppressRewardsWhileDown || !isDown;
+        int reward = 0;
         if (rewardAllowed && MoneySystem.Instance != null)
         {
-            int reward = Mathf.Max(0, Mathf.RoundToInt(baseReward * GetMultiplier(zone)));
+            reward = Mathf.Max(0, Mathf.RoundToInt(baseReward * GetMultiplier(zone)));
             if (reward > 0)
             {
                 MoneySystem.Instance.AddMoney(reward);
+                
+                // Spawn money number at hit point
+                SpawnMoneyNumber(hitPoint, reward);
             }
         }
 
@@ -118,6 +129,9 @@ public class ShootingTarget : MonoBehaviour
         if (wasKilled && !isDown && killReward > 0 && MoneySystem.Instance != null)
         {
             MoneySystem.Instance.AddMoney(killReward);
+            
+            // Spawn kill reward money number
+            SpawnMoneyNumber(hitPoint, killReward);
         }
         
         // Trigger falling if HP reaches zero or if falling is enabled and HP is zero
@@ -260,6 +274,23 @@ public class ShootingTarget : MonoBehaviour
         }
 
         return fallback;
+    }
+
+    /// <summary>
+    /// Spawns a money number popup at the specified position using Damage Numbers Pro.
+    /// </summary>
+    private void SpawnMoneyNumber(Vector3 position, int amount)
+    {
+        if (moneyNumberPrefab == null)
+        {
+            return;
+        }
+
+        // Calculate spawn position with offset
+        Vector3 spawnPosition = position + moneyNumberOffset;
+        
+        // Spawn the damage number
+        moneyNumberPrefab.Spawn(spawnPosition, amount);
     }
 
     private void OnDisable()
