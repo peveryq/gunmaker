@@ -34,6 +34,12 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private Image reloadSpinnerImage;
     [SerializeField] private float reloadSpinnerSpeed = 180f;
 
+    [Header("Unwelded Barrel Warning")]
+    [SerializeField] private GameObject unweldedBarrelWarningRoot;
+    [SerializeField] private TextMeshProUGUI unweldedBarrelWarningText;
+    [SerializeField] private Image unweldedBarrelWarningIcon;
+    [SerializeField] private string unweldedBarrelWarningTextFormat = "Barrel not welded";
+
     [Header("Interaction")]
     [SerializeField] private HUDInteractionPanel interactionPanel;
 
@@ -68,6 +74,7 @@ public class GameplayHUD : MonoBehaviour
         CacheReloadSpinnerRotation();
         SetReloadState(false);
         ClearAmmo();
+        SetUnweldedBarrelWarning(false);
     }
 
     private void OnEnable()
@@ -369,5 +376,21 @@ public class GameplayHUD : MonoBehaviour
     private void HandleMoneyChanged(int amount)
     {
         SetMoney(amount);
+    }
+
+    /// <summary>
+    /// Shows or hides the unwelded barrel warning
+    /// </summary>
+    public void SetUnweldedBarrelWarning(bool show)
+    {
+        if (unweldedBarrelWarningRoot != null)
+        {
+            unweldedBarrelWarningRoot.SetActive(show);
+        }
+
+        if (show && unweldedBarrelWarningText != null && !string.IsNullOrEmpty(unweldedBarrelWarningTextFormat))
+        {
+            unweldedBarrelWarningText.text = unweldedBarrelWarningTextFormat;
+        }
     }
 }

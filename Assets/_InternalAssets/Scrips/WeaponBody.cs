@@ -177,6 +177,19 @@ public class WeaponBody : MonoBehaviour
         return magazinePart != null; // Need magazine to reload
     }
     
+    /// <summary>
+    /// Checks if the barrel is installed but not welded
+    /// </summary>
+    public bool HasUnweldedBarrel()
+    {
+        if (barrelPart == null) return false;
+        
+        WeldingSystem weldingSystem = barrelPart.GetComponent<WeldingSystem>();
+        if (weldingSystem == null) return false;
+        
+        return weldingSystem.RequiresWelding && !weldingSystem.IsWelded;
+    }
+    
     // Get part in slot
     public WeaponPart GetPart(PartType type)
     {

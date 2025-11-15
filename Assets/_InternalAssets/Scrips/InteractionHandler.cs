@@ -64,6 +64,12 @@ public class InteractionHandler : MonoBehaviour
         {
             DropCurrentItem();
         }
+        
+        // Update unwelded barrel warning periodically (in case welding happens on workbench)
+        if (currentItem != null && currentWeaponController != null)
+        {
+            UpdateUnweldedBarrelWarning();
+        }
     }
 
     private void LateUpdate()
@@ -439,6 +445,8 @@ public class InteractionHandler : MonoBehaviour
         {
             HandleReloadProgressChanged(currentWeaponController.ReloadProgress);
         }
+        
+        UpdateUnweldedBarrelWarning();
     }
 
     private void DetachWeaponController()
@@ -452,6 +460,7 @@ public class InteractionHandler : MonoBehaviour
         }
 
         gameplayHud?.ClearAmmo();
+        gameplayHud?.SetUnweldedBarrelWarning(false);
     }
 
     private void HandleAmmoChanged(int current, int max)
@@ -479,6 +488,22 @@ public class InteractionHandler : MonoBehaviour
         {
             gameplayHud?.ClearAmmo();
         }
+    }
+    
+    private void UpdateUnweldedBarrelWarning()
+    {
+        bool showWarning = false;
+        
+        if (currentItem != null)
+        {
+            WeaponBody weaponBody = currentItem.GetComponent<WeaponBody>();
+            if (weaponBody != null)
+            {
+                showWarning = weaponBody.HasUnweldedBarrel();
+            }
+        }
+        
+        gameplayHud?.SetUnweldedBarrelWarning(showWarning);
     }
     
     // Properties
