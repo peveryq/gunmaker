@@ -11,6 +11,8 @@ public class WeaponStats
     [Range(1, 100)] public float reloadSpeed = 1f;
     [Range(1, 100)] public float scope = 1f;
     public int ammo = 0;
+    [Tooltip("Base damage dealt by weapon. Can be configured in weapon body prefab.")]
+    public float damage = 10f;
 
     [Header("Economy")]
     [Tooltip("Accumulated cost of all installed parts contributing to these stats.")]
@@ -77,7 +79,13 @@ public class WeaponStats
         settings.reloadTime = GetReloadTime();
         settings.aimFOV = GetAimFOV();
         settings.magSize = GetMagSize();
+        settings.bulletDamage = GetDamage();
         settings.totalPartCost = totalPartCost;
+    }
+    
+    public float GetDamage()
+    {
+        return damage;
     }
     
     // Clone stats
@@ -92,6 +100,7 @@ public class WeaponStats
             reloadSpeed = this.reloadSpeed,
             scope = this.scope,
             ammo = this.ammo,
+            damage = this.damage,
             totalPartCost = this.totalPartCost
         };
     }

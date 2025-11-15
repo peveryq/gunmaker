@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fireRate: 0.5
   bulletSpeed: 50
-  bulletDamage: 10
+  bulletDamage: 50
   spreadAngle: 7
   recoilUpward: 3
   recoilKickback: 0.15
@@ -35,3 +35,4 @@ MonoBehaviour:
   reloadStartSound: {fileID: 8300000, guid: e34622b632502a645b808cee6fa81c22, type: 3}
   reloadEndSound: {fileID: 8300000, guid: 9720efc9ab73c1f41980bc6095a93899, type: 3}
   emptySound: {fileID: 8300000, guid: cbf5087d5757ab143a4d0a78a211f301, type: 3}
+  totalPartCost: 0

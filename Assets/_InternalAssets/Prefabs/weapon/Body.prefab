@@ -562,6 +562,7 @@ MonoBehaviour:
     reloadSpeed: 1
     scope: 1
     ammo: 0
+    damage: 25
     totalPartCost: 0
   barrelPart: {fileID: 0}
   magazinePart: {fileID: 0}

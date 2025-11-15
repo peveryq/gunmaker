@@ -248,13 +248,24 @@ public class GameplayHUD : MonoBehaviour
     }
     
     /// <summary>
-    /// Shows kill lines on crosshair based on hit zone. Called when a target is hit.
+    /// Shows hit lines on crosshair based on hit zone. Called when a target is hit.
     /// </summary>
-    public void ShowKillLines(CrosshairController.HitZone zone)
+    public void ShowHitLines(CrosshairController.HitZone zone)
     {
         if (crosshairController != null)
         {
-            crosshairController.ShowKillLines(zone);
+            crosshairController.ShowHitLines(zone);
+        }
+    }
+
+    /// <summary>
+    /// Shows kill lines on crosshair. Called when a target is killed (HP reaches 0).
+    /// </summary>
+    public void ShowKillLines()
+    {
+        if (crosshairController != null)
+        {
+            crosshairController.ShowKillLines();
         }
     }
 

@@ -28,14 +28,14 @@ public class ShootingTargetZone : MonoBehaviour
     /// <summary>
     /// Helper for projectiles to report a hit without needing to locate the parent target manually.
     /// </summary>
-    public void ReportHit(Vector3 point, Vector3 normal)
+    public void ReportHit(Vector3 point, Vector3 normal, float damage = 0f)
     {
         if (target == null)
         {
             return;
         }
 
-        target.RegisterHit(zone, point, normal);
+        target.RegisterHit(zone, point, normal, damage);
     }
 }
 

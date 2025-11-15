@@ -230,6 +230,8 @@ MonoBehaviour:
   normalMultiplier: 1
   bullseyeMultiplier: 1.5
   suppressRewardsWhileDown: 1
+  maxHP: 100
+  bullseyeDamageMultiplier: 5
   audioSource: {fileID: 5318982239669569929}
   normalHitClip: {fileID: 0}
   bullseyeHitClip: {fileID: 0}

@@ -20,6 +20,12 @@ public class ShootingTarget : MonoBehaviour
     [SerializeField] private float bullseyeMultiplier = 1.5f;
     [SerializeField] private bool suppressRewardsWhileDown = true;
 
+    [Header("Health Settings")]
+    [Tooltip("Maximum health points for this target.")]
+    [SerializeField] private float maxHP = 100f;
+    [Tooltip("Damage multiplier when hitting bullseye zone.")]
+    [SerializeField] private float bullseyeDamageMultiplier = 1.5f;
+
     [Header("Audio Settings")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip normalHitClip;
@@ -51,15 +57,34 @@ public class ShootingTarget : MonoBehaviour
     private readonly Dictionary<HitZone, ParticleSystem> particleInstances = new Dictionary<HitZone, ParticleSystem>();
     private Coroutine resetCoroutine;
     private bool isDown;
+    private float currentHP;
+
+    private void Awake()
+    {
+        currentHP = maxHP;
+    }
 
     /// <summary>
     /// Register a hit from a projectile and trigger feedback/reward logic.
     /// </summary>
-    public void RegisterHit(HitZone zone, Vector3 hitPoint, Vector3 hitNormal)
+    public void RegisterHit(HitZone zone, Vector3 hitPoint, Vector3 hitNormal, float damage = 0f)
     {
         if (!gameObject.activeInHierarchy)
         {
             return;
+        }
+
+        // Apply damage if provided
+        if (damage > 0f)
+        {
+            // Apply bullseye damage multiplier if hitting bullseye
+            float finalDamage = damage;
+            if (zone == HitZone.Bullseye)
+            {
+                finalDamage = damage * Mathf.Max(0f, bullseyeDamageMultiplier);
+            }
+            
+            currentHP = Mathf.Max(0f, currentHP - finalDamage);
         }
 
         bool rewardAllowed = !suppressRewardsWhileDown || !isDown;
@@ -75,17 +100,27 @@ public class ShootingTarget : MonoBehaviour
         PlayHitSound(zone);
         SpawnHitParticles(zone, hitPoint, hitNormal);
 
-        // Show kill lines on crosshair for any hit
+        // Show hit lines on crosshair for any hit
         if (GameplayHUD.Instance != null)
         {
             CrosshairController.HitZone crosshairZone = zone == HitZone.Bullseye 
                 ? CrosshairController.HitZone.Bullseye 
                 : CrosshairController.HitZone.Normal;
-            GameplayHUD.Instance.ShowKillLines(crosshairZone);
+            GameplayHUD.Instance.ShowHitLines(crosshairZone);
         }
 
-        if (enableFalling)
+        // Check if target was killed (HP reached zero)
+        bool wasKilled = currentHP <= 0f;
+        
+        // Trigger falling if HP reaches zero or if falling is enabled and HP is zero
+        if (enableFalling && wasKilled && !isDown)
         {
+            // Show kill lines when target is killed
+            if (GameplayHUD.Instance != null)
+            {
+                GameplayHUD.Instance.ShowKillLines();
+            }
+            
             HandleFalling();
         }
     }
@@ -198,6 +233,8 @@ public class ShootingTarget : MonoBehaviour
             resetAnimation.DORestart();
         }
 
+        // Restore HP when target is raised
+        currentHP = maxHP;
         isDown = false;
         resetCoroutine = null;
     }

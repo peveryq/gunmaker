@@ -3,7 +3,7 @@ using UnityEngine;
 using DG.Tweening;
 
 /// <summary>
-/// Manages crosshair elements: static dot, weapon lines (animated on shot), and kill lines (shown on target hit).
+/// Manages crosshair elements: static dot, weapon lines (animated on shot), hit lines (shown on target hit), and kill lines (shown on target kill).
 /// </summary>
 public class CrosshairController : MonoBehaviour
 {
@@ -25,14 +25,19 @@ public class CrosshairController : MonoBehaviour
     [Tooltip("Duration for returning lines to original position when shooting stops.")]
     [SerializeField] private float returnDuration = 0.2f;
 
-    [Header("Kill Lines (X pattern)")]
-    [SerializeField] private GameObject normalKillLinesRoot;
-    [SerializeField] private GameObject bullseyeKillLinesRoot;
-    [SerializeField] private float normalKillLinesDuration = 1.5f;
-    [SerializeField] private float bullseyeKillLinesDuration = 1.5f;
+    [Header("Hit Lines (X pattern - shown on hit)")]
+    [SerializeField] private GameObject normalHitLinesRoot;
+    [SerializeField] private GameObject bullseyeHitLinesRoot;
+    [SerializeField] private float normalHitLinesDuration = 1.5f;
+    [SerializeField] private float bullseyeHitLinesDuration = 1.5f;
 
-    private Coroutine normalKillLinesCoroutine;
-    private Coroutine bullseyeKillLinesCoroutine;
+    [Header("Kill Lines (X pattern - shown on kill)")]
+    [SerializeField] private GameObject killLinesRoot;
+    [SerializeField] private float killLinesDuration = 1.5f;
+
+    private Coroutine normalHitLinesCoroutine;
+    private Coroutine bullseyeHitLinesCoroutine;
+    private Coroutine killLinesCoroutine;
     private bool weaponEquipped;
     private bool isShooting;
     private Vector2[] originalPositions;
@@ -45,14 +50,19 @@ public class CrosshairController : MonoBehaviour
             weaponLinesRoot.SetActive(false);
         }
 
-        if (normalKillLinesRoot != null)
+        if (normalHitLinesRoot != null)
         {
-            normalKillLinesRoot.SetActive(false);
+            normalHitLinesRoot.SetActive(false);
         }
 
-        if (bullseyeKillLinesRoot != null)
+        if (bullseyeHitLinesRoot != null)
         {
-            bullseyeKillLinesRoot.SetActive(false);
+            bullseyeHitLinesRoot.SetActive(false);
+        }
+
+        if (killLinesRoot != null)
+        {
+            killLinesRoot.SetActive(false);
         }
 
         // Cache original positions of weapon lines
@@ -151,13 +161,13 @@ public class CrosshairController : MonoBehaviour
     }
 
     /// <summary>
-    /// Shows kill lines for configured duration based on hit zone.
+    /// Shows hit lines for configured duration based on hit zone (shown on any hit).
     /// </summary>
-    public void ShowKillLines(HitZone zone)
+    public void ShowHitLines(HitZone zone)
     {
-        GameObject targetRoot = zone == HitZone.Bullseye ? bullseyeKillLinesRoot : normalKillLinesRoot;
-        float duration = zone == HitZone.Bullseye ? bullseyeKillLinesDuration : normalKillLinesDuration;
-        Coroutine currentCoroutine = zone == HitZone.Bullseye ? bullseyeKillLinesCoroutine : normalKillLinesCoroutine;
+        GameObject targetRoot = zone == HitZone.Bullseye ? bullseyeHitLinesRoot : normalHitLinesRoot;
+        float duration = zone == HitZone.Bullseye ? bullseyeHitLinesDuration : normalHitLinesDuration;
+        Coroutine currentCoroutine = zone == HitZone.Bullseye ? bullseyeHitLinesCoroutine : normalHitLinesCoroutine;
 
         if (targetRoot == null)
         {
@@ -169,16 +179,34 @@ public class CrosshairController : MonoBehaviour
             StopCoroutine(currentCoroutine);
         }
 
-        Coroutine newCoroutine = StartCoroutine(KillLinesRoutine(targetRoot, duration));
+        Coroutine newCoroutine = StartCoroutine(HitLinesRoutine(targetRoot, duration));
         
         if (zone == HitZone.Bullseye)
         {
-            bullseyeKillLinesCoroutine = newCoroutine;
+            bullseyeHitLinesCoroutine = newCoroutine;
         }
         else
         {
-            normalKillLinesCoroutine = newCoroutine;
+            normalHitLinesCoroutine = newCoroutine;
         }
+    }
+
+    /// <summary>
+    /// Shows kill lines for configured duration (shown when target HP reaches 0).
+    /// </summary>
+    public void ShowKillLines()
+    {
+        if (killLinesRoot == null)
+        {
+            return;
+        }
+
+        if (killLinesCoroutine != null)
+        {
+            StopCoroutine(killLinesCoroutine);
+        }
+
+        killLinesCoroutine = StartCoroutine(KillLinesRoutine(killLinesRoot, killLinesDuration));
     }
 
     private void UpdateWeaponLinesVisibility()
@@ -186,6 +214,34 @@ public class CrosshairController : MonoBehaviour
         if (weaponLinesRoot != null)
         {
             weaponLinesRoot.SetActive(weaponEquipped);
+        }
+    }
+
+    private IEnumerator HitLinesRoutine(GameObject root, float duration)
+    {
+        if (root != null)
+        {
+            root.SetActive(true);
+        }
+
+        float waitTime = Mathf.Max(0f, duration);
+        if (waitTime > 0f)
+        {
+            yield return new WaitForSeconds(waitTime);
+        }
+
+        if (root != null)
+        {
+            root.SetActive(false);
+        }
+
+        if (root == normalHitLinesRoot)
+        {
+            normalHitLinesCoroutine = null;
+        }
+        else if (root == bullseyeHitLinesRoot)
+        {
+            bullseyeHitLinesCoroutine = null;
         }
     }
 
@@ -207,14 +263,7 @@ public class CrosshairController : MonoBehaviour
             root.SetActive(false);
         }
 
-        if (root == normalKillLinesRoot)
-        {
-            normalKillLinesCoroutine = null;
-        }
-        else if (root == bullseyeKillLinesRoot)
-        {
-            bullseyeKillLinesCoroutine = null;
-        }
+        killLinesCoroutine = null;
     }
 
     private void KillReturnTweens()
@@ -236,29 +285,40 @@ public class CrosshairController : MonoBehaviour
 
     private void OnDisable()
     {
-        if (normalKillLinesCoroutine != null)
+        if (normalHitLinesCoroutine != null)
         {
-            StopCoroutine(normalKillLinesCoroutine);
-            normalKillLinesCoroutine = null;
+            StopCoroutine(normalHitLinesCoroutine);
+            normalHitLinesCoroutine = null;
         }
 
-        if (bullseyeKillLinesCoroutine != null)
+        if (bullseyeHitLinesCoroutine != null)
         {
-            StopCoroutine(bullseyeKillLinesCoroutine);
-            bullseyeKillLinesCoroutine = null;
+            StopCoroutine(bullseyeHitLinesCoroutine);
+            bullseyeHitLinesCoroutine = null;
+        }
+
+        if (killLinesCoroutine != null)
+        {
+            StopCoroutine(killLinesCoroutine);
+            killLinesCoroutine = null;
         }
 
         KillReturnTweens();
         StopShooting(); // Reset weapon lines to original position
 
-        if (normalKillLinesRoot != null)
+        if (normalHitLinesRoot != null)
         {
-            normalKillLinesRoot.SetActive(false);
+            normalHitLinesRoot.SetActive(false);
         }
 
-        if (bullseyeKillLinesRoot != null)
+        if (bullseyeHitLinesRoot != null)
         {
-            bullseyeKillLinesRoot.SetActive(false);
+            bullseyeHitLinesRoot.SetActive(false);
+        }
+
+        if (killLinesRoot != null)
+        {
+            killLinesRoot.SetActive(false);
         }
     }
 }

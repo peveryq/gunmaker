@@ -138,7 +138,7 @@ public class Bullet : MonoBehaviour
             }
         }
 
-        zone.ReportHit(point, resolvedNormal);
+        zone.ReportHit(point, resolvedNormal, damage);
         return true;
     }
 }
