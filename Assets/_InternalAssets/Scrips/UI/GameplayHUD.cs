@@ -269,6 +269,17 @@ public class GameplayHUD : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Sets aiming state. Hides weapon lines when aiming.
+    /// </summary>
+    public void SetAiming(bool aiming)
+    {
+        if (crosshairController != null)
+        {
+            crosshairController.SetAiming(aiming);
+        }
+    }
+
     public void SetReloadState(bool active)
     {
         CacheReloadSpinnerRotation();

@@ -186,7 +186,7 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 - `ShootingTarget` triggers hit lines display on any hit (different visual variants for normal vs bullseye zones) and kill lines display when target HP reaches 0.
 
 ### Appendix G – Shooting Target Setup
-- Add `ShootingTarget` to the root of a target prefab; assign base reward, normal/bullseye multipliers, max HP, one or more audio clips, and optional `DOTweenAnimation` components.
+- Add `ShootingTarget` to the root of a target prefab; assign base reward, normal/bullseye multipliers, kill reward (given when HP reaches 0), max HP, one or more audio clips, and optional `DOTweenAnimation` components.
 - Child colliders carry `ShootingTargetZone` (set zone enum) to differentiate normal vs bullseye hits; both can share the same root collider hierarchy.
 - Targets have HP system: each hit applies damage from weapon's `bulletDamage` (multiplied by `bullseyeDamageMultiplier` for bullseye hits); target falls when HP reaches 0 (if `enableFalling` is true); HP fully restores when target is raised.
 - When `enableFalling` is true, assign `DOTweenAnimation` components for fall and reset animations, plus `timeDown` for how long the target stays lowered; payouts pause while `IsDown` when suppression is enabled. Use DOTween Pro's visual editor to configure animations on child GameObjects.

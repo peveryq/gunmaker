@@ -145,6 +145,7 @@ public class WeaponController : MonoBehaviour
         // Handle aiming
         if (cursorLocked && settings != null && settings.canAim)
         {
+            bool wasAiming = isAiming;
             if (Input.GetMouseButton(1))
             {
                 isAiming = true;
@@ -152,6 +153,12 @@ public class WeaponController : MonoBehaviour
             else
             {
                 isAiming = false;
+            }
+            
+            // Notify crosshair if aiming state changed
+            if (wasAiming != isAiming && GameplayHUD.Instance != null)
+            {
+                GameplayHUD.Instance.SetAiming(isAiming);
             }
             
             HandleAiming();
@@ -215,6 +222,13 @@ public class WeaponController : MonoBehaviour
         }
         wasShootingLastFrame = false;
 
+        // Reset aiming state
+        if (isAiming && GameplayHUD.Instance != null)
+        {
+            GameplayHUD.Instance.SetAiming(false);
+        }
+        isAiming = false;
+
         // Restore default FOV before unequipping
         if (playerCamera != null && defaultFOV > 0)
         {
@@ -222,7 +236,6 @@ public class WeaponController : MonoBehaviour
         }
         
         isEquipped = false;
-        isAiming = false;
         playerCamera = null;
     }
     

@@ -19,6 +19,8 @@ public class ShootingTarget : MonoBehaviour
     [SerializeField] private float normalMultiplier = 1f;
     [SerializeField] private float bullseyeMultiplier = 1.5f;
     [SerializeField] private bool suppressRewardsWhileDown = true;
+    [Tooltip("Additional reward given when target HP reaches 0 (kill reward).")]
+    [SerializeField] private int killReward = 50;
 
     [Header("Health Settings")]
     [Tooltip("Maximum health points for this target.")]
@@ -111,6 +113,12 @@ public class ShootingTarget : MonoBehaviour
 
         // Check if target was killed (HP reached zero)
         bool wasKilled = currentHP <= 0f;
+        
+        // Give kill reward when target is killed (only once, when it wasn't down before)
+        if (wasKilled && !isDown && killReward > 0 && MoneySystem.Instance != null)
+        {
+            MoneySystem.Instance.AddMoney(killReward);
+        }
         
         // Trigger falling if HP reaches zero or if falling is enabled and HP is zero
         if (enableFalling && wasKilled && !isDown)

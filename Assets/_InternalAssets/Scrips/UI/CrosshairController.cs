@@ -40,6 +40,7 @@ public class CrosshairController : MonoBehaviour
     private Coroutine killLinesCoroutine;
     private bool weaponEquipped;
     private bool isShooting;
+    private bool isAiming;
     private Vector2[] originalPositions;
     private Tween[] returnTweens;
 
@@ -213,8 +214,18 @@ public class CrosshairController : MonoBehaviour
     {
         if (weaponLinesRoot != null)
         {
-            weaponLinesRoot.SetActive(weaponEquipped);
+            // Show weapon lines only when weapon is equipped and not aiming
+            weaponLinesRoot.SetActive(weaponEquipped && !isAiming);
         }
+    }
+
+    /// <summary>
+    /// Sets whether player is aiming. Hides weapon lines when aiming.
+    /// </summary>
+    public void SetAiming(bool aiming)
+    {
+        isAiming = aiming;
+        UpdateWeaponLinesVisibility();
     }
 
     private IEnumerator HitLinesRoutine(GameObject root, float duration)
