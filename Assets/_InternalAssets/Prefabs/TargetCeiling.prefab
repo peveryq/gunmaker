@@ -394,7 +394,7 @@ MonoBehaviour:
   normalHitParticles: {fileID: 0}
   bullseyeHitParticles: {fileID: 0}
   particleParent: {fileID: 0}
-  moneyNumberPrefab: {fileID: 4315909879521903964, guid: 143cf92ebe0f9554bb07f558cbb482fd, type: 3}
+  moneyNumberPrefab: {fileID: 4315909879521903964, guid: 2e4678cc377a7ba43983274564a936d4, type: 3}
   moneyNumberOffset: {x: 0, y: 1, z: 0}
 --- !u!82 &5318982239669569929
 AudioSource:
