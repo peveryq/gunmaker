@@ -29,8 +29,9 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     [SerializeField] private Transform blowtorchWorkPosition; // Position where blowtorch moves when welding
     
     [Header("Audio")]
-    [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip installSound; // Sound when part/weapon is installed on workbench
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
     
     [Header("Weapon Creation")]
     [SerializeField] private GameObject emptyWeaponBodyPrefab; // Prefab of empty weapon body
@@ -207,9 +208,17 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     
     private void PlayInstallSound()
     {
-        if (audioSource != null && installSound != null)
+        if (installSound != null)
         {
-            audioSource.PlayOneShot(installSound);
+            // Use AudioManager if available, otherwise fallback to local AudioSource
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX(installSound, volume: 0.7f);
+            }
+            else if (audioSource != null)
+            {
+                audioSource.PlayOneShot(installSound);
+            }
         }
     }
     

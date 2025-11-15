@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2adda0dd24ea4ea29b569b9737c3616c, type: 3}
+  m_Name: Rifle_super
+  m_EditorClassIdentifier: 
+  fireRate: 0.05
+  bulletSpeed: 150
+  bulletDamage: 10
+  spreadAngle: 0
+  recoilUpward: 0
+  recoilKickback: 0
+  recoilRecoverySpeed: 15
+  magSize: 100
+  reloadTime: 0.5
+  autoReload: 1
+  canAim: 1
+  aimFOV: 40
+  aimSpeed: 12
+  aimPosition: {x: 0, y: -0.27, z: 0.5}
+  enableWeaponSway: 1
+  swayAmount: 0.02
+  swaySpeed: 10
+  swaySmoothing: 8
+  muzzleFlash: {fileID: 3296632129810359161, guid: 840af1fada9ee28449c645e83585e80b, type: 3}
+  shootSound: {fileID: 8300000, guid: b1eef4d682d54a644aba55886f1c878d, type: 3}
+  reloadStartSound: {fileID: 8300000, guid: e34622b632502a645b808cee6fa81c22, type: 3}
+  reloadEndSound: {fileID: 8300000, guid: 9720efc9ab73c1f41980bc6095a93899, type: 3}
+  emptySound: {fileID: 8300000, guid: cbf5087d5757ab143a4d0a78a211f301, type: 3}
+  totalPartCost: 0

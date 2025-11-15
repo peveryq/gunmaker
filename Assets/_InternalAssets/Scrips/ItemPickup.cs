@@ -33,21 +33,15 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
     
     private Rigidbody rb;
     private Collider itemCollider;
-    private AudioSource audioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    private AudioSource audioSource; // Fallback only
     private bool isHeld = false;
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
     private float lastImpactSoundTime = -999f;
 
-    private void Awake()
-    {
-        EnsureAudioSource();
-    }
-
-    private void OnEnable()
-    {
-        EnsureAudioSource();
-    }
+    // AudioSource is now optional (fallback only)
+    // AudioManager will be used if available
 
     private void Start()
     {
@@ -68,46 +62,19 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
 
     private void EnsureAudioSource()
     {
+        // Only create AudioSource if needed for fallback
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
         }
 
-        if (audioSource == null)
+        if (audioSource == null && AudioManager.Instance == null)
         {
+            // Only create if AudioManager is not available
             audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.spatialBlend = 1f; // 3D sound
+            audioSource.spatialBlend = 0f; // 2D sound (fallback)
+            audioSource.playOnAwake = false;
         }
-
-        if (!audioSource.enabled)
-        {
-            audioSource.enabled = true;
-        }
-
-        audioSource.playOnAwake = false;
-    }
-
-    private bool TryGetActiveAudioSource(out AudioSource source)
-    {
-        EnsureAudioSource();
-        source = audioSource;
-
-        if (source == null)
-        {
-            return false;
-        }
-
-        if (!source.gameObject.activeInHierarchy)
-        {
-            source.gameObject.SetActive(true);
-        }
-
-        if (!source.enabled)
-        {
-            source.enabled = true;
-        }
-
-        return source.isActiveAndEnabled;
     }
     
     public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
@@ -210,13 +177,22 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
         // Play sound
         if (pickupSound != null)
         {
-            if (TryGetActiveAudioSource(out AudioSource source))
+            // Use AudioManager if available, otherwise fallback to local AudioSource
+            if (AudioManager.Instance != null)
             {
-                source.PlayOneShot(pickupSound);
+                AudioManager.Instance.PlaySFX(pickupSound, volume: 0.7f);
             }
             else
             {
-                AudioSource.PlayClipAtPoint(pickupSound, transform.position);
+                EnsureAudioSource();
+                if (audioSource != null)
+                {
+                    audioSource.PlayOneShot(pickupSound);
+                }
+                else
+                {
+                    AudioSource.PlayClipAtPoint(pickupSound, transform.position);
+                }
             }
         }
         
@@ -268,10 +244,7 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
             itemCollider.enabled = true;
         }
         
-        if (impactSounds != null && impactSounds.Length > 0)
-        {
-            EnsureAudioSource();
-        }
+        // AudioSource setup is now optional (fallback only)
         
         isHeld = false;
     }
@@ -295,14 +268,24 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
             AudioClip impactClip = impactSounds[Random.Range(0, impactSounds.Length)];
             if (impactClip != null)
             {
-                if (TryGetActiveAudioSource(out AudioSource source))
+                // Use AudioManager if available, otherwise fallback to local AudioSource
+                if (AudioManager.Instance != null)
                 {
-                    source.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
-                    source.PlayOneShot(impactClip);
+                    float pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
+                    AudioManager.Instance.PlaySFX(impactClip, volume: 0.6f, pitch: pitch);
                 }
                 else
                 {
-                    AudioSource.PlayClipAtPoint(impactClip, transform.position);
+                    EnsureAudioSource();
+                    if (audioSource != null)
+                    {
+                        audioSource.pitch = Random.Range(0.9f, 1.1f); // Slight pitch variation
+                        audioSource.PlayOneShot(impactClip);
+                    }
+                    else
+                    {
+                        AudioSource.PlayClipAtPoint(impactClip, transform.position);
+                    }
                 }
             }
         }

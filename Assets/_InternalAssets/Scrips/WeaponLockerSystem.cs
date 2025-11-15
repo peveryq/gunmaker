@@ -11,7 +11,8 @@ public class WeaponLockerSystem : MonoBehaviour
     [SerializeField] private WeaponLockerUI lockerUI;
     [SerializeField] private WeaponSellModal sellModal;
     [SerializeField] private LockerCameraController lockerCameraController;
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
     [SerializeField] private AudioClip stashSound;
     [SerializeField] private AudioClip withdrawSound;
     [SerializeField] private AudioClip openSound;
@@ -420,7 +421,14 @@ public class WeaponLockerSystem : MonoBehaviour
 
     private void PlaySound(AudioClip clip)
     {
-        if (audioSource != null && clip != null)
+        if (clip == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clip, volume: 0.8f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(clip);
         }

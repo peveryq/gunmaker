@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Bullet : MonoBehaviour
@@ -10,6 +11,8 @@ public class Bullet : MonoBehaviour
     
     private Rigidbody rb;
     private bool hasHit = false;
+    private Coroutine lifetimeCoroutine;
+    private Coroutine returnCoroutine;
     
     private void Awake()
     {
@@ -17,6 +20,34 @@ public class Bullet : MonoBehaviour
         if (rb == null)
         {
             rb = gameObject.AddComponent<Rigidbody>();
+        }
+    }
+    
+    /// <summary>
+    /// Reset bullet state for reuse from pool. Called by BulletPool.
+    /// </summary>
+    public void Reset()
+    {
+        hasHit = false;
+        
+        // Stop all coroutines if running
+        if (lifetimeCoroutine != null)
+        {
+            StopCoroutine(lifetimeCoroutine);
+            lifetimeCoroutine = null;
+        }
+        
+        if (returnCoroutine != null)
+        {
+            StopCoroutine(returnCoroutine);
+            returnCoroutine = null;
+        }
+        
+        // Reset Rigidbody
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
     }
     
@@ -31,8 +62,15 @@ public class Bullet : MonoBehaviour
             rb.linearVelocity = direction * speed;
         }
         
-        // Destroy after lifetime
-        Destroy(gameObject, lifetime);
+        // Schedule return to pool or destroy after lifetime
+        if (BulletPool.Instance != null)
+        {
+            lifetimeCoroutine = StartCoroutine(ReturnToPoolAfterLifetime(lifetime));
+        }
+        else
+        {
+            Destroy(gameObject, lifetime);
+        }
     }
     
     private void OnCollisionEnter(Collision collision)
@@ -81,8 +119,15 @@ public class Bullet : MonoBehaviour
             damageable.TakeDamage(damage);
         }
         
-        // Destroy bullet
-        Destroy(gameObject);
+        // Disable physics immediately to prevent bouncing
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        
+        // Return to pool or destroy bullet (with small delay to ensure bullet hole is created)
+        returnCoroutine = StartCoroutine(ReturnToPoolDelayed());
     }
     
     private void OnTriggerEnter(Collider other)
@@ -104,8 +149,15 @@ public class Bullet : MonoBehaviour
             damageable.TakeDamage(damage);
         }
         
-        // Destroy bullet
-        Destroy(gameObject);
+        // Disable physics immediately to prevent bouncing
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        
+        // Return to pool or destroy bullet (with small delay to ensure effects are processed)
+        StartCoroutine(ReturnToPoolDelayed());
     }
 
     private bool TryHandleTargetHit(Vector3 point, Vector3 normal, Collider collider)
@@ -141,6 +193,36 @@ public class Bullet : MonoBehaviour
 
         zone.ReportHit(point, resolvedNormal, damage);
         return true;
+    }
+    
+    private IEnumerator ReturnToPoolAfterLifetime(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (BulletPool.Instance != null && gameObject.activeSelf)
+        {
+            BulletPool.Instance.ReturnBullet(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+        lifetimeCoroutine = null;
+    }
+    
+    private IEnumerator ReturnToPoolDelayed()
+    {
+        // Small delay to ensure bullet hole and effects are processed
+        yield return new WaitForEndOfFrame();
+        
+        if (BulletPool.Instance != null && gameObject.activeSelf)
+        {
+            BulletPool.Instance.ReturnBullet(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+        returnCoroutine = null;
     }
 }
 

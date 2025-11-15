@@ -72,12 +72,12 @@ public class Blowtorch : MonoBehaviour, IInteractable
         }
         
         // Handle start sound to working sound transition
-        if (isStartSoundPlaying && blowtorchAudio != null)
+        if (isStartSoundPlaying && startSound != null)
         {
             startSoundTimer += Time.deltaTime;
             
             // Check if start sound finished playing
-            if (startSound != null && startSoundTimer >= startSound.length)
+            if (startSoundTimer >= startSound.length)
             {
                 // Transition to working sound
                 TransitionToWorkingSound();
@@ -104,14 +104,28 @@ public class Blowtorch : MonoBehaviour, IInteractable
             flameEffect.SetActive(true);
         }
         
-        // Play start sound first
-        if (blowtorchAudio != null && startSound != null)
+        // Play start sound first (use AudioManager if available, otherwise local AudioSource)
+        if (startSound != null)
         {
-            blowtorchAudio.loop = false;
-            blowtorchAudio.clip = startSound;
-            blowtorchAudio.Play();
-            isStartSoundPlaying = true;
-            startSoundTimer = 0f;
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX(startSound, volume: 0.8f);
+                isStartSoundPlaying = true;
+                startSoundTimer = 0f;
+            }
+            else if (blowtorchAudio != null)
+            {
+                blowtorchAudio.loop = false;
+                blowtorchAudio.clip = startSound;
+                blowtorchAudio.Play();
+                isStartSoundPlaying = true;
+                startSoundTimer = 0f;
+            }
+            else
+            {
+                // If no audio source, play working sound immediately
+                TransitionToWorkingSound();
+            }
         }
         else
         {

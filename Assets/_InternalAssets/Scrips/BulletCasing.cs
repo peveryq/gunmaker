@@ -120,10 +120,17 @@ public class BulletCasing : MonoBehaviour
     {
         if (!useFadeOut)
         {
-            // Simple destruction without fade
+            // Simple return to pool or destruction without fade
             if (Time.time - spawnTime >= lifetime)
             {
-                Destroy(gameObject);
+                if (CasingPool.Instance != null)
+                {
+                    CasingPool.Instance.ReturnCasing(gameObject);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
             }
             return;
         }
@@ -191,10 +198,17 @@ public class BulletCasing : MonoBehaviour
             }
         }
         
-        // Destroy after lifetime
+        // Return to pool or destroy after lifetime
         if (elapsedTime >= lifetime)
         {
-            Destroy(gameObject);
+            if (CasingPool.Instance != null)
+            {
+                CasingPool.Instance.ReturnCasing(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
     
@@ -203,6 +217,39 @@ public class BulletCasing : MonoBehaviour
     {
         // Add sound effect for casing hitting ground
         // You can add AudioSource and play clink sound here
+    }
+    
+    /// <summary>
+    /// Reset casing state for reuse from pool. Called by CasingPool.
+    /// </summary>
+    public void Reset()
+    {
+        isFading = false;
+        hasEjected = false;
+        spawnTime = Time.time;
+        
+        // Reset scale if using scale fade
+        if (useScaleFade && originalScale != Vector3.zero)
+        {
+            transform.localScale = originalScale;
+        }
+        
+        // Reset transparency if using fade out
+        if (useFadeOut && !useScaleFade && renderers != null)
+        {
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer != null)
+                {
+                    foreach (Material mat in renderer.materials)
+                    {
+                        Color color = mat.color;
+                        color.a = 1f;
+                        mat.color = color;
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -23,7 +23,8 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private AnimationCurve bobCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     
     [Header("Footsteps")]
-    [SerializeField] private AudioSource footstepAudioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource footstepAudioSource; // Fallback only
     [SerializeField] private AudioClip[] footstepSounds;
     [SerializeField] private float walkingStepInterval = 0.5f;
     [SerializeField] private float runningStepInterval = 0.3f;
@@ -91,12 +92,8 @@ public class FirstPersonController : MonoBehaviour
         }
         
         // Setup audio source for footsteps
-        if (footstepAudioSource == null)
-        {
-            footstepAudioSource = gameObject.AddComponent<AudioSource>();
-            footstepAudioSource.spatialBlend = 0f; // 2D sound
-            footstepAudioSource.volume = 0.5f;
-        }
+        // AudioSource is now optional (fallback only)
+        // AudioManager will be used if available
         
         // Lock cursor
         if (lockCursorOnStart)
@@ -265,12 +262,21 @@ public class FirstPersonController : MonoBehaviour
     
     private void PlayFootstep()
     {
-        if (footstepAudioSource == null || footstepSounds.Length == 0)
-            return;
+        if (footstepSounds.Length == 0) return;
         
         // Use same sounds for walking and running
         AudioClip clip = footstepSounds[Random.Range(0, footstepSounds.Length)];
-        footstepAudioSource.PlayOneShot(clip);
+        if (clip == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clip, volume: 0.5f);
+        }
+        else if (footstepAudioSource != null)
+        {
+            footstepAudioSource.PlayOneShot(clip);
+        }
     }
     
     private void OnDrawGizmosSelected()

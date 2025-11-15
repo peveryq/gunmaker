@@ -22,7 +22,8 @@ public class WeaponSlotSelectionUI : MonoBehaviour
     [SerializeField] private GunNameModal gunNameModal;
 
     [Header("Audio")]
-    [SerializeField] private AudioSource uiAudioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource uiAudioSource; // Fallback only
     [SerializeField] private AudioClip clickSound;
 
     [Header("Text")]
@@ -407,7 +408,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
     {
         if (clickSound == null) return;
 
-        if (uiAudioSource != null)
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clickSound, volume: 0.8f);
+        }
+        else if (uiAudioSource != null)
         {
             uiAudioSource.PlayOneShot(clickSound);
         }

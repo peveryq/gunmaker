@@ -27,7 +27,8 @@ public class PurchaseConfirmationUI : MonoBehaviour
     [SerializeField] private Button closeButton;
     
     [Header("Audio")]
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
     [SerializeField] private AudioClip purchaseSound;
     [SerializeField] private AudioClip buttonClickSound;
     
@@ -68,12 +69,8 @@ public class PurchaseConfirmationUI : MonoBehaviour
         }
         
         // Setup audio
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.spatialBlend = 0f; // 2D sound
-            audioSource.volume = 0.8f;
-        }
+        // AudioSource is now optional (fallback only)
+        // AudioManager will be used if available
         
         listenersInitialized = true;
         
@@ -393,7 +390,14 @@ public class PurchaseConfirmationUI : MonoBehaviour
     /// </summary>
     private void PlayPurchaseSound()
     {
-        if (audioSource != null && purchaseSound != null)
+        if (purchaseSound == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(purchaseSound, volume: 0.9f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(purchaseSound);
         }
@@ -401,7 +405,14 @@ public class PurchaseConfirmationUI : MonoBehaviour
 
     private void PlayButtonClickSound()
     {
-        if (audioSource != null && buttonClickSound != null)
+        if (buttonClickSound == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(buttonClickSound, volume: 0.8f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(buttonClickSound);
         }

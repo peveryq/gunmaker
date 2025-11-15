@@ -14,7 +14,8 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private Transform firePoint;
     [SerializeField] private Transform casingEjectPoint;
     [SerializeField] private Camera playerCamera;
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
     
     [Header("Casing Ejection")]
     [SerializeField] private Vector3 casingEjectDirection = new Vector3(1f, 1f, 0f); // Right and up
@@ -334,13 +335,27 @@ public class WeaponController : MonoBehaviour
         // Reset empty sound flag when successfully shooting
         hasPlayedEmptySound = false;
         
-        // Create bullet
+        // Create bullet (use pool if available)
         if (bulletPrefab != null && firePoint != null)
         {
             Vector3 direction = GetShootDirection();
-            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.LookRotation(direction));
+            GameObject bullet;
             
-            Bullet bulletScript = bullet.GetComponent<Bullet>();
+            if (BulletPool.Instance != null)
+            {
+                bullet = BulletPool.Instance.GetBullet();
+                if (bullet != null)
+                {
+                    bullet.transform.position = firePoint.position;
+                    bullet.transform.rotation = Quaternion.LookRotation(direction);
+                }
+            }
+            else
+            {
+                bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.LookRotation(direction));
+            }
+            
+            Bullet bulletScript = bullet != null ? bullet.GetComponent<Bullet>() : null;
             if (bulletScript != null)
             {
                 bulletScript.Initialize(direction, settings.bulletSpeed, settings.bulletDamage);
@@ -443,8 +458,23 @@ public class WeaponController : MonoBehaviour
         // Use casing eject point if assigned, otherwise use fire point
         Vector3 ejectPosition = casingEjectPoint != null ? casingEjectPoint.position : firePoint.position;
         
-        // Create casing
-        GameObject casing = Instantiate(casingPrefab, ejectPosition, Random.rotation);
+        // Get casing from pool or instantiate
+        GameObject casing;
+        if (CasingPool.Instance != null)
+        {
+            casing = CasingPool.Instance.GetCasing();
+            if (casing != null)
+            {
+                casing.transform.position = ejectPosition;
+                casing.transform.rotation = Random.rotation;
+            }
+        }
+        else
+        {
+            casing = Instantiate(casingPrefab, ejectPosition, Random.rotation);
+        }
+        
+        if (casing == null) return;
         
         // Calculate eject direction in world space
         Vector3 worldEjectDirection = transform.TransformDirection(casingEjectDirection.normalized);
@@ -715,7 +745,15 @@ public class WeaponController : MonoBehaviour
     
     private void PlaySound(AudioClip clip)
     {
-        if (clip != null && audioSource != null)
+        if (clip == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            // Use 2D sound for weapon sounds (no spatialization needed)
+            AudioManager.Instance.PlaySFX2D(clip, volume: 1f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(clip);
         }

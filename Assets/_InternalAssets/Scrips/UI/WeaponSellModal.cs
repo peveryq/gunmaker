@@ -27,7 +27,8 @@ public class WeaponSellModal : MonoBehaviour
     [SerializeField] private Color statsDeltaColor = Color.white;
 
     [Header("Audio")]
-    [SerializeField] private AudioSource clickAudioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource clickAudioSource; // Fallback only
     [SerializeField] private AudioClip clickAudioClip;
 
     private readonly List<WeaponStatRowUI> activeRows = new();
@@ -284,7 +285,12 @@ public class WeaponSellModal : MonoBehaviour
     {
         if (clickAudioClip == null) return;
 
-        if (clickAudioSource != null)
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clickAudioClip, volume: 0.8f);
+        }
+        else if (clickAudioSource != null)
         {
             clickAudioSource.PlayOneShot(clickAudioClip);
         }

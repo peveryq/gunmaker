@@ -14,7 +14,8 @@ public class GunNameModal : MonoBehaviour
     [SerializeField] private Button closeButton;
 
     [Header("Audio")]
-    [SerializeField] private AudioSource defaultAudioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource defaultAudioSource; // Fallback only
     [SerializeField] private AudioClip defaultClickSound;
 
     [Header("Settings")]
@@ -26,7 +27,7 @@ public class GunNameModal : MonoBehaviour
     private Action<string> onCreate;
     private Action onClose;
     private bool isActive;
-    private AudioSource clickAudioSource;
+    private AudioSource clickAudioSource; // Fallback only
     private AudioClip clickAudioClip;
 
     private void Awake()
@@ -194,7 +195,12 @@ public class GunNameModal : MonoBehaviour
     {
         if (clickAudioClip == null) return;
 
-        if (clickAudioSource != null)
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clickAudioClip, volume: 0.8f);
+        }
+        else if (clickAudioSource != null)
         {
             clickAudioSource.PlayOneShot(clickAudioClip);
         }

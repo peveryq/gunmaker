@@ -12,7 +12,8 @@ public class PartSpawner : MonoBehaviour
     [SerializeField] private Transform spawnPoint;
     
     [Header("Audio")]
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
     [SerializeField] private AudioClip spawnSound;
     
     private void Awake()
@@ -40,12 +41,8 @@ public class PartSpawner : MonoBehaviour
         }
         
         // Setup audio source if not assigned
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.spatialBlend = 1f; // 3D sound
-            audioSource.volume = 0.7f;
-        }
+        // AudioSource is now optional (fallback only)
+        // AudioManager will be used if available
     }
     
     /// <summary>
@@ -286,7 +283,14 @@ public class PartSpawner : MonoBehaviour
     /// </summary>
     private void PlaySpawnSound()
     {
-        if (audioSource != null && spawnSound != null)
+        if (spawnSound == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(spawnSound, volume: 0.7f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(spawnSound);
         }

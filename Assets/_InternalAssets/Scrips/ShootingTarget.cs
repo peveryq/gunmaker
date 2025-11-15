@@ -30,7 +30,7 @@ public class ShootingTarget : MonoBehaviour
     [SerializeField] private float bullseyeDamageMultiplier = 1.5f;
 
     [Header("Audio Settings")]
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip("Audio clips for hits. If AudioManager is available, uses it. Otherwise falls back to local AudioSource (if assigned).")]
     [SerializeField] private AudioClip normalHitClip;
     [SerializeField] private AudioClip bullseyeHitClip;
     [Tooltip("Optional additional variants for normal hits; chosen randomly.")]
@@ -39,6 +39,8 @@ public class ShootingTarget : MonoBehaviour
     [SerializeField] private AudioClip[] bullseyeHitVariants;
     [Tooltip("Sound played when target starts falling animation.")]
     [SerializeField] private AudioClip fallSound;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
 
     [Header("Falling Behaviour")]
     [SerializeField] private bool enableFalling = false;
@@ -49,21 +51,12 @@ public class ShootingTarget : MonoBehaviour
     [Tooltip("How long the target stays down before automatically raising.")]
     [SerializeField] private float timeDown = 2f;
 
-    [Header("Particle Overrides")]
-    [Tooltip("Optional particle prefab for normal hits. Instantiated once and reused.")]
-    [SerializeField] private ParticleSystem normalHitParticles;
-    [Tooltip("Optional particle prefab for bullseye hits. Instantiated once and reused.")]
-    [SerializeField] private ParticleSystem bullseyeHitParticles;
-    [Tooltip("Optional parent transform for spawned particle instances.")]
-    [SerializeField] private Transform particleParent;
-
     [Header("Damage Numbers")]
     [Tooltip("Prefab for spawning money numbers when target is hit. Uses Damage Numbers Pro.")]
     [SerializeField] private DamageNumber moneyNumberPrefab;
     [Tooltip("Offset from hit point where money number should spawn.")]
     [SerializeField] private Vector3 moneyNumberOffset = Vector3.up * 0.5f;
 
-    private readonly Dictionary<HitZone, ParticleSystem> particleInstances = new Dictionary<HitZone, ParticleSystem>();
     private Coroutine resetCoroutine;
     private bool isDown;
     private float currentHP;
@@ -111,7 +104,6 @@ public class ShootingTarget : MonoBehaviour
         }
 
         PlayHitSound(zone);
-        SpawnHitParticles(zone, hitPoint, hitNormal);
 
         // Show hit lines on crosshair for any hit
         if (GameplayHUD.Instance != null)
@@ -165,15 +157,18 @@ public class ShootingTarget : MonoBehaviour
 
     private void PlayHitSound(HitZone zone)
     {
-        if (audioSource == null)
-        {
-            return;
-        }
-
         AudioClip clip = zone == HitZone.Bullseye
             ? GetRandomClip(bullseyeHitVariants, bullseyeHitClip)
             : GetRandomClip(normalHitVariants, normalHitClip);
-        if (clip != null)
+        
+        if (clip == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(clip, volume: 0.8f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(clip);
         }
@@ -181,31 +176,17 @@ public class ShootingTarget : MonoBehaviour
 
     private void PlayFallSound()
     {
-        if (audioSource != null && fallSound != null)
+        if (fallSound == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(fallSound, volume: 0.7f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(fallSound);
         }
-    }
-
-    private void SpawnHitParticles(HitZone zone, Vector3 hitPoint, Vector3 hitNormal)
-    {
-        ParticleSystem prefab = zone == HitZone.Bullseye ? bullseyeHitParticles : normalHitParticles;
-        if (prefab == null)
-        {
-            return;
-        }
-
-        if (!particleInstances.TryGetValue(zone, out ParticleSystem instance) || instance == null)
-        {
-            instance = Instantiate(prefab, particleParent != null ? particleParent : transform);
-            particleInstances[zone] = instance;
-        }
-
-        instance.transform.position = hitPoint;
-        instance.transform.rotation = Quaternion.LookRotation(hitNormal);
-        instance.gameObject.SetActive(true);
-        instance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        instance.Play();
     }
 
     private void HandleFalling()

@@ -54,7 +54,8 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private PurchaseConfirmationUI purchaseConfirmationUI;
     
     [Header("Audio")]
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip("Optional local AudioSource for fallback (if AudioManager not available). Can be left empty.")]
+    [SerializeField] private AudioSource audioSource; // Fallback only
     [SerializeField] private AudioClip buttonClickSound;
     
     private PartType currentCategory = PartType.Barrel;
@@ -90,12 +91,8 @@ public class ShopUI : MonoBehaviour
             closeButton.onClick.AddListener(CloseShop);
         
         // Setup audio
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.spatialBlend = 0f; // 2D sound
-            audioSource.volume = 0.5f;
-        }
+        // AudioSource is now optional (fallback only)
+        // AudioManager will be used if available
         
         // Hide shop initially
         if (shopPanel != null)
@@ -489,7 +486,14 @@ public class ShopUI : MonoBehaviour
     /// </summary>
     private void PlayButtonSound()
     {
-        if (audioSource != null && buttonClickSound != null)
+        if (buttonClickSound == null) return;
+        
+        // Use AudioManager if available, otherwise fallback to local AudioSource
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(buttonClickSound, volume: 0.8f);
+        }
+        else if (audioSource != null)
         {
             audioSource.PlayOneShot(buttonClickSound);
         }
