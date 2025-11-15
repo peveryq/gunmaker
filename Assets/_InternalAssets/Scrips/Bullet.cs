@@ -59,7 +59,8 @@ public class Bullet : MonoBehaviour
             handledByTarget = TryHandleTargetHit(hitPoint, hitNormal, collision.collider);
         }
 
-        if (!handledByTarget && collision.contacts.Length > 0)
+        // Always spawn bullet hole for visual feedback, even if hit was handled by target
+        if (collision.contacts.Length > 0)
         {
             // Use BulletHoleManager if available
             if (BulletHoleManager.Instance != null)

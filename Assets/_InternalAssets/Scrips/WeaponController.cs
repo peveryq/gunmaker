@@ -41,6 +41,11 @@ public class WeaponController : MonoBehaviour
     
     // Aiming
     private bool isAiming = false;
+    private bool isAimingToggleMode = false; // If true, aiming was activated via toggle (single click)
+    private float rightMouseDownTime = 0f;
+    private bool isRightMouseHeld = false;
+    private bool wasToggleModeOnPress = false; // Remember toggle state when button was pressed
+    private const float CLICK_THRESHOLD = 0.25f; // Time in seconds to distinguish click from hold
     private float defaultFOV;
     private Vector3 defaultPosition;
     
@@ -146,13 +151,64 @@ public class WeaponController : MonoBehaviour
         if (cursorLocked && settings != null && settings.canAim)
         {
             bool wasAiming = isAiming;
-            if (Input.GetMouseButton(1))
+            
+            // Check for right mouse button down
+            if (Input.GetMouseButtonDown(1))
             {
+                rightMouseDownTime = Time.time;
+                isRightMouseHeld = true;
+                
+                // Remember if we were in toggle mode before this press
+                wasToggleModeOnPress = isAimingToggleMode;
+                
+                // Activate aim immediately on button press (works for both click and hold)
+                isAiming = true;
+                
+                // If we were in toggle mode, disable it temporarily
+                // We'll determine if this becomes a toggle toggle (off) or hold on button release
+                if (wasToggleModeOnPress)
+                {
+                    isAimingToggleMode = false;
+                }
+            }
+            
+            // Check for right mouse button held
+            if (isRightMouseHeld && Input.GetMouseButton(1))
+            {
+                // While held, keep aim active
                 isAiming = true;
             }
-            else
+            
+            // Check for right mouse button up
+            if (Input.GetMouseButtonUp(1))
             {
-                isAiming = false;
+                if (isRightMouseHeld)
+                {
+                    float holdDuration = Time.time - rightMouseDownTime;
+                    
+                    if (holdDuration < CLICK_THRESHOLD)
+                    {
+                        // Single click: toggle aim state
+                        // If we were in toggle mode before press, toggle it off
+                        // Otherwise, toggle it on
+                        isAimingToggleMode = !wasToggleModeOnPress;
+                        isAiming = isAimingToggleMode;
+                    }
+                    else
+                    {
+                        // Was holding: deactivate aim (it was hold mode)
+                        isAiming = false;
+                        isAimingToggleMode = false;
+                    }
+                }
+                
+                isRightMouseHeld = false;
+            }
+            
+            // If in toggle mode and button is not being held, maintain toggle state
+            if (!isRightMouseHeld && isAimingToggleMode)
+            {
+                isAiming = true;
             }
             
             // Notify crosshair if aiming state changed
@@ -228,6 +284,8 @@ public class WeaponController : MonoBehaviour
             GameplayHUD.Instance.SetAiming(false);
         }
         isAiming = false;
+        isAimingToggleMode = false;
+        isRightMouseHeld = false;
 
         // Restore default FOV before unequipping
         if (playerCamera != null && defaultFOV > 0)

@@ -24,7 +24,35 @@ public class BulletCasing : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         renderers = GetComponentsInChildren<Renderer>();
         spawnTime = Time.time;
+        
+        // Ensure fadeTime is valid
+        if (fadeTime <= 0f)
+        {
+            fadeTime = 0.1f; // Default minimum value
+        }
+        
+        // Ensure lifetime is valid
+        if (lifetime <= 0f)
+        {
+            lifetime = 1f; // Default minimum value
+        }
+        
+        // Ensure fadeTime doesn't exceed lifetime
+        if (fadeTime > lifetime)
+        {
+            fadeTime = lifetime * 0.5f; // Use half of lifetime as fade time
+        }
+        
+        // Get original scale and validate it
         originalScale = transform.localScale;
+        if (float.IsNaN(originalScale.x) || float.IsNaN(originalScale.y) || float.IsNaN(originalScale.z) ||
+            float.IsInfinity(originalScale.x) || float.IsInfinity(originalScale.y) || float.IsInfinity(originalScale.z) ||
+            originalScale.x <= 0f || originalScale.y <= 0f || originalScale.z <= 0f)
+        {
+            // Fallback to Vector3.one if scale is invalid
+            originalScale = Vector3.one;
+            transform.localScale = Vector3.one;
+        }
         
         // Create material instances for fade effect
         if (useFadeOut && !useScaleFade)
@@ -102,8 +130,15 @@ public class BulletCasing : MonoBehaviour
         
         float elapsedTime = Time.time - spawnTime;
         
+        // Ensure fadeTime is valid for calculations
+        float safeFadeTime = fadeTime > 0.0001f ? fadeTime : 0.1f;
+        if (safeFadeTime > lifetime)
+        {
+            safeFadeTime = lifetime * 0.5f;
+        }
+        
         // Start fading before destruction
-        if (elapsedTime >= lifetime - fadeTime && !isFading)
+        if (elapsedTime >= lifetime - safeFadeTime && !isFading)
         {
             isFading = true;
         }
@@ -111,14 +146,27 @@ public class BulletCasing : MonoBehaviour
         // Fade out
         if (isFading)
         {
-            float fadeProgress = (elapsedTime - (lifetime - fadeTime)) / fadeTime;
+            // Use the safeFadeTime calculated above
+            float fadeProgress = (elapsedTime - (lifetime - safeFadeTime)) / safeFadeTime;
             fadeProgress = Mathf.Clamp01(fadeProgress);
             
             if (useScaleFade)
             {
                 // Scale down to zero
                 float scale = 1f - fadeProgress;
-                transform.localScale = originalScale * scale;
+                
+                // Validate scale value before applying
+                if (!float.IsNaN(scale) && !float.IsInfinity(scale) && scale >= 0f)
+                {
+                    Vector3 newScale = originalScale * scale;
+                    
+                    // Validate newScale before applying
+                    if (!float.IsNaN(newScale.x) && !float.IsNaN(newScale.y) && !float.IsNaN(newScale.z) &&
+                        !float.IsInfinity(newScale.x) && !float.IsInfinity(newScale.y) && !float.IsInfinity(newScale.z))
+                    {
+                        transform.localScale = newScale;
+                    }
+                }
             }
             else
             {
