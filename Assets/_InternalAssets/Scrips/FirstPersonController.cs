@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 public class FirstPersonController : MonoBehaviour
 {
@@ -56,6 +57,12 @@ public class FirstPersonController : MonoBehaviour
     
     private bool cursorLocked = true;
     
+    // FOV Kick (camera FOV expansion on shot)
+    private float baseFOV; // Base FOV (stored at start, before any modifications)
+    private float fovKickOffset = 0f; // Current FOV kick offset (added to base FOV)
+    private float previousFOVKickOffset = 0f; // Previous frame's offset (to track changes)
+    private Tween fovKickReturnTween;
+    
     private void Start()
     {
         // Get or add CharacterController
@@ -81,6 +88,9 @@ public class FirstPersonController : MonoBehaviour
         playerCamera.transform.SetParent(transform);
         originalCameraPosition = new Vector3(0, cameraHeight, 0);
         playerCamera.transform.localPosition = originalCameraPosition;
+        
+        // Store base FOV for FOV Kick calculations
+        baseFOV = playerCamera.fieldOfView;
         
         // Setup ground check
         if (groundCheck == null)
@@ -126,6 +136,27 @@ public class FirstPersonController : MonoBehaviour
         
         // Apply gravity always (after jump to allow jump velocity to be set)
         ApplyGravity();
+    }
+    
+    private void LateUpdate()
+    {
+        // Apply FOV Kick offset in LateUpdate to ensure it's applied after all other FOV changes
+        // (e.g., aiming FOV changes from WeaponController)
+        if (playerCamera != null)
+        {
+            float currentFOV = playerCamera.fieldOfView;
+            
+            // If offset changed or is non-zero, apply it
+            // We subtract the previous offset (if any) to get the base FOV,
+            // then add the current offset
+            if (fovKickOffset != previousFOVKickOffset || fovKickOffset != 0f)
+            {
+                // Remove previous offset to get base FOV, then add current offset
+                float baseFOVWithoutKick = currentFOV - previousFOVKickOffset;
+                playerCamera.fieldOfView = baseFOVWithoutKick + fovKickOffset;
+                previousFOVKickOffset = fovKickOffset;
+            }
+        }
     }
     
     private void HandleCursorToggle()
@@ -302,5 +333,47 @@ public class FirstPersonController : MonoBehaviour
         xRotation -= verticalRecoil; // Negative because positive xRotation looks down
         xRotation = Mathf.Clamp(xRotation, minLookAngle, maxLookAngle);
         yRotation += horizontalRecoil;
+    }
+    
+    /// <summary>
+    /// Apply FOV Kick - instant camera FOV expansion on shot with smooth return.
+    /// Creates the powerful feel like in CoD (camera widens on shot).
+    /// </summary>
+    /// <param name="fovKickAmount">FOV expansion amount in degrees (positive = wider)</param>
+    /// <param name="kickDuration">Duration of the FOV expansion (very short, 0.01-0.05s)</param>
+    /// <param name="returnDuration">Duration of smooth FOV return to original (0.1-0.2s)</param>
+    public void ApplyFOVKick(float fovKickAmount, float kickDuration = 0.03f, float returnDuration = 0.15f)
+    {
+        if (playerCamera == null) return;
+        
+        // Kill existing return tween if any
+        if (fovKickReturnTween != null && fovKickReturnTween.IsActive())
+        {
+            fovKickReturnTween.Kill();
+        }
+        
+        // Apply instant FOV expansion
+        fovKickOffset = fovKickAmount;
+        
+        // Then smoothly return to zero
+        fovKickReturnTween = DOTween.To(
+            () => fovKickOffset,
+            x => fovKickOffset = x,
+            0f,
+            returnDuration
+        )
+        .SetEase(Ease.OutQuad) // Smooth deceleration
+        .OnComplete(() => {
+            fovKickOffset = 0f; // Ensure it's exactly zero
+        });
+    }
+    
+    private void OnDestroy()
+    {
+        // Clean up DOTween tweens
+        if (fovKickReturnTween != null && fovKickReturnTween.IsActive())
+        {
+            fovKickReturnTween.Kill();
+        }
     }
 }

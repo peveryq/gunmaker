@@ -19,6 +19,9 @@ MonoBehaviour:
   recoilUpward: 2
   recoilKickback: 0.15
   recoilRecoverySpeed: 15
+  fovKickAmount: 1
+  fovKickDuration: 0.03
+  fovKickReturnDuration: 0.15
   magSize: 30
   reloadTime: 1.5
   autoReload: 1

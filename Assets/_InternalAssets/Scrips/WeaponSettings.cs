@@ -14,6 +14,14 @@ public class WeaponSettings : ScriptableObject
     public float recoilKickback = 0.1f; // Weapon kick back toward player
     public float recoilRecoverySpeed = 5f; // How fast weapon returns to position
     
+    [Header("FOV Kick")]
+    [Tooltip("FOV expansion amount on shot (degrees). Camera widens by this value. Typically 1-3 degrees for powerful feel.")]
+    public float fovKickAmount = 2f;
+    [Tooltip("Duration of FOV expansion (seconds). Very short for instant feel (0.01-0.05).")]
+    public float fovKickDuration = 0.03f;
+    [Tooltip("Duration of smooth FOV return to original (seconds). Typically 0.1-0.2.")]
+    public float fovKickReturnDuration = 0.15f;
+    
     [Header("Ammo")]
     public int magSize = 15;
     public float reloadTime = 2f;

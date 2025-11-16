@@ -544,6 +544,13 @@ public class WeaponController : MonoBehaviour
             if (fpsController != null)
             {
                 fpsController.ApplyCameraRecoil(settings.recoilUpward, 0f);
+                
+                // Apply FOV Kick (camera FOV expansion for powerful feel)
+                fpsController.ApplyFOVKick(
+                    settings.fovKickAmount,
+                    settings.fovKickDuration,
+                    settings.fovKickReturnDuration
+                );
             }
         }
         
