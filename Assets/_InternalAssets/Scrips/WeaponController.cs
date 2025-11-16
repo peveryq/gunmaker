@@ -194,11 +194,11 @@ public class WeaponController : MonoBehaviour
                         // Otherwise, toggle it on
                         isAimingToggleMode = !wasToggleModeOnPress;
                         isAiming = isAimingToggleMode;
-                    }
-                    else
-                    {
+            }
+            else
+            {
                         // Was holding: deactivate aim (it was hold mode)
-                        isAiming = false;
+                isAiming = false;
                         isAimingToggleMode = false;
                     }
                 }

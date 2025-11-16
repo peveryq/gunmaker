@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using DG.Tweening;
 
 public class WeaponLockerSystem : MonoBehaviour
 {
@@ -17,10 +18,20 @@ public class WeaponLockerSystem : MonoBehaviour
     [SerializeField] private AudioClip withdrawSound;
     [SerializeField] private AudioClip openSound;
     [SerializeField] private AudioClip closeSound;
-    [Header("Locker Animations")]
-    [SerializeField] private Animator lockerAnimator;
-    [SerializeField] private string openAnimationTrigger = "Open";
-    [SerializeField] private string closeAnimationTrigger = "Close";
+
+    [Header("Locker Animations (DOTween)")]
+    [Tooltip("DOTweenAnimation components that animate locker doors from closed to open.\nEach element typically corresponds to a single door leaf.\nTweens should be configured from closed (0) to open (+/- angle) with autoPlay = false.")]
+    [SerializeField] private DOTweenAnimation[] doorOpenTweens;
+    [Tooltip("DOTweenAnimation components that animate locker doors from open back to closed.\nShould mirror doorOpenTweens by index (same doors), but with their own easing/bounce and autoPlay = false.")]
+    [SerializeField] private DOTweenAnimation[] doorCloseTweens;
+
+    [Header("Locker Light")]
+    [Tooltip("Optional light inside the locker that is toggled when doors open/close.")]
+    [SerializeField] private Light lockerLight;
+    [Tooltip("Delay before enabling the locker light after opening.")]
+    [SerializeField] private float lightOnDelay = 0.1f;
+    [Tooltip("Delay before disabling the locker light after closing.")]
+    [SerializeField] private float lightOffDelay = 0f;
 
     private InteractionHandler interactionHandler;
     private bool isInitialized;
@@ -39,6 +50,12 @@ public class WeaponLockerSystem : MonoBehaviour
         Instance = this;
         transform.SetParent(null);
         DontDestroyOnLoad(gameObject);
+
+        // Ensure locker light starts disabled by default
+        if (lockerLight != null)
+        {
+            lockerLight.enabled = false;
+        }
     }
 
     private void Start()
@@ -135,7 +152,7 @@ public class WeaponLockerSystem : MonoBehaviour
         lockerUI.EnsureControlCaptured();
         lockerUI.PreparePreviewForOpen();
         PlaySound(openSound);
-        PlayLockerAnimation(openAnimationTrigger);
+        PlayLockerAnimation(true);
 
         Action showLockerUI = () =>
         {
@@ -379,7 +396,7 @@ public class WeaponLockerSystem : MonoBehaviour
         }
 
         PlaySound(closeSound);
-        PlayLockerAnimation(closeAnimationTrigger);
+        PlayLockerAnimation(false);
 
         Action onExitCompleted = () =>
         {
@@ -434,16 +451,71 @@ public class WeaponLockerSystem : MonoBehaviour
         }
     }
 
-    private void PlayLockerAnimation(string triggerName)
+    private void PlayLockerAnimation(bool isOpen)
     {
-        if (lockerAnimator == null || string.IsNullOrEmpty(triggerName))
+        // Prefer DOTween-based door animations if configured
+        DOTweenAnimation[] tweensToPlay = null;
+        if (isOpen)
         {
-            return;
+            if (doorOpenTweens != null && doorOpenTweens.Length > 0)
+            {
+                tweensToPlay = doorOpenTweens;
+            }
+        }
+        else
+        {
+            if (doorCloseTweens != null && doorCloseTweens.Length > 0)
+            {
+                tweensToPlay = doorCloseTweens;
+            }
         }
 
-        lockerAnimator.ResetTrigger(openAnimationTrigger);
-        lockerAnimator.ResetTrigger(closeAnimationTrigger);
-        lockerAnimator.SetTrigger(triggerName);
+        if (tweensToPlay != null && tweensToPlay.Length > 0)
+        {
+            foreach (DOTweenAnimation anim in tweensToPlay)
+            {
+                if (anim == null) continue;
+
+                // Ensure tween is created (if autoGenerate is false)
+                anim.CreateTween(false, false);
+                anim.DORestart();
+            }
+
+            // Handle locker light with delay
+            if (lockerLight != null)
+            {
+                if (isOpen)
+                {
+                    if (lightOnDelay > 0f)
+                    {
+                        DOVirtual.DelayedCall(lightOnDelay, () =>
+                        {
+                            if (lockerLight != null) lockerLight.enabled = true;
+                        });
+                    }
+                    else
+                    {
+                        lockerLight.enabled = true;
+                    }
+                }
+                else
+                {
+                    if (lightOffDelay > 0f)
+                    {
+                        DOVirtual.DelayedCall(lightOffDelay, () =>
+                        {
+                            if (lockerLight != null) lockerLight.enabled = false;
+                        });
+                    }
+                    else
+                    {
+                        lockerLight.enabled = false;
+                    }
+                }
+            }
+
+            return;
+        }
     }
 
     private void OnDestroy()

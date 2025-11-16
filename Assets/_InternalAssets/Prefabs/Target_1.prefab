@@ -218,7 +218,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3886684629358889467}
   m_Layer: 0
-  m_Name: TargetCeiling
+  m_Name: Target_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
