@@ -473,7 +473,7 @@ public class WeaponLockerSystem : MonoBehaviour
         if (tweensToPlay != null && tweensToPlay.Length > 0)
         {
             foreach (DOTweenAnimation anim in tweensToPlay)
-            {
+    {
                 if (anim == null) continue;
 
                 // Ensure tween is created (if autoGenerate is false)

@@ -12,9 +12,6 @@ public class BulletHoleManager : MonoBehaviour
     [SerializeField] private int maxBulletHoles = 50; // Maximum number of bullet holes
     [SerializeField] private float bulletHoleLifetime = 10f; // How long before destroying
     
-    [Header("Particle Effects")]
-    [SerializeField] private ParticleSystem impactParticles; // Impact debris particles
-    
     private Queue<BulletHole> activeBulletHoles = new Queue<BulletHole>();
     private Queue<GameObject> pooledBulletHoles = new Queue<GameObject>();
     
@@ -104,14 +101,6 @@ public class BulletHoleManager : MonoBehaviour
         
         bulletHole.Initialize(bulletHoleLifetime, () => ReturnToPool(holeObj));
         activeBulletHoles.Enqueue(bulletHole);
-        
-        // Spawn impact particles
-        if (impactParticles != null)
-        {
-            impactParticles.transform.position = position;
-            impactParticles.transform.rotation = Quaternion.LookRotation(normal);
-            impactParticles.Play();
-        }
     }
     
     private GameObject GetPooledObject()

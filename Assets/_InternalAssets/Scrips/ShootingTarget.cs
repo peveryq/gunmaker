@@ -48,6 +48,8 @@ public class ShootingTarget : MonoBehaviour
     [SerializeField] private DOTweenAnimation fallAnimation;
     [Tooltip("DOTweenAnimation component for reset/raise animation. Should animate target back to upright position. Set autoPlay = false in DOTweenAnimation.")]
     [SerializeField] private DOTweenAnimation resetAnimation;
+    [Tooltip("DOTweenAnimation component for punch/shake animation when hit. Plays only while target is standing. Set autoPlay = false in DOTweenAnimation.")]
+    [SerializeField] private DOTweenAnimation punchAnimation;
     [Tooltip("How long the target stays down before automatically raising.")]
     [SerializeField] private float timeDown = 2f;
 
@@ -60,6 +62,7 @@ public class ShootingTarget : MonoBehaviour
     private Coroutine resetCoroutine;
     private bool isDown;
     private float currentHP;
+    private bool isPunchAnimating;
 
     private void Awake()
     {
@@ -104,6 +107,12 @@ public class ShootingTarget : MonoBehaviour
         }
 
         PlayHitSound(zone);
+
+        // Play punch animation only if target is standing
+        if (!isDown)
+        {
+            PlayPunchAnimation();
+        }
 
         // Show hit lines on crosshair for any hit
         if (GameplayHUD.Instance != null)
@@ -189,6 +198,37 @@ public class ShootingTarget : MonoBehaviour
         }
     }
 
+    private void PlayPunchAnimation()
+    {
+        if (punchAnimation == null) return;
+        
+        // Don't play if animation is already running
+        if (isPunchAnimating)
+        {
+            return;
+        }
+        
+        // Ensure tween is created if autoGenerate is false
+        punchAnimation.CreateTween(false, false);
+        
+        // Get the tween to set up completion callback
+        // DOTweenAnimation has a 'tween' property that holds the Tween
+        Tween tween = punchAnimation.tween;
+        if (tween != null)
+        {
+            // Set flag to prevent overlapping animations
+            isPunchAnimating = true;
+            
+            // Reset flag when animation completes
+            tween.OnComplete(() => {
+                isPunchAnimating = false;
+            });
+        }
+        
+        // Restart the animation (plays from start)
+        punchAnimation.DORestart();
+    }
+
     private void HandleFalling()
     {
         if (resetCoroutine != null)
@@ -203,6 +243,7 @@ public class ShootingTarget : MonoBehaviour
     private IEnumerator FallRoutine(bool skipFallAnimation)
     {
         isDown = true;
+        isPunchAnimating = false; // Reset punch animation flag when target falls
 
         if (!skipFallAnimation && fallAnimation != null)
         {
@@ -283,6 +324,7 @@ public class ShootingTarget : MonoBehaviour
         }
 
         isDown = false;
+        isPunchAnimating = false; // Reset punch animation flag
     }
 }
 
