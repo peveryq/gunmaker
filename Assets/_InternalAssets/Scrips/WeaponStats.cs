@@ -21,44 +21,79 @@ public class WeaponStats
     // Convert stats to weapon settings values
     public float GetBulletSpeed()
     {
-        // power: 1->30, 100->300
-        return Mathf.Lerp(50f, 300f, (power - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(50f, 300f, (power - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.bulletSpeedMin, config.bulletSpeedMax, (power - 1f) / 99f);
     }
     
     public float GetSpreadAngle()
     {
-        // accuracy: 1->7, 100->0
-        return Mathf.Lerp(7f, 0f, (accuracy - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(7f, 0f, (accuracy - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.spreadAngleMin, config.spreadAngleMax, (accuracy - 1f) / 99f);
     }
     
     public float GetFireRate()
     {
-        // rapidity: 1->0.5, 100->0.05
-        return Mathf.Lerp(0.5f, 0.05f, (rapidity - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(0.5f, 0.05f, (rapidity - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.fireRateMin, config.fireRateMax, (rapidity - 1f) / 99f);
     }
     
     public float GetRecoilUpward()
     {
-        // recoil: 1->0, 100->3
-        return Mathf.Lerp(0f, 3f, (recoil - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(0f, 3f, (recoil - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.recoilUpwardMin, config.recoilUpwardMax, (recoil - 1f) / 99f);
     }
     
     public float GetRecoilKickback()
     {
-        // recoil: 1->0.01, 100->0.4
-        return Mathf.Lerp(0.05f, 0.15f, (recoil - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(0.05f, 0.15f, (recoil - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.recoilKickbackMin, config.recoilKickbackMax, (recoil - 1f) / 99f);
     }
     
     public float GetReloadTime()
     {
-        // reloadSpeed: 1->3, 100->1
-        return Mathf.Lerp(3f, 1f, (reloadSpeed - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(3f, 1f, (reloadSpeed - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.reloadTimeMin, config.reloadTimeMax, (reloadSpeed - 1f) / 99f);
     }
     
     public float GetAimFOV()
     {
-        // scope: 1->40, 100->10
-        return Mathf.Lerp(45f, 5f, (scope - 1f) / 99f);
+        WeaponStatsConfig config = WeaponStatsConfig.Instance;
+        if (config == null)
+        {
+            // Fallback to default values if config not found
+            return Mathf.Lerp(45f, 5f, (scope - 1f) / 99f);
+        }
+        return Mathf.Lerp(config.aimFOVMin, config.aimFOVMax, (scope - 1f) / 99f);
     }
     
     public int GetMagSize()

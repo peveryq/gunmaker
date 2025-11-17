@@ -127,6 +127,20 @@ public class BulletPool : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
         
+        // Reset TrailRenderer if present (clear old trail history)
+        TrailRenderer trail = bullet.GetComponent<TrailRenderer>();
+        if (trail != null)
+        {
+            trail.Clear();
+        }
+        
+        // Also check in children (in case trail is on child object)
+        trail = bullet.GetComponentInChildren<TrailRenderer>();
+        if (trail != null)
+        {
+            trail.Clear();
+        }
+        
         // Remove from active list and add to available
         activeBullets.Remove(bullet);
         availableBullets.Enqueue(bullet);

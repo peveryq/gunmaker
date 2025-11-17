@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Rifle_super
   m_EditorClassIdentifier: 
   fireRate: 0.05
-  bulletSpeed: 150
+  bulletSpeed: 300
   bulletDamage: 10
   spreadAngle: 0
   recoilUpward: 0
@@ -22,11 +22,11 @@ MonoBehaviour:
   fovKickAmount: 1
   fovKickDuration: 0.03
   fovKickReturnDuration: 0.15
-  magSize: 100
+  magSize: 150
   reloadTime: 0.5
   autoReload: 1
   canAim: 1
-  aimFOV: 40
+  aimFOV: 4
   aimSpeed: 12
   aimPosition: {x: 0, y: -0.27, z: 0.5}
   enableWeaponSway: 1

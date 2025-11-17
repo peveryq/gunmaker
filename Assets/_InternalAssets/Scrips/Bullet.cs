@@ -49,6 +49,20 @@ public class Bullet : MonoBehaviour
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
+        
+        // Reset TrailRenderer if present (clear old trail history)
+        TrailRenderer trail = GetComponent<TrailRenderer>();
+        if (trail != null)
+        {
+            trail.Clear();
+        }
+        
+        // Also check in children (in case trail is on child object)
+        trail = GetComponentInChildren<TrailRenderer>();
+        if (trail != null)
+        {
+            trail.Clear();
+        }
     }
     
     public void Initialize(Vector3 direction, float bulletSpeed, float bulletDamage)

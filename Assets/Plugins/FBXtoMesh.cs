@@ -19,7 +19,7 @@ public class BatchMeshExporter : MonoBehaviour
             if (mf != null && mf.sharedMesh != null)
             {
                 Mesh mesh = mf.sharedMesh;
-                string path = "Assets/_InternalAssets/Meshes/" + mesh.name + ".mesh";
+                string path = "Assets/_InternalAssets/Models/_Meshes/" + mesh.name + ".mesh";
                 AssetDatabase.CreateAsset(Object.Instantiate(mesh), path);
                 Debug.Log("Mesh saved: " + path);
             }
@@ -29,7 +29,7 @@ public class BatchMeshExporter : MonoBehaviour
             if (smr != null && smr.sharedMesh != null)
             {
                 Mesh mesh = smr.sharedMesh;
-                string path = "Assets/_InternalAssets/Meshes/" + mesh.name + ".mesh";
+                string path = "Assets/_InternalAssets/Models/_Meshes/" + mesh.name + ".mesh";
                 AssetDatabase.CreateAsset(Object.Instantiate(mesh), path);
                 Debug.Log("Skinned mesh saved: " + path);
             }

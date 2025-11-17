@@ -75,7 +75,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 50
-  lifetime: 4
+  lifetime: 1
   damage: 10
   hitEffect: {fileID: 0}
 --- !u!96 &8915027735796685103

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3bff17cec61c91448975fe9b5931cba, type: 3}
+  m_Name: WeaponStatsConfig
+  m_EditorClassIdentifier: 
+  bulletSpeedMin: 50
+  bulletSpeedMax: 300
+  spreadAngleMin: 7
+  spreadAngleMax: 0
+  fireRateMin: 0.5
+  fireRateMax: 0.05
+  recoilUpwardMin: 0
+  recoilUpwardMax: 3
+  recoilKickbackMin: 0.05
+  recoilKickbackMax: 0.15
+  reloadTimeMin: 3
+  reloadTimeMax: 0.5
+  aimFOVMin: 45
+  aimFOVMax: 5
