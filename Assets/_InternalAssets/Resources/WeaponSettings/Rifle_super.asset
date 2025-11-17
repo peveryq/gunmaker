@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Rifle_super
   m_EditorClassIdentifier: 
   fireRate: 0.05
-  bulletSpeed: 300
+  bulletSpeed: 1000
   bulletDamage: 10
   spreadAngle: 0
   recoilUpward: 0
@@ -26,7 +26,7 @@ MonoBehaviour:
   reloadTime: 0.5
   autoReload: 1
   canAim: 1
-  aimFOV: 4
+  aimFOV: 7
   aimSpeed: 12
   aimPosition: {x: 0, y: -0.27, z: 0.5}
   enableWeaponSway: 1

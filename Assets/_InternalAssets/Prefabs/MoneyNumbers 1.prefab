@@ -143,11 +143,11 @@ MonoBehaviour:
   renderThroughWalls: 0
   consistentScreenSize: 1
   distanceScalingSettings:
-    baseDistance: 15
+    baseDistance: 600
     closeDistance: 5
-    farDistance: 50
-    closeScale: 2
-    farScale: 1
+    farDistance: 300
+    closeScale: 50
+    farScale: 5
   cameraOverride: {fileID: 0}
   enableNumber: 1
   number: 123

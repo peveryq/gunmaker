@@ -13,6 +13,26 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float minLookAngle = -90f;
     [SerializeField] private float maxLookAngle = 90f;
     
+    [Header("Aim Smoothing (High Zoom)")]
+    [Tooltip("Enable camera smoothing when aiming with high zoom scopes (low FOV). Makes aiming easier at high zoom levels.")]
+    [SerializeField] private bool enableAimSmoothing = true;
+    [Tooltip("FOV threshold below which smoothing starts to apply. When FOV is below this, smoothing activates.")]
+    [SerializeField] private float aimSmoothingFOVThreshold = 40f;
+    [Tooltip("Minimum smoothing speed (when FOV is at threshold). Lower = smoother. Range: 1-50.")]
+    [SerializeField] private float aimSmoothingSpeedMin = 10f;
+    [Tooltip("Maximum smoothing speed (when FOV is at minimum, e.g. 5 degrees). Lower = smoother. Range: 1-50.")]
+    [SerializeField] private float aimSmoothingSpeedMax = 3f;
+    [Tooltip("Minimum FOV value for smoothing calculation (typically the lowest aim FOV, e.g. 5 degrees).")]
+    [SerializeField] private float aimSmoothingFOVMin = 5f;
+    
+    [Header("Aim Sensitivity Reduction (High Zoom)")]
+    [Tooltip("Enable mouse sensitivity reduction when aiming with high zoom scopes (low FOV). Reduces sensitivity as FOV decreases.")]
+    [SerializeField] private bool enableAimSensitivityReduction = true;
+    [Tooltip("Sensitivity multiplier when FOV is at threshold (1.0 = no reduction, 0.5 = half sensitivity).")]
+    [SerializeField] private float aimSensitivityMultiplierAtThreshold = 1f;
+    [Tooltip("Sensitivity multiplier when FOV is at minimum (e.g. 0.2 = 20% of base sensitivity at max zoom).")]
+    [SerializeField] private float aimSensitivityMultiplierAtMin = 0.2f;
+    
     [Header("Camera Settings")]
     [SerializeField] private Camera playerCamera;
     [SerializeField] private float cameraHeight = 1.7f;
@@ -47,6 +67,10 @@ public class FirstPersonController : MonoBehaviour
     
     private float xRotation = 0f;
     private float yRotation = 0f;
+    
+    // Aim smoothing targets (for smooth camera movement at high zoom)
+    private float targetXRotation = 0f;
+    private float targetYRotation = 0f;
     
     private float bobTimer = 0f;
     private Vector3 originalCameraPosition;
@@ -91,6 +115,10 @@ public class FirstPersonController : MonoBehaviour
         
         // Store base FOV for FOV Kick calculations
         baseFOV = playerCamera.fieldOfView;
+        
+        // Initialize aim smoothing targets to match current rotation
+        targetXRotation = xRotation;
+        targetYRotation = yRotation;
         
         // Setup ground check
         if (groundCheck == null)
@@ -190,16 +218,66 @@ public class FirstPersonController : MonoBehaviour
     
     private void HandleMouseLook()
     {
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        // Get base mouse input
+        float mouseX = Input.GetAxis("Mouse X");
+        float mouseY = Input.GetAxis("Mouse Y");
+        
+        // Get current FOV once (used for both sensitivity reduction and smoothing)
+        float currentFOV = playerCamera != null ? playerCamera.fieldOfView : baseFOV;
+        
+        // Calculate effective sensitivity (may be reduced at high zoom)
+        float effectiveSensitivity = mouseSensitivity;
+        
+        // Apply sensitivity reduction if enabled and FOV is below threshold
+        if (enableAimSensitivityReduction && playerCamera != null && currentFOV < aimSmoothingFOVThreshold)
+        {
+            // Calculate sensitivity multiplier based on FOV (lower FOV = lower sensitivity)
+            // Normalize FOV between threshold and minimum
+            float fovRange = aimSmoothingFOVThreshold - aimSmoothingFOVMin;
+            float fovNormalized = Mathf.Clamp01((aimSmoothingFOVThreshold - currentFOV) / fovRange);
+            
+            // Interpolate sensitivity multiplier (lower FOV = lower multiplier)
+            float sensitivityMultiplier = Mathf.Lerp(aimSensitivityMultiplierAtThreshold, aimSensitivityMultiplierAtMin, fovNormalized);
+            effectiveSensitivity = mouseSensitivity * sensitivityMultiplier;
+        }
+        
+        // Apply sensitivity to mouse input
+        mouseX *= effectiveSensitivity;
+        mouseY *= effectiveSensitivity;
+        
+        // Update target rotations
+        targetYRotation += mouseX;
+        targetXRotation -= mouseY;
+        targetXRotation = Mathf.Clamp(targetXRotation, minLookAngle, maxLookAngle);
+        
+        // Check if we should apply smoothing based on current FOV
+        bool shouldSmooth = enableAimSmoothing && playerCamera != null;
+        
+        if (shouldSmooth && currentFOV < aimSmoothingFOVThreshold)
+        {
+            // Calculate smoothing speed based on FOV (lower FOV = more smoothing)
+            // Normalize FOV between threshold and minimum
+            float fovRange = aimSmoothingFOVThreshold - aimSmoothingFOVMin;
+            float fovNormalized = Mathf.Clamp01((aimSmoothingFOVThreshold - currentFOV) / fovRange);
+            
+            // Interpolate smoothing speed (lower FOV = lower speed = more smoothing)
+            float smoothingSpeed = Mathf.Lerp(aimSmoothingSpeedMin, aimSmoothingSpeedMax, fovNormalized);
+            
+            // Apply smoothing to rotations
+            yRotation = Mathf.LerpAngle(yRotation, targetYRotation, smoothingSpeed * Time.deltaTime);
+            xRotation = Mathf.LerpAngle(xRotation, targetXRotation, smoothingSpeed * Time.deltaTime);
+        }
+        else
+        {
+            // No smoothing - direct rotation
+            yRotation = targetYRotation;
+            xRotation = targetXRotation;
+        }
         
         // Rotate player horizontally
-        yRotation += mouseX;
         transform.rotation = Quaternion.Euler(0, yRotation, 0);
         
         // Rotate camera vertically
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, minLookAngle, maxLookAngle);
         playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
     }
     
