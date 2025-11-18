@@ -12,6 +12,7 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     [SerializeField] private string doorName = "Training Range";
     [SerializeField] private bool isLocked = false;
     [SerializeField] private string unlockedLabel = "enter";
+    [SerializeField] private string lockedLabel = "locked";
     
     [Header("UI Reference")]
     [SerializeField] private LocationSelectionUI locationSelectionUI;
@@ -56,18 +57,24 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
     {
         if (options == null) return;
+        
         bool available = !isLocked;
-        if (!available)
+        string resolvedLabel;
+        
+        if (isLocked)
         {
-            return;
+            resolvedLabel = string.IsNullOrEmpty(lockedLabel) ? "locked" : lockedLabel;
         }
-
-        string resolvedLabel = string.IsNullOrEmpty(unlockedLabel) ? "to testing" : unlockedLabel;
+        else
+        {
+            resolvedLabel = string.IsNullOrEmpty(unlockedLabel) ? "to testing" : unlockedLabel;
+        }
+        
         options.Add(InteractionOption.Primary(
             id: $"door.{doorName}",
             label: resolvedLabel,
             key: handler != null ? handler.InteractKey : KeyCode.E,
-            isAvailable: true,
+            isAvailable: available,
             callback: h => h.PerformInteraction(this)));
     }
     

@@ -200,6 +200,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   labelText: {fileID: 9002785041874343313}
   keyText: {fileID: 2713948601227581052}
+  keyHintRoot: {fileID: 4273015465068453495}
   button: {fileID: 1082251183475279454}
   background: {fileID: 2484575532968037728}
   contentRow: {fileID: 1667024409425243701}
@@ -245,7 +246,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 205.02464, y: -60}
-  m_SizeDelta: {x: 0, y: 45.049004}
+  m_SizeDelta: {x: 84.15, y: 45.049004}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8867653547803379152
 CanvasRenderer:

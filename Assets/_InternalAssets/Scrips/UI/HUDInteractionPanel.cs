@@ -41,12 +41,10 @@ public class HUDInteractionPanel : MonoBehaviour
             return;
         }
 
+        // Add all options (including unavailable ones - they will be shown as disabled)
         for (int i = 0; i < options.Count; i++)
         {
-            if (options[i].IsAvailable)
-            {
-                currentOptions.Add(options[i]);
-            }
+            currentOptions.Add(options[i]);
         }
 
         if (currentOptions.Count == 0)

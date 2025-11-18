@@ -255,13 +255,10 @@ public class InteractionHandler : MonoBehaviour
 
         activeOptions.Clear();
 
+        // Add all options to activeOptions (unavailable ones will be shown as disabled by InteractionButtonView)
         for (int i = 0; i < optionsBuffer.Count; i++)
         {
-            InteractionOption option = optionsBuffer[i];
-            if (option.IsAvailable)
-            {
-                activeOptions.Add(option);
-            }
+            activeOptions.Add(optionsBuffer[i]);
         }
 
         if (activeOptions.Count == 0)

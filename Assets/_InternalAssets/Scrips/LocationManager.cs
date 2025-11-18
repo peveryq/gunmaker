@@ -49,6 +49,13 @@ public class LocationManager : MonoBehaviour
         if (instance == null)
         {
             instance = this;
+            
+            // Move to root if parented (DontDestroyOnLoad only works for root objects)
+            if (transform.parent != null)
+            {
+                transform.SetParent(null);
+            }
+            
             DontDestroyOnLoad(gameObject);
             
             // Find or create earnings tracker

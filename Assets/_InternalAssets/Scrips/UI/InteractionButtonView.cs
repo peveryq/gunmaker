@@ -6,6 +6,7 @@ public class InteractionButtonView : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI labelText;
     [SerializeField] private TextMeshProUGUI keyText;
+    [SerializeField] private GameObject keyHintRoot;
     [SerializeField] private Button button;
     [SerializeField] private Image background;
     [SerializeField] private RectTransform contentRow;
@@ -55,6 +56,13 @@ public class InteractionButtonView : MonoBehaviour
         if (keyText != null)
         {
             keyText.text = option.Key == KeyCode.None ? string.Empty : option.Key.ToString().ToUpperInvariant();
+        }
+
+        // Show/hide key hint root based on availability and key presence
+        if (keyHintRoot != null)
+        {
+            bool showKeyHint = option.IsAvailable && option.Key != KeyCode.None;
+            keyHintRoot.SetActive(showKeyHint);
         }
 
         if (button != null)
