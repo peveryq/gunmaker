@@ -408,7 +408,15 @@ public class FirstPersonController : MonoBehaviour
     // Public method to apply camera recoil from weapons
     public void ApplyCameraRecoil(float verticalRecoil, float horizontalRecoil = 0f)
     {
-        xRotation -= verticalRecoil; // Negative because positive xRotation looks down
+        // Apply recoil to target rotations (not current rotations) so it works with smoothing
+        // Negative because positive xRotation looks down
+        targetXRotation -= verticalRecoil;
+        targetXRotation = Mathf.Clamp(targetXRotation, minLookAngle, maxLookAngle);
+        targetYRotation += horizontalRecoil;
+        
+        // Also apply immediately to current rotations for instant feedback when not smoothing
+        // This ensures recoil is visible even when smoothing is disabled
+        xRotation -= verticalRecoil;
         xRotation = Mathf.Clamp(xRotation, minLookAngle, maxLookAngle);
         yRotation += horizontalRecoil;
     }
