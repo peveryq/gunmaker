@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Singleton manager for location transitions.
@@ -19,6 +20,12 @@ public class LocationManager : MonoBehaviour
     [Header("Location Roots")]
     [SerializeField] private GameObject workshopRoot;
     [SerializeField] private GameObject testingRangeRoot;
+    
+    [Header("Drop Containers")]
+    [Tooltip("Container for dropped items in workshop. Should be child of workshopRoot.")]
+    [SerializeField] private Transform workshopDropContainer;
+    [Tooltip("Container for dropped items in testing range. Should be child of testingRangeRoot.")]
+    [SerializeField] private Transform testingRangeDropContainer;
     
     [Header("References")]
     [SerializeField] private LoadingScreen loadingScreen;
@@ -43,6 +50,16 @@ public class LocationManager : MonoBehaviour
         public Transform parent;
         public bool wasEquipped;
     }
+    
+    private struct OriginalItemState
+    {
+        public Vector3 originalPosition;
+        public Quaternion originalRotation;
+        public Transform originalParent;
+        public bool shouldAlwaysReset; // For items like blowtorch that should reset even if held
+    }
+    
+    private Dictionary<ItemPickup, OriginalItemState> registeredItems = new Dictionary<ItemPickup, OriginalItemState>();
     
     private void Awake()
     {
@@ -168,6 +185,14 @@ public class LocationManager : MonoBehaviour
         // Wait another frame to ensure everything is set up
         yield return null;
         
+        // Reset items if returning to workshop (after location is activated)
+        if (targetLocation == LocationType.Workshop)
+        {
+            ResetRegisteredItems();
+            // Wait a frame after reset to ensure physics settle
+            yield return null;
+        }
+        
         // Fade out from loading screen and fade screen
         if (loadingScreen != null && fadeScreen != null)
         {
@@ -192,6 +217,149 @@ public class LocationManager : MonoBehaviour
         
         // Notify location change
         OnLocationChanged(targetLocation);
+    }
+    
+    /// <summary>
+    /// Get drop container for current location
+    /// </summary>
+    public Transform GetDropContainerForCurrentLocation()
+    {
+        switch (currentLocation)
+        {
+            case LocationType.Workshop:
+                return workshopDropContainer;
+            case LocationType.TestingRange:
+                return testingRangeDropContainer;
+            default:
+                return null;
+        }
+    }
+    
+    /// <summary>
+    /// Register an item to be reset to its original position when returning to workshop
+    /// </summary>
+    public void RegisterItemForReset(ItemPickup item, bool alwaysReset = false)
+    {
+        if (item == null) return;
+        
+        OriginalItemState state = new OriginalItemState
+        {
+            originalPosition = item.transform.position,
+            originalRotation = item.transform.rotation,
+            originalParent = item.transform.parent,
+            shouldAlwaysReset = alwaysReset
+        };
+        
+        registeredItems[item] = state;
+    }
+    
+    /// <summary>
+    /// Unregister an item from reset tracking
+    /// </summary>
+    public void UnregisterItemForReset(ItemPickup item)
+    {
+        if (item != null && registeredItems.ContainsKey(item))
+        {
+            registeredItems.Remove(item);
+        }
+    }
+    
+    private void ResetRegisteredItems()
+    {
+        if (registeredItems.Count == 0) return;
+        
+        List<ItemPickup> itemsToReset = new List<ItemPickup>(registeredItems.Keys);
+        
+        foreach (ItemPickup item in itemsToReset)
+        {
+            if (item == null) continue;
+            
+            OriginalItemState state = registeredItems[item];
+            
+            // Check if item should be reset
+            bool shouldReset = false;
+            
+            if (state.shouldAlwaysReset)
+            {
+                // Always reset items like blowtorch
+                // If held, drop it first
+                if (item.IsHeld && interactionHandler != null && interactionHandler.CurrentItem == item)
+                {
+                    interactionHandler.DropCurrentItem();
+                }
+                shouldReset = true;
+            }
+            else
+            {
+                // Only reset if not currently held
+                if (!item.IsHeld)
+                {
+                    shouldReset = true;
+                }
+            }
+            
+            if (shouldReset)
+            {
+                // Stop blowtorch working state FIRST (before any position changes)
+                Blowtorch blowtorch = item.GetComponent<Blowtorch>();
+                if (blowtorch != null)
+                {
+                    // Force stop working immediately
+                    blowtorch.StopWorking();
+                    
+                    // Also ensure audio is stopped (in case it's on a child object)
+                    AudioSource[] allAudioSources = item.GetComponentsInChildren<AudioSource>();
+                    foreach (AudioSource audioSource in allAudioSources)
+                    {
+                        if (audioSource != null && audioSource.isPlaying)
+                        {
+                            audioSource.Stop();
+                            audioSource.clip = null;
+                        }
+                    }
+                }
+                
+                // Reset to original position
+                item.transform.position = state.originalPosition;
+                item.transform.rotation = state.originalRotation;
+                
+                // Restore original parent if it exists and is active
+                if (state.originalParent != null && state.originalParent.gameObject.activeInHierarchy)
+                {
+                    item.transform.SetParent(state.originalParent);
+                }
+                else
+                {
+                    // If original parent is not available, parent to appropriate drop container
+                    Transform dropContainer = GetDropContainerForCurrentLocation();
+                    if (dropContainer != null)
+                    {
+                        item.transform.SetParent(dropContainer);
+                    }
+                }
+                
+                // Disable physics if item has Rigidbody
+                Rigidbody rb = item.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    // Reset velocities first (before setting kinematic)
+                    bool wasKinematic = rb.isKinematic;
+                    if (!wasKinematic)
+                    {
+#if UNITY_6000_0_OR_NEWER
+                        rb.linearVelocity = Vector3.zero;
+#else
+                        rb.velocity = Vector3.zero;
+#endif
+                        rb.angularVelocity = Vector3.zero;
+                    }
+                    
+                    // Then set kinematic and disable gravity
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+                }
+            }
+        }
     }
     
     private void SetPlayerPositionAndRotation(Vector3 position, Quaternion rotation)

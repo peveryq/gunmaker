@@ -20,6 +20,14 @@ public class LocationSelectionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI locationDescriptionText;
     [SerializeField] private Button startButton;
     [SerializeField] private GameObject grabGunFirstNotification;
+    [SerializeField] private TextMeshProUGUI notificationText; // Text component for notification message
+    
+    [Header("Notification Messages")]
+    [SerializeField] private string noWeaponMessage = "grab a gun first";
+    [SerializeField] private string noBarrelMessage = "attach a barrel to the gun";
+    [SerializeField] private string noMagazineMessage = "attach a mag to the gun";
+    [SerializeField] private string noBarrelAndMagazineMessage = "attach a barrel and a mag to the gun";
+    [SerializeField] private string unweldedBarrelMessage = "weld the barrel to the gun";
     
     [Header("References")]
     [SerializeField] private LocationManager locationManager;
@@ -169,8 +177,9 @@ public class LocationSelectionUI : MonoBehaviour
     
     private void OnStartClicked()
     {
-        // Check if player has weapon
-        if (!HasWeapon())
+        // Check if weapon is ready (has weapon and barrel)
+        WeaponReadiness readiness = GetWeaponReadiness();
+        if (readiness != WeaponReadiness.Ready)
         {
             PlayButtonSound();
             return;
@@ -188,11 +197,21 @@ public class LocationSelectionUI : MonoBehaviour
         }
     }
     
-    private bool HasWeapon()
+    private enum WeaponReadiness
+    {
+        NoWeapon,
+        NoBarrel,
+        NoMagazine,
+        NoBarrelAndMagazine,
+        UnweldedBarrel,
+        Ready
+    }
+    
+    private WeaponReadiness GetWeaponReadiness()
     {
         if (interactionHandler == null || interactionHandler.CurrentItem == null)
         {
-            return false;
+            return WeaponReadiness.NoWeapon;
         }
         
         ItemPickup currentItem = interactionHandler.CurrentItem;
@@ -201,21 +220,92 @@ public class LocationSelectionUI : MonoBehaviour
         WeaponBody weaponBody = currentItem.GetComponent<WeaponBody>();
         WeaponController weaponController = currentItem.GetComponent<WeaponController>();
         
-        return weaponBody != null || weaponController != null;
+        if (weaponBody == null && weaponController == null)
+        {
+            return WeaponReadiness.NoWeapon;
+        }
+        
+        // Get WeaponBody if we only have WeaponController
+        if (weaponBody == null && weaponController != null)
+        {
+            weaponBody = weaponController.GetComponent<WeaponBody>();
+            if (weaponBody == null)
+            {
+                weaponBody = weaponController.GetComponentInParent<WeaponBody>();
+            }
+        }
+        
+        if (weaponBody == null)
+        {
+            return WeaponReadiness.NoWeapon;
+        }
+        
+        // Check for barrel and magazine (priority order)
+        bool hasBarrel = weaponBody.HasBarrel;
+        bool hasMagazine = weaponBody.GetPart(PartType.Magazine) != null;
+        
+        if (!hasBarrel && !hasMagazine)
+        {
+            return WeaponReadiness.NoBarrelAndMagazine;
+        }
+        else if (!hasBarrel)
+        {
+            return WeaponReadiness.NoBarrel;
+        }
+        else if (!hasMagazine)
+        {
+            return WeaponReadiness.NoMagazine;
+        }
+        
+        // If barrel and magazine are present, check if barrel is welded (lowest priority)
+        if (hasBarrel && weaponBody.HasUnweldedBarrel())
+        {
+            return WeaponReadiness.UnweldedBarrel;
+        }
+        
+        return WeaponReadiness.Ready;
     }
     
     private void UpdateStartButtonState()
     {
-        bool hasWeapon = HasWeapon();
+        WeaponReadiness readiness = GetWeaponReadiness();
+        bool isReady = readiness == WeaponReadiness.Ready;
         
         if (startButton != null)
         {
-            startButton.interactable = hasWeapon;
+            startButton.interactable = isReady;
         }
         
+        // Show notification if not ready
         if (grabGunFirstNotification != null)
         {
-            grabGunFirstNotification.SetActive(!hasWeapon);
+            grabGunFirstNotification.SetActive(!isReady);
+        }
+        
+        // Update notification text based on readiness state
+        if (notificationText != null && !isReady)
+        {
+            switch (readiness)
+            {
+                case WeaponReadiness.NoWeapon:
+                    notificationText.text = noWeaponMessage;
+                    break;
+                case WeaponReadiness.NoBarrel:
+                    notificationText.text = noBarrelMessage;
+                    break;
+                case WeaponReadiness.NoMagazine:
+                    notificationText.text = noMagazineMessage;
+                    break;
+                case WeaponReadiness.NoBarrelAndMagazine:
+                    notificationText.text = noBarrelAndMagazineMessage;
+                    break;
+                case WeaponReadiness.UnweldedBarrel:
+                    notificationText.text = unweldedBarrelMessage;
+                    break;
+                default:
+                    notificationText.text = string.Empty;
+                    break;
+            }
         }
     }
     

@@ -203,8 +203,22 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
     {
         if (!isHeld) return;
         
-        // Unparent
-        transform.SetParent(null);
+        // Stop blowtorch working state if it's a blowtorch
+        Blowtorch blowtorch = GetComponent<Blowtorch>();
+        if (blowtorch != null)
+        {
+            blowtorch.StopWorking();
+        }
+        
+        // Get drop container from LocationManager for current location
+        Transform dropContainer = null;
+        if (LocationManager.Instance != null)
+        {
+            dropContainer = LocationManager.Instance.GetDropContainerForCurrentLocation();
+        }
+        
+        // Parent to drop container if available, otherwise root (backward compatibility)
+        transform.SetParent(dropContainer);
         
         // Disable collider temporarily to safely reposition
         if (itemCollider != null)

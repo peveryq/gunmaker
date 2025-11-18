@@ -9,9 +9,10 @@ public class Blowtorch : MonoBehaviour, IInteractable
     [SerializeField] private float rotationSpeed = 10f; // Speed of rotation to working position
     
     [Header("Audio")]
-    [SerializeField] private AudioSource blowtorchAudio;
-    [SerializeField] private AudioClip startSound; // Sound when torch ignites
+    [Tooltip("Local AudioSource for looping working sound. AudioManager doesn't support looping SFX, so we use local AudioSource but apply AudioManager volume settings.")]
+    [SerializeField] private AudioSource blowtorchAudio; // AudioSource for working sound (fallback if AudioManager unavailable)
     [SerializeField] private AudioClip workingSound; // Looping sound while working
+    [SerializeField] private float workingSoundVolume = 0.8f; // Base volume for working sound (will be multiplied by AudioManager volume)
     
     [Header("Settings")]
     [SerializeField] private float weldingSpeed = 10f; // Percent per second
@@ -20,9 +21,7 @@ public class Blowtorch : MonoBehaviour, IInteractable
     [SerializeField] private KeyCode weldKey = KeyCode.E;
     
     private bool isWorking = false;
-    private bool isStartSoundPlaying = false;
     private ItemPickup itemPickup;
-    private float startSoundTimer = 0f;
     
     // Working position control
     private Transform targetWorkingTransform; // Target position when working
@@ -71,16 +70,13 @@ public class Blowtorch : MonoBehaviour, IInteractable
             }
         }
         
-        // Handle start sound to working sound transition
-        if (isStartSoundPlaying && startSound != null)
+        // Update working sound volume if playing (to reflect AudioManager volume changes)
+        if (isWorking && blowtorchAudio != null && blowtorchAudio.isPlaying && blowtorchAudio.clip == workingSound)
         {
-            startSoundTimer += Time.deltaTime;
-            
-            // Check if start sound finished playing
-            if (startSoundTimer >= startSound.length)
+            if (AudioManager.Instance != null)
             {
-                // Transition to working sound
-                TransitionToWorkingSound();
+                float masterVolume = AudioManager.Instance.SFXVolume * AudioManager.Instance.MasterVolume;
+                blowtorchAudio.volume = workingSoundVolume * masterVolume;
             }
         }
     }
@@ -104,45 +100,48 @@ public class Blowtorch : MonoBehaviour, IInteractable
             flameEffect.SetActive(true);
         }
         
-        // Play start sound first (use AudioManager if available, otherwise local AudioSource)
-        if (startSound != null)
+        // Start working sound immediately
+        StartWorkingSound();
+    }
+    
+    /// <summary>
+    /// Start working sound.
+    /// Uses local AudioSource (AudioManager doesn't support looping sounds),
+    /// but applies AudioManager volume settings for consistency.
+    /// </summary>
+    private void StartWorkingSound()
+    {
+        if (blowtorchAudio == null || workingSound == null || !isWorking) return;
+        
+        // Prevent multiple calls
+        if (blowtorchAudio.isPlaying && blowtorchAudio.clip == workingSound)
         {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySFX(startSound, volume: 0.8f);
-                isStartSoundPlaying = true;
-                startSoundTimer = 0f;
-            }
-            else if (blowtorchAudio != null)
-            {
-                blowtorchAudio.loop = false;
-                blowtorchAudio.clip = startSound;
-                blowtorchAudio.Play();
-                isStartSoundPlaying = true;
-                startSoundTimer = 0f;
-            }
-            else
-            {
-                // If no audio source, play working sound immediately
-                TransitionToWorkingSound();
-            }
+            return;
+        }
+        
+        // Stop any currently playing sound
+        if (blowtorchAudio.isPlaying)
+        {
+            blowtorchAudio.Stop();
+        }
+        
+        // Set and play working sound
+        blowtorchAudio.clip = workingSound;
+        blowtorchAudio.loop = true;
+        
+        // Apply AudioManager volume settings (priority) or fallback to base volume
+        if (AudioManager.Instance != null)
+        {
+            // Use AudioManager volume settings
+            blowtorchAudio.volume = workingSoundVolume * AudioManager.Instance.SFXVolume * AudioManager.Instance.MasterVolume;
         }
         else
         {
-            // If no start sound, play working sound immediately
-            TransitionToWorkingSound();
+            // Fallback: use base volume if AudioManager unavailable
+            blowtorchAudio.volume = workingSoundVolume;
         }
-    }
-    
-    private void TransitionToWorkingSound()
-    {
-        if (blowtorchAudio != null && workingSound != null && isWorking)
-        {
-            blowtorchAudio.clip = workingSound;
-            blowtorchAudio.loop = true;
-            blowtorchAudio.Play();
-            isStartSoundPlaying = false;
-        }
+        
+        blowtorchAudio.Play();
     }
     
     public void StopWorking()
@@ -150,8 +149,6 @@ public class Blowtorch : MonoBehaviour, IInteractable
         if (!isWorking) return;
         
         isWorking = false;
-        isStartSoundPlaying = false;
-        startSoundTimer = 0f;
         isMovingToWorkPosition = true; // Start returning to held position
         
         if (flameEffect != null)
@@ -159,9 +156,11 @@ public class Blowtorch : MonoBehaviour, IInteractable
             flameEffect.SetActive(false);
         }
         
+        // Stop audio source
         if (blowtorchAudio != null)
         {
             blowtorchAudio.Stop();
+            blowtorchAudio.clip = null;
         }
     }
     
