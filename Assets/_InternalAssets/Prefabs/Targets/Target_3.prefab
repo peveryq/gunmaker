@@ -218,7 +218,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3886684629358889467}
   m_Layer: 0
-  m_Name: Target_2
+  m_Name: Target_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -232,7 +232,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2881969441891446305}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.000000014901161, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -243,7 +243,7 @@ Transform:
   - {fileID: 2215774312343628007}
   - {fileID: 8171212176889839370}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &3460644379326095800
 GameObject:
   m_ObjectHideFlags: 0
@@ -313,7 +313,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: bff0d4b967b3c1749aa0388816420187, type: 2}
+  - {fileID: 2100000, guid: 6f101e656e42ec54782b3fe402b811fe, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -393,7 +393,7 @@ MonoBehaviour:
   resetAnimation: {fileID: 3103091633302023770}
   punchAnimation: {fileID: 4656111665829477578}
   timeDown: 1
-  moneyNumberPrefab: {fileID: 4315909879521903964, guid: 2e4678cc377a7ba43983274564a936d4, type: 3}
+  moneyNumberPrefab: {fileID: 4315909879521903964, guid: ae0f332038488824baa23bfedd0f3e7f, type: 3}
   moneyNumberOffset: {x: 0, y: 2, z: 0}
 --- !u!82 &5318982239669569929
 AudioSource:

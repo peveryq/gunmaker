@@ -13,6 +13,9 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     [SerializeField] private bool isLocked = false;
     [SerializeField] private string unlockedLabel = "enter";
     
+    [Header("UI Reference")]
+    [SerializeField] private LocationSelectionUI locationSelectionUI;
+    
     [Header("Events")]
     [SerializeField] private UnityEvent onDoorOpened;
     
@@ -21,7 +24,15 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
         if (isLocked || player == null) return false;
         
         // Open location selection UI
-        Debug.Log($"Opening location selection for: {doorName}");
+        if (locationSelectionUI != null)
+        {
+            locationSelectionUI.OpenLocationSelection();
+        }
+        else
+        {
+            Debug.LogWarning($"LocationDoor: LocationSelectionUI not assigned for {doorName}");
+        }
+        
         onDoorOpened?.Invoke();
         
         return true;
@@ -51,7 +62,7 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
             return;
         }
 
-        string resolvedLabel = string.IsNullOrEmpty(unlockedLabel) ? "enter" : unlockedLabel;
+        string resolvedLabel = string.IsNullOrEmpty(unlockedLabel) ? "to testing" : unlockedLabel;
         options.Add(InteractionOption.Primary(
             id: $"door.{doorName}",
             label: resolvedLabel,

@@ -99,7 +99,7 @@ GameObject:
   - component: {fileID: 6860088929676857598}
   - component: {fileID: 1586556949008828634}
   m_Layer: 0
-  m_Name: MoneyNumbers
+  m_Name: MoneyNumbers_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -143,11 +143,11 @@ MonoBehaviour:
   renderThroughWalls: 0
   consistentScreenSize: 1
   distanceScalingSettings:
-    baseDistance: 15
+    baseDistance: 600
     closeDistance: 5
-    farDistance: 50
-    closeScale: 2
-    farScale: 0.5
+    farDistance: 300
+    closeScale: 50
+    farScale: 5
   cameraOverride: {fileID: 0}
   enableNumber: 1
   number: 123
@@ -279,7 +279,7 @@ MonoBehaviour:
     toNumber: 100
   durationFadeIn: 0.05
   enableOffsetFadeIn: 0
-  offsetFadeIn: {x: 0.5, y: 0}
+  offsetFadeIn: {x: 5, y: 0}
   enableScaleFadeIn: 1
   scaleFadeIn: {x: 0.5, y: 0.5}
   enableCrossScaleFadeIn: 0
@@ -299,9 +299,9 @@ MonoBehaviour:
   shakeFrequencyFadeOut: 4
   enableLerp: 1
   lerpSettings:
-    speed: 10
-    minX: 1.5
-    maxX: 1.5
+    speed: 3
+    minX: 0
+    maxX: 0
     minY: 2
     maxY: 2
     randomFlip: 0
@@ -314,7 +314,7 @@ MonoBehaviour:
     randomFlip: 0
     dragX: 0.1
     dragY: 1
-    gravity: 3
+    gravity: 0
   enableShaking: 0
   shakeSettings:
     offset: {x: 0.005, y: 0.005}
@@ -409,9 +409,9 @@ MonoBehaviour:
   enableCombination: 1
   combinationSettings:
     method: 0
-    maxDistance: 3
+    maxDistance: 5
     spawnDelay: 0.1
-    absorbDuration: 0.4
+    absorbDuration: 0.1
     scaleCurve:
       serializedVersion: 2
       m_Curve:
@@ -478,12 +478,12 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    moveToAbsorber: 1
+    moveToAbsorber: 0
     teleportToAbsorber: 0
     absorberScaleFactor: 1.5
     absorberScaleFade: 15
     instantGain: 0
-    bonusLifetime: 1
+    bonusLifetime: 0.3
   enableDestruction: 0
   destructionSettings:
     maxDistance: 2
@@ -547,8 +547,8 @@ MonoBehaviour:
     radius: 3
     pushOffset: 1
   updateDelay: 0.0125
-  enablePooling: 1
-  poolSize: 30
+  enablePooling: 0
+  poolSize: 50
   position: {x: 0, y: 0, z: 0}
 --- !u!210 &6860088929676857598
 SortingGroup:
@@ -690,15 +690,15 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4283170697
-  m_fontColor: {r: 0.5357722, g: 1, b: 0.2924527, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 1
+  m_colorMode: 2
   m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+    topLeft: {r: 0.79331166, g: 1, b: 0.6949685, a: 1}
+    topRight: {r: 0.79331166, g: 1, b: 0.6949685, a: 1}
+    bottomLeft: {r: 0.38813725, g: 0.78616345, b: 0.39725238, a: 1}
+    bottomRight: {r: 0.38813725, g: 0.78616345, b: 0.39725238, a: 1}
   m_fontColorGradientPreset: {fileID: 0}
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
