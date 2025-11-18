@@ -119,11 +119,21 @@ public class FadeScreen : MonoBehaviour
             currentFadeTween = null;
         }
         
+        // Ensure image is active before setting color
+        if (!fadeImage.gameObject.activeSelf && alpha > 0.01f)
+        {
+            fadeImage.gameObject.SetActive(true);
+        }
+        
         Color c = fadeImage.color;
         c.a = Mathf.Clamp01(alpha);
         fadeImage.color = c;
         
-        fadeImage.gameObject.SetActive(c.a > 0.01f);
+        // Hide image if fully transparent
+        if (alpha <= 0.01f)
+        {
+            fadeImage.gameObject.SetActive(false);
+        }
     }
     
     /// <summary>

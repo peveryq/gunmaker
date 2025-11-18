@@ -10,6 +10,7 @@ public class LocationSelectionUI : MonoBehaviour
 {
     [Header("Main Panel")]
     [SerializeField] private GameObject locationPanel;
+    [SerializeField] private GameObject root;
     
     [Header("Top Bar")]
     [SerializeField] private Button exitButton;
@@ -22,7 +23,6 @@ public class LocationSelectionUI : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private LocationManager locationManager;
-    [SerializeField] private LoadingScreen loadingScreen;
     [SerializeField] private InteractionHandler interactionHandler;
     [SerializeField] private FirstPersonController firstPersonController;
     
@@ -34,6 +34,12 @@ public class LocationSelectionUI : MonoBehaviour
     
     private void Awake()
     {
+        // Get root if not assigned
+        if (root == null)
+        {
+            root = gameObject;
+        }
+        
         // Find references if not assigned
         if (locationManager == null)
         {
@@ -61,7 +67,12 @@ public class LocationSelectionUI : MonoBehaviour
             startButton.onClick.AddListener(OnStartClicked);
         }
         
-        // Hide panel initially
+        // Hide panel and root initially
+        if (root != null)
+        {
+            root.SetActive(false);
+        }
+        
         if (locationPanel != null)
         {
             locationPanel.SetActive(false);
@@ -85,6 +96,12 @@ public class LocationSelectionUI : MonoBehaviour
     /// </summary>
     public void OpenLocationSelection()
     {
+        // Show root first
+        if (root != null)
+        {
+            root.SetActive(true);
+        }
+        
         // Show panel
         if (locationPanel != null)
         {
@@ -124,6 +141,12 @@ public class LocationSelectionUI : MonoBehaviour
             locationPanel.SetActive(false);
         }
         
+        // Hide root
+        if (root != null)
+        {
+            root.SetActive(false);
+        }
+        
         // Release HUD
         if (hudVisibilityCaptured && GameplayUIContext.HasInstance)
         {
@@ -158,14 +181,8 @@ public class LocationSelectionUI : MonoBehaviour
         // Close UI first
         CloseLocationSelection();
         
-        // Show loading screen and transition
-        if (loadingScreen != null && locationManager != null)
-        {
-            loadingScreen.StartLoading(() => {
-                locationManager.TransitionToLocation(LocationManager.LocationType.TestingRange);
-            });
-        }
-        else if (locationManager != null)
+        // Transition to location (LocationManager will handle loading screen)
+        if (locationManager != null)
         {
             locationManager.TransitionToLocation(LocationManager.LocationType.TestingRange);
         }

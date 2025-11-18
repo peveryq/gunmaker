@@ -10,10 +10,12 @@ public class TestingRangeController : MonoBehaviour
 {
     [Header("Countdown")]
     [SerializeField] private TextMeshProUGUI countdownText;
+    [SerializeField] private int countdownStartValue = 5;
     [SerializeField] private float countdownInterval = 1f;
     [SerializeField] private string shootText = "shoot!";
     
     [Header("Shooting Timer")]
+    [SerializeField] private GameObject shootingTimerRoot;
     [SerializeField] private TextMeshProUGUI shootingTimerText;
     [SerializeField] private float shootingDuration = 60f; // seconds
     
@@ -22,6 +24,9 @@ public class TestingRangeController : MonoBehaviour
     [SerializeField] private DOTweenAnimation doorCloseAnimation;
     [SerializeField] private AudioClip doorOpenSound;
     [SerializeField] private AudioClip doorCloseSound;
+    
+    [Header("UI Root")]
+    [SerializeField] private GameObject uiRoot;
     
     [Header("References")]
     [SerializeField] private LocationManager locationManager;
@@ -50,10 +55,35 @@ public class TestingRangeController : MonoBehaviour
             firstPersonController = FindFirstObjectByType<FirstPersonController>();
         }
         
-        // Hide UI initially
+        // Hide UI root and elements initially (immediately)
+        HideAllUI();
+    }
+    
+    private void Start()
+    {
+        // Ensure UI is hidden at start (in case Awake didn't run or objects were enabled after)
+        // This is important because UI elements might be on a different canvas that's always active
+        if (!isActive)
+        {
+            HideAllUI();
+        }
+    }
+    
+    private void HideAllUI()
+    {
+        if (uiRoot != null)
+        {
+            uiRoot.SetActive(false);
+        }
+        
         if (countdownText != null)
         {
             countdownText.gameObject.SetActive(false);
+        }
+        
+        if (shootingTimerRoot != null)
+        {
+            shootingTimerRoot.SetActive(false);
         }
         
         if (shootingTimerText != null)
@@ -64,6 +94,12 @@ public class TestingRangeController : MonoBehaviour
     
     private void OnEnable()
     {
+        // Show UI root when testing range is activated
+        if (uiRoot != null)
+        {
+            uiRoot.SetActive(true);
+        }
+        
         // Start countdown when testing range is activated
         StartCountdown();
     }
@@ -72,6 +108,10 @@ public class TestingRangeController : MonoBehaviour
     {
         StopAllCoroutines();
         isActive = false;
+        
+        // Hide all UI immediately when testing range is deactivated
+        // This is critical because the controller might be disabled before OnDisable completes
+        HideAllUI();
     }
     
     /// <summary>
@@ -99,8 +139,8 @@ public class TestingRangeController : MonoBehaviour
             countdownText.gameObject.SetActive(true);
         }
         
-        // Countdown: 5, 4, 3, 2, 1
-        for (int i = 5; i >= 1; i--)
+        // Countdown from countdownStartValue down to 1
+        for (int i = countdownStartValue; i >= 1; i--)
         {
             if (countdownText != null)
             {
@@ -116,6 +156,11 @@ public class TestingRangeController : MonoBehaviour
             countdownText.text = shootText;
         }
         
+        // Open door and start shooting timer immediately when "shoot!" appears
+        OpenDoor();
+        StartShootingTimer();
+        
+        // Wait for countdown interval, then hide countdown text
         yield return new WaitForSeconds(countdownInterval);
         
         // Hide countdown text
@@ -123,12 +168,6 @@ public class TestingRangeController : MonoBehaviour
         {
             countdownText.gameObject.SetActive(false);
         }
-        
-        // Open door
-        OpenDoor();
-        
-        // Start shooting timer
-        StartShootingTimer();
         
         countdownCoroutine = null;
     }
@@ -157,7 +196,12 @@ public class TestingRangeController : MonoBehaviour
             locationManager.StartEarningsTracking();
         }
         
-        // Show shooting timer
+        // Show shooting timer root and text
+        if (shootingTimerRoot != null)
+        {
+            shootingTimerRoot.SetActive(true);
+        }
+        
         if (shootingTimerText != null)
         {
             shootingTimerText.gameObject.SetActive(true);
@@ -177,7 +221,7 @@ public class TestingRangeController : MonoBehaviour
     {
         while (currentShootingTime > 0f)
         {
-            // Update timer display
+            // Update timer display (format: 00:00 - minutes:seconds)
             if (shootingTimerText != null)
             {
                 int minutes = Mathf.FloorToInt(currentShootingTime / 60f);
@@ -215,7 +259,12 @@ public class TestingRangeController : MonoBehaviour
         // Wait for fade
         yield return new WaitForSeconds(fadeOutSpeed);
         
-        // Hide shooting timer
+        // Hide shooting timer root and text
+        if (shootingTimerRoot != null)
+        {
+            shootingTimerRoot.SetActive(false);
+        }
+        
         if (shootingTimerText != null)
         {
             shootingTimerText.gameObject.SetActive(false);

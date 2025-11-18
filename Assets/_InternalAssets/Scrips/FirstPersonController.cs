@@ -405,6 +405,27 @@ public class FirstPersonController : MonoBehaviour
     public bool IsRunning => isRunning;
     public float CurrentSpeed => currentSpeed;
     
+    /// <summary>
+    /// Set player rotation (horizontal) and camera rotation (vertical).
+    /// Used for spawning at specific locations with specific look direction.
+    /// </summary>
+    public void SetRotation(float horizontalRotation, float verticalRotation = 0f)
+    {
+        yRotation = horizontalRotation;
+        xRotation = Mathf.Clamp(verticalRotation, minLookAngle, maxLookAngle);
+        
+        // Also update target rotations for smoothing
+        targetYRotation = horizontalRotation;
+        targetXRotation = xRotation;
+        
+        // Apply rotations immediately
+        transform.rotation = Quaternion.Euler(0, yRotation, 0);
+        if (playerCamera != null)
+        {
+            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
+        }
+    }
+    
     // Public method to apply camera recoil from weapons
     public void ApplyCameraRecoil(float verticalRecoil, float horizontalRecoil = 0f)
     {

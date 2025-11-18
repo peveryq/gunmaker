@@ -94,6 +94,8 @@ public class LocationManager : MonoBehaviour
         }
     }
     
+    private Coroutine transitionCoroutine;
+    
     /// <summary>
     /// Transition to a specific location
     /// </summary>
@@ -105,7 +107,14 @@ public class LocationManager : MonoBehaviour
             return;
         }
         
-        StartCoroutine(TransitionRoutine(location));
+        // Stop any existing transition
+        if (transitionCoroutine != null)
+        {
+            StopCoroutine(transitionCoroutine);
+            transitionCoroutine = null;
+        }
+        
+        transitionCoroutine = StartCoroutine(TransitionRoutine(location));
     }
     
     private IEnumerator TransitionRoutine(LocationType targetLocation)
@@ -114,6 +123,12 @@ public class LocationManager : MonoBehaviour
         
         // Save weapon state before transition
         SaveWeaponState();
+        
+        // Set fade screen to opaque BEFORE starting loading (so it's black during load)
+        if (fadeScreen != null)
+        {
+            fadeScreen.SetFade(1f);
+        }
         
         // Show loading screen
         if (loadingScreen != null)
@@ -137,12 +152,11 @@ public class LocationManager : MonoBehaviour
         // Wait a frame for objects to initialize
         yield return null;
         
-        // Move player to spawn point
+        // Move player to spawn point (with proper CharacterController handling)
         Transform spawnPoint = GetSpawnPoint(targetLocation);
         if (spawnPoint != null && firstPersonController != null)
         {
-            firstPersonController.transform.position = spawnPoint.position;
-            firstPersonController.transform.rotation = spawnPoint.rotation;
+            SetPlayerPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
         }
         
         // Restore weapon if returning to workshop
@@ -151,19 +165,20 @@ public class LocationManager : MonoBehaviour
             RestoreWeapon();
         }
         
-        // Fade in from loading screen
+        // Wait another frame to ensure everything is set up
+        yield return null;
+        
+        // Fade out from loading screen and fade screen
         if (loadingScreen != null && fadeScreen != null)
         {
-            // Set fade screen to opaque first, then fade out loading screen and fade screen
-            fadeScreen.SetFade(1f);
+            // Fade out loading screen first, then fade screen
             loadingScreen.FadeOut(fadeInSpeed, () => {
                 fadeScreen.FadeOut(fadeInSpeed);
             });
         }
         else if (fadeScreen != null)
         {
-            // Set fade screen to opaque first, then fade out
-            fadeScreen.SetFade(1f);
+            // Just fade out fade screen
             fadeScreen.FadeOut(fadeInSpeed);
         }
         else if (loadingScreen != null)
@@ -173,9 +188,55 @@ public class LocationManager : MonoBehaviour
         }
         
         currentLocation = targetLocation;
+        transitionCoroutine = null;
         
         // Notify location change
         OnLocationChanged(targetLocation);
+    }
+    
+    private void SetPlayerPositionAndRotation(Vector3 position, Quaternion rotation)
+    {
+        if (firstPersonController == null) return;
+        
+        CharacterController cc = firstPersonController.GetComponent<CharacterController>();
+        bool wasEnabled = cc != null && cc.enabled;
+        
+        // Extract rotation angles from spawn point
+        Vector3 eulerAngles = rotation.eulerAngles;
+        float horizontalRotation = eulerAngles.y; // Y rotation for horizontal (player body)
+        float verticalRotation = eulerAngles.x; // X rotation for vertical (camera look up/down)
+        
+        // Clamp vertical rotation to valid range (convert 0-360 to -180-180)
+        if (verticalRotation > 180f)
+        {
+            verticalRotation -= 360f;
+        }
+        verticalRotation = Mathf.Clamp(verticalRotation, -90f, 90f);
+        
+        // Set rotation first (before position to avoid issues)
+        firstPersonController.SetRotation(horizontalRotation, verticalRotation);
+        
+        // Set position - use CharacterController's internal position if available
+        if (cc != null)
+        {
+            // CharacterController needs special handling for position
+            // Disable it, set transform position, then re-enable
+            cc.enabled = false;
+            firstPersonController.transform.position = position;
+            
+            // Re-enable if it was enabled before
+            if (wasEnabled)
+            {
+                cc.enabled = true;
+                // Force update by moving zero distance (syncs internal position)
+                cc.Move(Vector3.zero);
+            }
+        }
+        else
+        {
+            // No CharacterController, just set position directly
+            firstPersonController.transform.position = position;
+        }
     }
     
     private void SaveWeaponState()

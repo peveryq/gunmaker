@@ -9,6 +9,9 @@ using DG.Tweening;
 /// </summary>
 public class LoadingScreen : MonoBehaviour
 {
+    [Header("Root")]
+    [SerializeField] private GameObject root;
+    
     [Header("Background")]
     [SerializeField] private Image backgroundImage;
     
@@ -33,6 +36,12 @@ public class LoadingScreen : MonoBehaviour
     
     private void Awake()
     {
+        // Get root if not assigned
+        if (root == null)
+        {
+            root = gameObject;
+        }
+        
         // Ensure progress bar fill is set up correctly
         if (progressBarFill != null)
         {
@@ -42,6 +51,11 @@ public class LoadingScreen : MonoBehaviour
         }
         
         // Hide by default
+        if (root != null)
+        {
+            root.SetActive(false);
+        }
+        
         if (backgroundImage != null)
         {
             backgroundImage.gameObject.SetActive(false);
@@ -59,8 +73,21 @@ public class LoadingScreen : MonoBehaviour
             return null;
         }
         
+        // Stop any existing loading coroutine
+        if (loadingCoroutine != null)
+        {
+            StopCoroutine(loadingCoroutine);
+            loadingCoroutine = null;
+        }
+        
         isLoading = true;
         loadStartTime = Time.realtimeSinceStartup;
+        
+        // Show loading screen root immediately
+        if (root != null)
+        {
+            root.SetActive(true);
+        }
         
         // Show loading screen immediately
         if (backgroundImage != null)
@@ -98,11 +125,32 @@ public class LoadingScreen : MonoBehaviour
             // Check if all required objects are active
             allObjectsReady = CheckRequiredObjects();
             
-            // Calculate target time (max of actual time and fake minimum)
-            float targetTime = Mathf.Max(elapsedTime, fakeMinimumWaitTime);
+            float progress = 0f;
             
-            // Update progress (0 to 1)
-            float progress = Mathf.Clamp01(elapsedTime / targetTime);
+            // Progress logic:
+            // 1. If elapsedTime < fakeMinimumWaitTime: progress = elapsedTime / fakeMinimumWaitTime * 0.8 (0-80%)
+            // 2. If elapsedTime >= fakeMinimumWaitTime but objects not ready: progress = 0.8 (80%)
+            // 3. When objects ready: progress = 1.0 (100%)
+            
+            if (elapsedTime < fakeMinimumWaitTime)
+            {
+                // Progress from 0 to 80% during fake minimum wait time
+                progress = Mathf.Clamp01(elapsedTime / fakeMinimumWaitTime) * 0.8f;
+            }
+            else
+            {
+                // We've reached minimum wait time
+                if (allObjectsReady)
+                {
+                    // Objects are ready, go to 100%
+                    progress = 1f;
+                }
+                else
+                {
+                    // Objects not ready yet, stay at 80%
+                    progress = 0.8f;
+                }
+            }
             
             if (progressBarFill != null)
             {
@@ -173,6 +221,11 @@ public class LoadingScreen : MonoBehaviour
                 {
                     backgroundImage.gameObject.SetActive(false);
                 }
+                // Hide root when fade completes
+                if (root != null)
+                {
+                    root.SetActive(false);
+                }
                 onComplete?.Invoke();
             });
     }
@@ -189,6 +242,12 @@ public class LoadingScreen : MonoBehaviour
         }
         
         isLoading = false;
+        
+        // Hide root
+        if (root != null)
+        {
+            root.SetActive(false);
+        }
         
         if (backgroundImage != null)
         {
