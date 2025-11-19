@@ -1,0 +1,16 @@
+This folder is part of the PluginYG – Crazy Games Integration (unofficial).
+
+This integration is an unofficial tool to simplify connecting games with the Crazy Games platform SDK.
+
+Crazy Games is a registered trademark of its respective owner.
+This project is not affiliated with or endorsed by Crazy Games.
+
+THIRD-PARTY SOFTWARE NOTICE
+
+This package includes third-party software components.
+
+The folder "SDK" may contain the official SDK files of the Crazy Games platform,
+which are distributed by their respective owners.
+
+These SDK files are provided only for the purpose of integration convenience.
+All rights to the Crazy Games SDK belong to their respective owners.
