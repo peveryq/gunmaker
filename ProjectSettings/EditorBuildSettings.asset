@@ -6,14 +6,11 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/btsrp.unity
+    path: Assets/_InternalAssets/Scenes/Bootstrapper.unity
     guid: 57c6b89d5418c2d469a0917a618b3d0f
   - enabled: 1
     path: Assets/_InternalAssets/Scenes/Main.unity
     guid: 98a28b5ea0ccf2846828b20b22ecd12a
-  - enabled: 0
-    path: Assets/1.unity
-    guid: 740d7e1d58cc13843acdb71a7499d6f7
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
   m_UseUCBPForAssetBundles: 0
