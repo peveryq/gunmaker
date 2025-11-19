@@ -7,55 +7,57 @@
         false,
         false
     ],
-    "idSave": 33,
-    "playerMoney": 17155,
+    "idSave": 1,
+    "playerMoney": 40000,
     "savedWeapons": [
         {
             "weaponName": "123",
             "statsSnapshot": {
-                "power": 1.0,
-                "accuracy": 1.0,
-                "rapidity": 1.0,
+                "power": 21.0,
+                "accuracy": 6.0,
+                "rapidity": 21.0,
                 "recoil": 100.0,
-                "reloadSpeed": 1.0,
+                "reloadSpeed": 21.0,
                 "scope": 1.0,
-                "ammo": 0,
+                "ammo": 30,
                 "damage": 25.0,
                 "totalPartCost": 0
             },
             "barrelPart": {
                 "partType": 0,
-                "partName": "",
+                "partName": "barrel_1",
                 "partCost": 0,
-                "powerModifier": 0.0,
-                "accuracyModifier": 0.0,
+                "powerModifier": 20.0,
+                "accuracyModifier": 5.0,
                 "rapidityModifier": 0.0,
                 "recoilModifier": 0.0,
                 "reloadSpeedModifier": 0.0,
                 "scopeModifier": 0.0,
-                "magazineCapacity": 15,
+                "magazineCapacity": 0,
                 "isWelded": false,
                 "weldingProgress": 0.0,
-                "meshGUID": "",
-                "materialGUID": "",
+                "meshGUID": "dd2176bd48715cc4c88d515a7e13f96e",
+                "materialGUID": "4abc8c0ba3de1d74baac56007363db2f",
+                "meshName": "barrel_2",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
             "magazinePart": {
-                "partType": 0,
-                "partName": "",
+                "partType": 1,
+                "partName": "mag_1",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
-                "rapidityModifier": 0.0,
+                "rapidityModifier": 20.0,
                 "recoilModifier": 0.0,
-                "reloadSpeedModifier": 0.0,
+                "reloadSpeedModifier": 20.0,
                 "scopeModifier": 0.0,
-                "magazineCapacity": 15,
+                "magazineCapacity": 30,
                 "isWelded": false,
                 "weldingProgress": 0.0,
-                "meshGUID": "",
-                "materialGUID": "",
+                "meshGUID": "22c69e7cc3eff0941987cd18c3595186",
+                "materialGUID": "4abc8c0ba3de1d74baac56007363db2f",
+                "meshName": "mag_2",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -74,6 +76,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -92,6 +95,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             }
@@ -124,6 +128,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -142,6 +147,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -160,6 +166,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -178,6 +185,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             }
@@ -210,6 +218,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -228,6 +237,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -246,6 +256,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -264,6 +275,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             }
@@ -296,6 +308,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -314,6 +327,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -332,6 +346,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -350,6 +365,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             }
@@ -382,6 +398,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -400,6 +417,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -418,6 +436,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -436,6 +455,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             }
@@ -445,49 +465,51 @@
         "weaponData": {
             "weaponName": "123",
             "statsSnapshot": {
-                "power": 1.0,
-                "accuracy": 1.0,
-                "rapidity": 1.0,
+                "power": 21.0,
+                "accuracy": 6.0,
+                "rapidity": 21.0,
                 "recoil": 100.0,
-                "reloadSpeed": 1.0,
+                "reloadSpeed": 21.0,
                 "scope": 1.0,
-                "ammo": 0,
+                "ammo": 30,
                 "damage": 25.0,
                 "totalPartCost": 0
             },
             "barrelPart": {
                 "partType": 0,
-                "partName": "",
+                "partName": "barrel_1",
                 "partCost": 0,
-                "powerModifier": 0.0,
-                "accuracyModifier": 0.0,
+                "powerModifier": 20.0,
+                "accuracyModifier": 5.0,
                 "rapidityModifier": 0.0,
                 "recoilModifier": 0.0,
                 "reloadSpeedModifier": 0.0,
                 "scopeModifier": 0.0,
-                "magazineCapacity": 15,
+                "magazineCapacity": 0,
                 "isWelded": false,
                 "weldingProgress": 0.0,
-                "meshGUID": "",
-                "materialGUID": "",
+                "meshGUID": "dd2176bd48715cc4c88d515a7e13f96e",
+                "materialGUID": "4abc8c0ba3de1d74baac56007363db2f",
+                "meshName": "barrel_2",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
             "magazinePart": {
-                "partType": 0,
-                "partName": "",
+                "partType": 1,
+                "partName": "mag_1",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
-                "rapidityModifier": 0.0,
+                "rapidityModifier": 20.0,
                 "recoilModifier": 0.0,
-                "reloadSpeedModifier": 0.0,
+                "reloadSpeedModifier": 20.0,
                 "scopeModifier": 0.0,
-                "magazineCapacity": 15,
+                "magazineCapacity": 30,
                 "isWelded": false,
                 "weldingProgress": 0.0,
-                "meshGUID": "",
-                "materialGUID": "",
+                "meshGUID": "22c69e7cc3eff0941987cd18c3595186",
+                "materialGUID": "4abc8c0ba3de1d74baac56007363db2f",
+                "meshName": "mag_2",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -506,6 +528,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -524,6 +547,7 @@
                 "weldingProgress": 0.0,
                 "meshGUID": "",
                 "materialGUID": "",
+                "meshName": "",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             }

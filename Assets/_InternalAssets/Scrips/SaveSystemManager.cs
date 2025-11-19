@@ -665,133 +665,116 @@ public class SaveSystemManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Restore WeaponPart from WeaponPartSaveData using Part.prefab
+    /// Restore WeaponPart from WeaponPartSaveData using PartSpawner and ShopPartConfig
+    /// This works in both Editor and Runtime builds
     /// </summary>
     private WeaponPart RestorePartFromSaveData(WeaponPartSaveData saveData)
     {
         if (saveData == null) return null;
         
-        // Load Part.prefab from Assets
-        GameObject partPrefab = null;
-#if UNITY_EDITOR
-        if (!string.IsNullOrEmpty(saveData.meshGUID))
+        // Get ShopPartConfig to find mesh and prefab
+        ShopPartConfig shopConfig = Resources.FindObjectsOfTypeAll<ShopPartConfig>().FirstOrDefault();
+        if (shopConfig == null)
         {
-            // Try to load Part.prefab directly
-            partPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_InternalAssets/Prefabs/weapon/Part.prefab");
-        }
-#endif
-        
-        // Fallback: Try to get from ShopPartConfig if available
-        if (partPrefab == null)
-        {
-            ShopPartConfig shopConfig = Resources.FindObjectsOfTypeAll<ShopPartConfig>().FirstOrDefault();
-            if (shopConfig != null && shopConfig.universalPartPrefab != null)
-            {
-                partPrefab = shopConfig.universalPartPrefab;
-            }
+            Debug.LogError("SaveSystemManager: ShopPartConfig not found! Cannot restore parts.");
+            return null;
         }
         
-        // If still null, create basic GameObject (fallback)
+        // Get universal part prefab
+        GameObject universalPrefab = shopConfig.universalPartPrefab;
+        if (universalPrefab == null)
+        {
+            Debug.LogError("SaveSystemManager: Universal part prefab not found in ShopPartConfig!");
+            return null;
+        }
+        
+        // Find mesh by name in ShopPartConfig
+        Mesh partMesh = FindMeshByName(shopConfig, saveData.partType, saveData.meshName);
+        if (partMesh == null)
+        {
+            Debug.LogWarning($"SaveSystemManager: Mesh '{saveData.meshName}' not found for {saveData.partType}. Part will be restored without visual mesh.");
+        }
+        
+        // Build stats dictionary for PartSpawner
+        Dictionary<StatInfluence.StatType, float> stats = new Dictionary<StatInfluence.StatType, float>();
+        if (saveData.powerModifier != 0) stats[StatInfluence.StatType.Power] = saveData.powerModifier;
+        if (saveData.accuracyModifier != 0) stats[StatInfluence.StatType.Accuracy] = saveData.accuracyModifier;
+        if (saveData.rapidityModifier != 0) stats[StatInfluence.StatType.Rapidity] = saveData.rapidityModifier;
+        if (saveData.recoilModifier != 0) stats[StatInfluence.StatType.Recoil] = saveData.recoilModifier;
+        if (saveData.reloadSpeedModifier != 0) stats[StatInfluence.StatType.ReloadSpeed] = saveData.reloadSpeedModifier;
+        if (saveData.scopeModifier != 0) stats[StatInfluence.StatType.Aim] = saveData.scopeModifier;
+        if (saveData.magazineCapacity > 0) stats[StatInfluence.StatType.Ammo] = saveData.magazineCapacity;
+        
+        // Find lens overlay prefab if this is a scope
+        GameObject lensPrefab = null;
+        if (saveData.partType == PartType.Scope && !string.IsNullOrEmpty(saveData.lensOverlayName))
+        {
+            lensPrefab = FindLensPrefabByName(shopConfig, saveData.lensOverlayName);
+        }
+        
+        // Use PartSpawner to create the part properly (if available)
+        // Otherwise create manually
         GameObject partObj = null;
-        if (partPrefab != null)
+        if (PartSpawner.Instance != null && partMesh != null)
         {
-            partObj = Instantiate(partPrefab);
+            // Use PartSpawner for proper creation with mesh
+            partObj = PartSpawner.Instance.SpawnPart(
+                universalPrefab,
+                partMesh,
+                saveData.partType,
+                stats,
+                saveData.partName,
+                lensPrefab,
+                saveData.partCost
+            );
         }
         else
         {
-            Debug.LogWarning("SaveSystemManager: Part.prefab not found, creating basic part GameObject.");
-            partObj = new GameObject($"Restored_{saveData.partType}_{saveData.partName}");
-        }
-        
-        WeaponPart weaponPart = partObj.GetComponent<WeaponPart>();
-        if (weaponPart == null)
-        {
-            weaponPart = partObj.AddComponent<WeaponPart>();
-        }
-        
-        // Set basic properties
-        weaponPart.partType = saveData.partType;
-        weaponPart.partName = saveData.partName;
-        weaponPart.SetCost(saveData.partCost);
-        
-        // Set modifiers using reflection
-        var powerField = typeof(WeaponPart).GetField("powerModifier", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var accuracyField = typeof(WeaponPart).GetField("accuracyModifier", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var rapidityField = typeof(WeaponPart).GetField("rapidityModifier", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var recoilField = typeof(WeaponPart).GetField("recoilModifier", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var reloadSpeedField = typeof(WeaponPart).GetField("reloadSpeedModifier", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var scopeField = typeof(WeaponPart).GetField("scopeModifier", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var magazineField = typeof(WeaponPart).GetField("magazineCapacity", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
-        if (powerField != null) powerField.SetValue(weaponPart, saveData.powerModifier);
-        if (accuracyField != null) accuracyField.SetValue(weaponPart, saveData.accuracyModifier);
-        if (rapidityField != null) rapidityField.SetValue(weaponPart, saveData.rapidityModifier);
-        if (recoilField != null) recoilField.SetValue(weaponPart, saveData.recoilModifier);
-        if (reloadSpeedField != null) reloadSpeedField.SetValue(weaponPart, saveData.reloadSpeedModifier);
-        if (scopeField != null) scopeField.SetValue(weaponPart, saveData.scopeModifier);
-        if (magazineField != null) magazineField.SetValue(weaponPart, saveData.magazineCapacity);
-        
-        // Restore mesh and material
-        if (!string.IsNullOrEmpty(saveData.meshGUID) || !string.IsNullOrEmpty(saveData.materialGUID))
-        {
-#if UNITY_EDITOR
-            MeshFilter meshFilter = partObj.GetComponent<MeshFilter>();
-            if (meshFilter == null)
-            {
-                meshFilter = partObj.AddComponent<MeshFilter>();
-            }
+            // Fallback: create manually if PartSpawner unavailable or mesh not found
+            partObj = Instantiate(universalPrefab);
             
-            MeshRenderer meshRenderer = partObj.GetComponent<MeshRenderer>();
-            if (meshRenderer == null)
+            // Apply mesh if found
+            if (partMesh != null)
             {
-                meshRenderer = partObj.AddComponent<MeshRenderer>();
-            }
-            
-            // Load mesh from GUID
-            if (!string.IsNullOrEmpty(saveData.meshGUID))
-            {
-                string meshPath = UnityEditor.AssetDatabase.GUIDToAssetPath(saveData.meshGUID);
-                if (!string.IsNullOrEmpty(meshPath))
+                MeshFilter meshFilter = partObj.GetComponent<MeshFilter>();
+                if (meshFilter != null)
                 {
-                    Mesh mesh = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
-                    if (mesh != null)
-                    {
-                        meshFilter.sharedMesh = mesh;
-                    }
+                    meshFilter.mesh = partMesh;
+                    UpdatePartCollider(partObj, partMesh);
                 }
             }
             
-            // Load material from GUID
-            if (!string.IsNullOrEmpty(saveData.materialGUID))
+            // Apply stats manually
+            WeaponPart weaponPart = partObj.GetComponent<WeaponPart>();
+            if (weaponPart == null)
             {
-                string materialPath = UnityEditor.AssetDatabase.GUIDToAssetPath(saveData.materialGUID);
-                if (!string.IsNullOrEmpty(materialPath))
-                {
-                    Material material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(materialPath);
-                    if (material != null)
-                    {
-                        meshRenderer.sharedMaterial = material;
-                    }
-                }
+                weaponPart = partObj.AddComponent<WeaponPart>();
             }
             
-            // Update collider to match mesh if mesh was loaded
-            if (meshFilter.sharedMesh != null)
+            weaponPart.partType = saveData.partType;
+            weaponPart.partName = saveData.partName;
+            weaponPart.SetCost(saveData.partCost);
+            
+            // Apply stats using reflection
+            ApplyPartStats(weaponPart, stats);
+            
+            // Add lens overlay if found
+            if (lensPrefab != null)
             {
-                UpdatePartCollider(partObj, meshFilter.sharedMesh);
+                GameObject lensOverlay = Instantiate(lensPrefab, partObj.transform);
+                DisablePhysicsOnChildren(lensOverlay);
             }
-#endif
+        }
+        
+        WeaponPart restoredPart = partObj.GetComponent<WeaponPart>();
+        if (restoredPart == null)
+        {
+            Debug.LogError("SaveSystemManager: Failed to get WeaponPart component from restored part!");
+            return null;
         }
         
         // Restore WeldingSystem for barrels if needed
-        if (saveData.partType == PartType.Barrel)
+        if (saveData.partType == PartType.Barrel && restoredPart != null)
         {
             WeldingSystem welding = partObj.GetComponent<WeldingSystem>();
             if (welding == null)
@@ -809,129 +792,154 @@ public class SaveSystemManager : MonoBehaviour
             if (isWeldedField != null) isWeldedField.SetValue(welding, saveData.isWelded);
         }
         
-        // Restore lens overlay for scopes if needed
-        // Only restore lens if it was actually present in the original scope (lensOverlayName is not empty)
-        if (saveData.partType == PartType.Scope && !string.IsNullOrEmpty(saveData.lensOverlayName))
+        return restoredPart;
+    }
+    
+    /// <summary>
+    /// Find mesh by name in ShopPartConfig
+    /// </summary>
+    private Mesh FindMeshByName(ShopPartConfig shopConfig, PartType partType, string meshName)
+    {
+        if (string.IsNullOrEmpty(meshName) || shopConfig == null) return null;
+        
+        PartTypeConfig partConfig = shopConfig.GetPartTypeConfig(partType);
+        if (partConfig == null) return null;
+        
+        // Search through all rarity tiers
+        foreach (var tier in partConfig.rarityTiers)
         {
-            GameObject lensPrefab = null;
+            if (tier == null || tier.partMeshData == null) continue;
             
-#if UNITY_EDITOR
-            // First, try to load lens overlay prefab from GUID
-            if (!string.IsNullOrEmpty(saveData.lensOverlayPrefabGUID))
+            foreach (var meshData in tier.partMeshData)
             {
-                string lensPath = UnityEditor.AssetDatabase.GUIDToAssetPath(saveData.lensOverlayPrefabGUID);
-                if (!string.IsNullOrEmpty(lensPath))
+                if (meshData != null && meshData.mesh != null)
                 {
-                    lensPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(lensPath);
-                }
-            }
-            
-            // Fallback: try to find lens prefab through ShopPartConfig
-            if (lensPrefab == null)
-            {
-                ShopPartConfig shopConfig = Resources.FindObjectsOfTypeAll<ShopPartConfig>().FirstOrDefault();
-                if (shopConfig != null)
-                {
-                    PartTypeConfig scopeConfig = shopConfig.GetPartTypeConfig(PartType.Scope);
-                    if (scopeConfig != null)
+                    // Compare mesh names (case-insensitive, remove "(clone)" suffix)
+                    string savedName = meshName.ToLower().Replace("(clone)", "").Trim();
+                    string meshDataName = meshData.mesh.name.ToLower().Replace("(clone)", "").Trim();
+                    
+                    if (meshDataName == savedName || meshDataName.Contains(savedName) || savedName.Contains(meshDataName))
                     {
-                        // Search through all rarity tiers for lens prefabs
-                        foreach (var tier in scopeConfig.rarityTiers)
-                        {
-                            if (tier != null && tier.partMeshData != null)
-                            {
-                                foreach (var meshData in tier.partMeshData)
-                                {
-                                    if (meshData != null && meshData.lensOverlayPrefab != null)
-                                    {
-                                        // Check if this lens prefab matches the saved name
-                                        string prefabName = meshData.lensOverlayPrefab.name.ToLower();
-                                        string savedName = saveData.lensOverlayName.ToLower().Replace("(clone)", "").Trim();
-                                        
-                                        if (prefabName.Contains(savedName) || savedName.Contains(prefabName))
-                                        {
-                                            lensPrefab = meshData.lensOverlayPrefab;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (lensPrefab != null) break;
-                            }
-                        }
+                        return meshData.mesh;
                     }
                 }
-            }
-#else
-            // Runtime: try to find lens prefab through ShopPartConfig
-            ShopPartConfig shopConfig = Resources.FindObjectsOfTypeAll<ShopPartConfig>().FirstOrDefault();
-            if (shopConfig != null)
-            {
-                PartTypeConfig scopeConfig = shopConfig.GetPartTypeConfig(PartType.Scope);
-                if (scopeConfig != null)
-                {
-                    // Search through all rarity tiers for lens prefabs
-                    foreach (var tier in scopeConfig.rarityTiers)
-                    {
-                        if (tier != null && tier.partMeshData != null)
-                        {
-                            foreach (var meshData in tier.partMeshData)
-                            {
-                                if (meshData != null && meshData.lensOverlayPrefab != null)
-                                {
-                                    // Check if this lens prefab matches the saved name
-                                    string prefabName = meshData.lensOverlayPrefab.name.ToLower();
-                                    string savedName = saveData.lensOverlayName.ToLower().Replace("(clone)", "").Trim();
-                                    
-                                    if (prefabName.Contains(savedName) || savedName.Contains(prefabName))
-                                    {
-                                        lensPrefab = meshData.lensOverlayPrefab;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (lensPrefab != null) break;
-                        }
-                    }
-                }
-            }
-#endif
-            
-            // Instantiate lens overlay if found
-            if (lensPrefab != null)
-            {
-                GameObject lensOverlay = Instantiate(lensPrefab, partObj.transform);
-                
-                // Disable physics on lens overlay to prevent it from affecting weapon physics
-                // Lens overlay should be purely visual and not interact with physics
-                Rigidbody[] lensRigidbodies = lensOverlay.GetComponentsInChildren<Rigidbody>(true);
-                foreach (Rigidbody rb in lensRigidbodies)
-                {
-                    if (rb != null)
-                    {
-                        rb.isKinematic = true;
-                        rb.useGravity = false;
-                    }
-                }
-                
-                Collider[] lensColliders = lensOverlay.GetComponentsInChildren<Collider>(true);
-                foreach (Collider collider in lensColliders)
-                {
-                    if (collider != null)
-                    {
-                        collider.enabled = false;
-                    }
-                }
-                
-                // Lens overlay prefab should have its local position/rotation pre-configured
-                Debug.Log($"SaveSystemManager: Restored lens overlay for scope: {saveData.partName}");
-            }
-            else if (!string.IsNullOrEmpty(saveData.lensOverlayPrefabGUID))
-            {
-                Debug.LogWarning($"SaveSystemManager: Could not restore lens overlay for scope: {saveData.partName}. GUID: {saveData.lensOverlayPrefabGUID}, Name: {saveData.lensOverlayName}");
             }
         }
         
-        return weaponPart;
+        return null;
+    }
+    
+    /// <summary>
+    /// Find lens prefab by name in ShopPartConfig
+    /// </summary>
+    private GameObject FindLensPrefabByName(ShopPartConfig shopConfig, string lensName)
+    {
+        if (string.IsNullOrEmpty(lensName) || shopConfig == null) return null;
+        
+        PartTypeConfig scopeConfig = shopConfig.GetPartTypeConfig(PartType.Scope);
+        if (scopeConfig == null) return null;
+        
+        string savedName = lensName.ToLower().Replace("(clone)", "").Trim();
+        
+        // Search through all rarity tiers
+        foreach (var tier in scopeConfig.rarityTiers)
+        {
+            if (tier == null || tier.partMeshData == null) continue;
+            
+            foreach (var meshData in tier.partMeshData)
+            {
+                if (meshData != null && meshData.lensOverlayPrefab != null)
+                {
+                    string prefabName = meshData.lensOverlayPrefab.name.ToLower().Replace("(clone)", "").Trim();
+                    
+                    if (prefabName == savedName || prefabName.Contains(savedName) || savedName.Contains(prefabName))
+                    {
+                        return meshData.lensOverlayPrefab;
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Apply part stats using reflection (helper method)
+    /// </summary>
+    private void ApplyPartStats(WeaponPart weaponPart, Dictionary<StatInfluence.StatType, float> stats)
+    {
+        if (weaponPart == null || stats == null) return;
+        
+        var weaponPartType = typeof(WeaponPart);
+        
+        foreach (var stat in stats)
+        {
+            string fieldName = null;
+            object value = stat.Value;
+            
+            switch (stat.Key)
+            {
+                case StatInfluence.StatType.Power:
+                    fieldName = "powerModifier";
+                    break;
+                case StatInfluence.StatType.Accuracy:
+                    fieldName = "accuracyModifier";
+                    break;
+                case StatInfluence.StatType.Rapidity:
+                    fieldName = "rapidityModifier";
+                    break;
+                case StatInfluence.StatType.Recoil:
+                    fieldName = "recoilModifier";
+                    break;
+                case StatInfluence.StatType.ReloadSpeed:
+                    fieldName = "reloadSpeedModifier";
+                    break;
+                case StatInfluence.StatType.Aim:
+                    fieldName = "scopeModifier";
+                    break;
+                case StatInfluence.StatType.Ammo:
+                    fieldName = "magazineCapacity";
+                    value = (int)stat.Value;
+                    break;
+            }
+            
+            if (fieldName != null)
+            {
+                var field = weaponPartType.GetField(fieldName, 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(weaponPart, value);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Disable physics on GameObject and all children
+    /// </summary>
+    private void DisablePhysicsOnChildren(GameObject obj)
+    {
+        if (obj == null) return;
+        
+        Rigidbody[] rigidbodies = obj.GetComponentsInChildren<Rigidbody>(true);
+        foreach (Rigidbody rb in rigidbodies)
+        {
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+        }
+        
+        Collider[] colliders = obj.GetComponentsInChildren<Collider>(true);
+        foreach (Collider collider in colliders)
+        {
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+        }
     }
     
     /// <summary>

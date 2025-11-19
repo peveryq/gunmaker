@@ -27,8 +27,9 @@ public class WeaponPartSaveData
     public float weldingProgress = 0f;
     
     // Visual data (mesh and material)
-    public string meshGUID = ""; // GUID of the mesh asset
-    public string materialGUID = ""; // GUID of the material asset
+    public string meshGUID = ""; // GUID of the mesh asset (Editor only, for reference)
+    public string materialGUID = ""; // GUID of the material asset (Editor only, for reference)
+    public string meshName = ""; // Name of the mesh (for runtime lookup in ShopPartConfig)
     
     // Lens overlay data (for scopes)
     public string lensOverlayPrefabGUID = ""; // GUID of the lens overlay prefab (for scopes)
@@ -79,11 +80,15 @@ public class WeaponPartSaveData
             }
         }
         
-        // Save mesh and material GUIDs
+        // Save mesh name and GUIDs (GUID for editor reference, name for runtime lookup)
         MeshFilter meshFilter = part.GetComponent<MeshFilter>();
         if (meshFilter != null && meshFilter.sharedMesh != null)
         {
+            // Save mesh name for runtime lookup in ShopPartConfig
+            meshName = meshFilter.sharedMesh.name;
+            
 #if UNITY_EDITOR
+            // Save GUID for editor reference (optional)
             string meshPath = UnityEditor.AssetDatabase.GetAssetPath(meshFilter.sharedMesh);
             if (!string.IsNullOrEmpty(meshPath))
             {
@@ -96,6 +101,7 @@ public class WeaponPartSaveData
         if (meshRenderer != null && meshRenderer.sharedMaterial != null)
         {
 #if UNITY_EDITOR
+            // Save material GUID for editor reference (optional)
             string materialPath = UnityEditor.AssetDatabase.GetAssetPath(meshRenderer.sharedMaterial);
             if (!string.IsNullOrEmpty(materialPath))
             {
