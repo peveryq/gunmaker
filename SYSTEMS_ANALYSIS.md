@@ -36,7 +36,7 @@
 ### Economy & Shop Layer (2025 Update)
 | Subsystem | Files | Summary |
 |-----------|-------|---------|
-| Currency | `MoneySystem` | Singleton ledger with UI binding, reload-safe (no persistence yet) |
+| Currency | `MoneySystem` | Singleton ledger with UI binding, integrated with save system |
 | Offering generation | `ShopOfferingGenerator`, `ShopPartConfig` | Two-phase randomisation (visual pass, stat pass) with rarity tiers, price clamps, starter offerings |
 | UI & UX | `ShopUI`, `ShopItemTile`, `PurchaseConfirmationUI`, `WeaponStatsUI` | Modal flow + hover stats (three-column split, preview deltas, pooling) |
 | Spawning & visuals | `PartSpawner` | Universal prefab, runtime mesh swap, collider recalculation, scope lens child, geometry-centred placement |
@@ -56,6 +56,14 @@
 | Transition UI | `LocationSelectionUI`, `LoadingScreen`, `FadeScreen` | Fullscreen location browser with weapon readiness validation, progress bar with fake minimum wait time, universal fade system |
 | Testing range | `TestingRangeController`, `ResultsScreenUI`, `EarningsTracker` | Countdown with effects, shooting timer with warnings, door animations, results screen with earnings display and highlight animations |
 | Item management | `ItemResetMarker`, `ItemPickup` (modified) | Location-specific drop containers, automatic item reset system for tools like blowtorch |
+
+### Save & Persistence Layer (2025 Update)
+| System | Key Scripts | Highlights |
+|--------|-------------|-----------|
+| Save management | `SaveSystemManager`, `GameSaveData`, `SaveData` | Centralized singleton with YG2 Storage integration, auto-save every 20s (workshop only), saves money, weapon slots, and workbench state |
+| Data structures | `WeaponSaveData`, `WeaponPartSaveData`, `WorkbenchSaveData` | Serializable classes for weapon state, part details (stats, mesh name, welding, lens overlay), workbench mounting |
+| Auto-save | `SaveSystemManager`, `GameplayHUD` | Location-aware auto-save with UI indicator (rotating icon + text via DOTween), triggers on return from testing range |
+| Restoration | `SaveSystemManager.RestorePartFromSaveData` | Uses `PartSpawner` and `ShopPartConfig` for runtime mesh lookup, works in Editor and WebGL builds |
 
 ---
 
@@ -113,12 +121,31 @@ Player → LocationDoor (IInteractable)
             ↳ Countdown sequence (5-4-3-2-1-shoot!)
             ↳ Door opens, shooting timer starts
             ↳ Timer ends → door closes → delay → fade → ResultsScreenUI
+            ↳ ResultsScreenUI.CloseResults() → SaveSystemManager.TriggerAutoSaveOnReturn()
+
+Save System (Automatic)
+       → SaveSystemManager (DontDestroyOnLoad singleton)
+            ↳ Auto-save timer (20s intervals, workshop only)
+            ↳ LocationManager.OnLocationChangedEvent subscription
+            ↳ YG2.onGetSDKData subscription
+       → SaveGameData()
+            ↳ YG2.saves.playerMoney = MoneySystem.CurrentMoney
+            ↳ YG2.saves.savedWeapons = WeaponSlotManager.GetSaveData()
+            ↳ YG2.saves.workbenchWeapon = WorkbenchSaveData(workbench.MountedWeapon)
+            ↳ YG2.SaveProgress() [cloud + local storage]
+            ↳ GameplayHUD.ShowAutoSaveIndicator() [if showUI = true]
+       → LoadGameData()
+            ↳ MoneySystem.SetMoneyDirect(YG2.saves.playerMoney)
+            ↳ WeaponSlotManager.LoadFromSaveData() → RestoreWeaponFromSaveData()
+                 ↳ RestorePartFromSaveData() [uses PartSpawner + ShopPartConfig for mesh lookup]
+            ↳ Workbench.MountWeaponForLoad() [if workbenchWeapon exists]
 ```
 
 - **Two-phase randomisation:** Tile generation caches rarity, price, mesh, icon, manufacturer. Stat roll occurs when the player inspects a tile, preventing unnecessary calculations.
 - **Starter safety net:** Barrel and magazine categories inject a zero-cost, zero-stat offering (with 8 ammo for magazines) as the first tile.
 - **Name localisation prep:** Part type display names now come from `ShopPartConfig.PartTypeConfig.partTypeDisplayName`, enabling future localisation passes.
 - **Icon ↔ Mesh pairing:** `PartMeshData` links meshes, sprites, and optional scope lens prefabs to keep visuals and geometry aligned.
+- **Save system integration:** Centralized `SaveSystemManager` handles all persistence via YG2 Storage module. Auto-saves every 20s in workshop, triggers on return from testing range. Saves money, weapon slots (with full part details including mesh names), and workbench state. Mesh restoration uses `ShopPartConfig` for runtime lookup (works in Editor and WebGL builds).
 
 ---
 
@@ -144,22 +171,22 @@ Player → LocationDoor (IInteractable)
 ---
 
 ## Quality Summary
-- **Architecture:** Loose coupling between offering generator, UI, and spawner; interaction/UI surface via `IInteractionOptionsProvider` contracts.
-- **Robustness:** Null checks on all inspector references; guarded coroutine usage; shop gracefully handles missing config entries.
+- **Architecture:** Loose coupling between offering generator, UI, and spawner; interaction/UI surface via `IInteractionOptionsProvider` contracts. Centralized save system via `SaveSystemManager` singleton.
+- **Robustness:** Null checks on all inspector references; guarded coroutine usage; shop gracefully handles missing config entries. Save system validates data before loading, filters invalid entries, handles YG2 SDK initialization timing variations.
 - **Reload UX:** Coroutine-driven reload flow cancels when the weapon leaves the player and streams progress events to the HUD.
-- **UX polish:** HUD hides automatically when fullscreen UI captures control; locker preview appears with door animation prior to UI reveal.
+- **UX polish:** HUD hides automatically when fullscreen UI captures control; locker preview appears with door animation prior to UI reveal. Auto-save indicator provides visual feedback with rotating icon and text.
 - **Training targets:** `ShootingTarget` suppresses payouts while down, pools per-zone VFX, and exposes animator triggers for fall/raise loops.
-- **Testing hooks:** `ShopOfferingGenerator.RemoveOffering` allows deterministic test scenarios; HUD visibility toggles via `GameplayUIContext` requests.
+- **Testing hooks:** `ShopOfferingGenerator.RemoveOffering` allows deterministic test scenarios; HUD visibility toggles via `GameplayUIContext` requests. Editor tool for clearing save data via `ClearPlayerPrefsTool`.
 - **Documentation cleanup:** Legacy temporary markdown files removed; setup guide kept canonical.
+- **Persistence:** Full save/load system via YG2 Storage module with cloud + local saves. Mesh restoration works in Editor and WebGL builds using runtime lookup via `ShopPartConfig`.
 
 ### Known Limitations / Next Steps
-1. **Persistence** – Money, slot occupancy, stored weapon data, and location state reset on scene reload. Hook into future save system once defined.
-2. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
-3. **Analytics hooks** – Consider emitting events when purchases, locker interactions, or location transitions occur for telemetry or tutorials.
-4. **Localization** – Part, slot, and location UI strings remain hardcoded English.
-5. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet.
-6. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
-7. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
+1. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
+2. **Analytics hooks** – Consider emitting events when purchases, locker interactions, or location transitions occur for telemetry or tutorials.
+3. **Localization** – Part, slot, and location UI strings remain hardcoded English.
+4. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet.
+5. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
+6. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
 
 ---
 
@@ -169,7 +196,7 @@ Player → LocationDoor (IInteractable)
 - **Adding new interactions:** Implement `IInteractionOptionsProvider`, populate options via `InteractionOption.Primary/Secondary`, HUD handles rendering.
 - **To add new part types:** Extend `ShopPartConfig.PartTypeConfig`, provide mesh/icon/name pools, update enum handling in generator/spawner.
 - **Adding new rarity tiers:** Adjust `RarityTier` ranges and ensure price/stat formula accommodates new bounds.
-- **Integrating saves:** `MoneySystem` exposes `OnMoneyChanged`; serialise `MoneySystem.CurrentMoney` and `WeaponSlotManager` slot records.
+- **Save system:** All persistence handled by `SaveSystemManager` (auto-save every 20s in workshop). Saves money (`MoneySystem.CurrentMoney`), weapon slots (`WeaponSlotManager.GetSaveData()`), and workbench state. Part mesh restoration uses `ShopPartConfig` for runtime lookup - ensure mesh names match between saved parts and config.
 
 ---
 
@@ -250,8 +277,19 @@ Player → LocationDoor (IInteractable)
 - **Loading screen:** Progress bar with fake minimum wait time logic. Fills 0-80% during minimum wait, holds at 80% if loading takes longer, jumps to 100% when ready. Prevents jarring instant transitions.
 - **Weapon readiness:** Priority-based validation system checks for weapon, barrel, magazine, and welding status. Dynamic notification messages guide player. Start button disabled until weapon is fully ready.
 - **Item management:** Location-specific drop containers prevent items from disappearing when location is disabled. `ItemResetMarker` component for declarative item reset behavior (e.g., blowtorch returns to original position).
-- **Testing range flow:** Countdown (5-4-3-2-1-shoot!) with animations and sounds, door opens when "shoot!" appears, shooting timer with warning effects (red color, animations, sounds below threshold), door closes when timer ends, configurable delay before fade, results screen with earnings display.
+- **Testing range flow:** Countdown (5-4-3-2-1-shoot!) with animations and sounds, door opens when "shoot!" appears, shooting timer with warning effects (red color, animations, sounds below threshold), door closes when timer ends, configurable delay before fade, results screen with earnings display. Auto-save triggers on return via `SaveSystemManager.TriggerAutoSaveOnReturn()`.
 - **UI layout updates:** Earnings display uses coroutine-based force rebuild with `HorizontalLayoutGroup` and `ContentSizeFitter`. `ForceMeshUpdate()` for TextMeshPro, explicit `SetLayoutHorizontal()`/`SetLayoutVertical()` calls for reliable updates.
+
+### Appendix L – Save & Persistence System
+- **SaveSystemManager:** Centralized singleton with `DontDestroyOnLoad`, auto-creates on game start via `RuntimeInitializeOnLoadMethod`. Manages all save/load operations through YG2 Storage module. Subscribes to `LocationManager.OnLocationChangedEvent` for location-aware auto-save control.
+- **Auto-save logic:** Triggers every 20 seconds when in workshop (`LocationType.Workshop`), automatically stops when entering testing range. Timer resets on location change. Also triggers on return from testing range via `TriggerAutoSaveOnReturn()` (called from `ResultsScreenUI`).
+- **Save data structure:** Extends `YG.SavesYG` via `partial class` pattern in `GameSaveData.cs`. Stores `playerMoney` (int), `savedWeapons` (List<WeaponSaveData>), and `workbenchWeapon` (WorkbenchSaveData). All serializable via Unity's `JsonUtility` or Newtonsoft.Json.
+- **Weapon part serialization:** `WeaponPartSaveData` saves part type, name, cost, all stat modifiers, welding state (for barrels), mesh name (for runtime lookup), and lens overlay info (for scopes). Mesh GUID saved for editor reference but mesh name is primary for runtime restoration.
+- **Mesh restoration:** Uses `ShopPartConfig` to find meshes by name at runtime (works in both Editor and WebGL builds). Falls back to `PartSpawner.SpawnPart()` for proper part creation with mesh swap, collider update, and lens overlay attachment. Manual restoration path if PartSpawner unavailable.
+- **Physics handling:** When weapons are held, all Rigidbody and Collider components (including children like scope lenses) are disabled to prevent physics conflicts. Velocities reset before setting kinematic. Ensures weapons behave as pure visual objects when parented to camera.
+- **Load timing:** Uses coroutine-based deferred loading to ensure all systems (MoneySystem, WeaponSlotManager, Workbench) are initialized before restoring data. Multiple retry attempts (5 attempts, 0.3s intervals) handle YG2 SDK initialization timing variations.
+- **Validation:** Filters invalid weapon data (empty names, no parts) before loading. Prevents phantom weapon bodies from spawning. Workbench weapon cleared on load to prevent duplicates. Reuses weapon instances if same weapon exists in both slot and workbench.
+- **UI feedback:** Auto-save indicator shows rotating icon (DOTween rotation) and text ("autosave") on HUD for short duration (default 1.5s). Icon rotation speed and display duration configurable in `GameplayHUD`.
 
 ---
 
@@ -291,6 +329,14 @@ Player → LocationDoor (IInteractable)
 33. Implemented results screen with earnings display, layout auto-update, and highlight animations
 34. Optimized blowtorch audio: simplified to single working sound, AudioManager volume sync, removed complex crossfade
 35. Added delay between door close and fade start for better UX timing
+36. Implemented comprehensive save system: SaveSystemManager singleton with YG2 Storage integration, auto-save every 20s (workshop only), saves money, weapon slots, and workbench state
+37. Added save data structures: WeaponSaveData, WeaponPartSaveData, WorkbenchSaveData for serialization
+38. Integrated auto-save UI indicator: rotating icon and text via DOTween, configurable display duration
+39. Fixed mesh restoration for WebGL builds: uses ShopPartConfig for runtime mesh lookup by name (works in both Editor and WebGL)
+40. Enhanced part restoration: uses PartSpawner.SpawnPart() for proper creation with mesh swap, collider update, and lens overlay
+41. Improved physics handling: disables Rigidbody and Collider on all children when weapons are held to prevent physics conflicts
+42. Added validation and filtering: prevents loading invalid weapon data, handles duplicates between slots and workbench
+43. Integrated save triggers: auto-save on return from testing range via ResultsScreenUI callback
 
 ---
 
