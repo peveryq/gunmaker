@@ -1,0 +1,3 @@
+﻿Build path: D:/Проекты/оружейник/Builds/build
+Build number: 4
+PluginYG version: 2.007

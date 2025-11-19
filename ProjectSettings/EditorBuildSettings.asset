@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/btsrp.unity
+    guid: 57c6b89d5418c2d469a0917a618b3d0f
+  - enabled: 1
+    path: Assets/1.unity
+    guid: 740d7e1d58cc13843acdb71a7499d6f7
+  - enabled: 0
     path: Assets/_InternalAssets/Scenes/Main.unity
     guid: 98a28b5ea0ccf2846828b20b22ecd12a
   m_configObjects:
