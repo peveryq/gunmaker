@@ -43,6 +43,9 @@ public class LocationManager : MonoBehaviour
     private WeaponState savedWeaponState;
     private EarningsTracker earningsTracker;
     
+    // Event for location changes
+    public System.Action<LocationType> OnLocationChangedEvent;
+    
     private struct WeaponState
     {
         public Vector3 position;
@@ -216,6 +219,9 @@ public class LocationManager : MonoBehaviour
         transitionCoroutine = null;
         
         // Notify location change
+        OnLocationChangedEvent?.Invoke(targetLocation);
+        
+        // Log location change
         OnLocationChanged(targetLocation);
     }
     
@@ -534,7 +540,7 @@ public class LocationManager : MonoBehaviour
     
     private void OnLocationChanged(LocationType newLocation)
     {
-        // This can be extended with events if needed
+        // This method name conflicts with the event, so we call the event directly in TransitionRoutine
         Debug.Log($"LocationManager: Changed to {newLocation}");
     }
     

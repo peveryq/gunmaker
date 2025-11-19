@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -96,6 +97,20 @@ public class WeaponSlotManager : MonoBehaviour
     public IReadOnlyList<WeaponRecord> GetSlotRecords()
     {
         return slotRecords;
+    }
+    
+    /// <summary>
+    /// Get all weapon records (for iteration/searching)
+    /// </summary>
+    public IEnumerable<WeaponRecord> GetAllRecords()
+    {
+        foreach (var record in slotRecords)
+        {
+            if (record != null)
+            {
+                yield return record;
+            }
+        }
     }
 
     public WeaponRecord GetRecord(int slotIndex)
@@ -242,6 +257,134 @@ public class WeaponSlotManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         applicationIsQuitting = true;
+    }
+    
+    /// <summary>
+    /// Save all weapon records to save data list
+    /// If a weapon is currently on the workbench, use its current state instead of the stored record
+    /// </summary>
+    public List<WeaponSaveData> GetSaveData()
+    {
+        List<WeaponSaveData> saveDataList = new List<WeaponSaveData>();
+        
+        // Get workbench to check if any weapon from slots is currently mounted
+        Workbench workbench = FindFirstObjectByType<Workbench>();
+        WeaponBody mountedWeapon = workbench != null ? workbench.MountedWeapon : null;
+        
+        foreach (var record in slotRecords)
+        {
+            if (record != null && record.WeaponBody != null)
+            {
+                WeaponBody weaponBody = record.WeaponBody;
+                
+                // Check if this weapon is currently on the workbench
+                // If yes, use the workbench weapon's state (it's the same instance but with updated parts)
+                // Compare by weapon name to identify the same weapon
+                bool isOnWorkbench = mountedWeapon != null && 
+                                     mountedWeapon == weaponBody;
+                
+                if (isOnWorkbench)
+                {
+                    // Use workbench weapon's current state (has all latest modifications)
+                    saveDataList.Add(mountedWeapon.GetSaveData());
+                }
+                else
+                {
+                    // Use stored record's weapon state
+                    saveDataList.Add(weaponBody.GetSaveData());
+                }
+            }
+            else
+            {
+                // Null entry indicates empty slot
+                saveDataList.Add(null);
+            }
+        }
+        
+        return saveDataList;
+    }
+    
+    /// <summary>
+    /// Load weapon records from save data list
+    /// Note: This method is called by SaveSystemManager, not directly
+    /// </summary>
+    internal void LoadFromSaveData(List<WeaponSaveData> saveDataList, System.Func<WeaponSaveData, WeaponBody> restoreWeaponFunc)
+    {
+        if (saveDataList == null || restoreWeaponFunc == null) return;
+        
+        // Clear existing slots
+        ForceRebuild();
+        
+        // Load weapons into slots
+        for (int i = 0; i < saveDataList.Count && i < slotRecords.Count; i++)
+        {
+            var weaponSaveData = saveDataList[i];
+            if (weaponSaveData != null)
+            {
+                // Restore weapon from save data
+                WeaponBody weaponBody = restoreWeaponFunc(weaponSaveData);
+                if (weaponBody != null)
+                {
+                    // Prepare weapon for storage (cache physics state, disable rigidbodies/colliders)
+                    // This ensures the weapon is in the correct state for storage and can be properly restored when taken
+                    WeaponLockerSystem lockerSystem = WeaponLockerSystem.Instance;
+                    if (lockerSystem != null)
+                    {
+                        // Use reflection to call the private PrepareWeaponForStorage method
+                        var prepareMethod = typeof(WeaponLockerSystem).GetMethod("PrepareWeaponForStorage", 
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (prepareMethod != null)
+                        {
+                            prepareMethod.Invoke(lockerSystem, new object[] { weaponBody });
+                        }
+                        else
+                        {
+                            // Fallback: manually prepare weapon
+                            weaponBody.gameObject.SetActive(false);
+                            
+                            // Disable rigidbodies and colliders manually
+                            Rigidbody[] rigidbodies = weaponBody.GetComponentsInChildren<Rigidbody>(true);
+                            foreach (Rigidbody rb in rigidbodies)
+                            {
+                                if (rb != null)
+                                {
+                                    rb.isKinematic = true;
+                                    rb.useGravity = false;
+                                }
+                            }
+                            
+                            Collider[] colliders = weaponBody.GetComponentsInChildren<Collider>(true);
+                            foreach (Collider collider in colliders)
+                            {
+                                if (collider != null)
+                                {
+                                    collider.enabled = false;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Fallback if WeaponLockerSystem is not available
+                        weaponBody.gameObject.SetActive(false);
+                    }
+                    
+                    // Create record and assign to slot
+                    WeaponRecord record = new WeaponRecord(
+                        weaponSaveData.weaponName,
+                        weaponBody,
+                        weaponBody.Settings,
+                        weaponSaveData.statsSnapshot != null ? weaponSaveData.statsSnapshot.Clone() : null
+                    );
+                    
+                    // Directly set the record in the slot (for loading, bypass validation)
+                    slotRecords[i] = record;
+                }
+            }
+        }
+        
+        // Notify slots changed (auto-save is handled centrally by SaveSystemManager, not here)
+        RaiseSlotsChanged();
     }
 }
 

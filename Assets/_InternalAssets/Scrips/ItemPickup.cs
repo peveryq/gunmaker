@@ -155,14 +155,63 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
         originalLocalPosition = transform.localPosition;
         originalLocalRotation = transform.localRotation;
         
-        // Disable physics
+        // Disable physics on this object and ALL children
+        // This is especially important for weapons with multiple parts (scopes, barrels, etc.)
+        // When held, the weapon should be purely visual and follow the camera via transform
+        Rigidbody[] allRigidbodies = GetComponentsInChildren<Rigidbody>(true);
+        foreach (Rigidbody rigidbody in allRigidbodies)
+        {
+            if (rigidbody != null)
+            {
+                // IMPORTANT: Reset velocities BEFORE making it kinematic
+                // Unity doesn't allow setting velocities on kinematic bodies
+                if (!rigidbody.isKinematic)
+                {
+#if UNITY_6000_0_OR_NEWER
+                    rigidbody.linearVelocity = Vector3.zero;
+#else
+                    rigidbody.velocity = Vector3.zero;
+#endif
+                    rigidbody.angularVelocity = Vector3.zero;
+                }
+                
+                // Now make it kinematic
+                rigidbody.isKinematic = true;
+                rigidbody.useGravity = false;
+            }
+        }
+        
+        // Also handle the main Rigidbody for backward compatibility
         if (rb != null)
         {
+            // IMPORTANT: Reset velocities BEFORE making it kinematic
+            if (!rb.isKinematic)
+            {
+#if UNITY_6000_0_OR_NEWER
+                rb.linearVelocity = Vector3.zero;
+#else
+                rb.velocity = Vector3.zero;
+#endif
+                rb.angularVelocity = Vector3.zero;
+            }
+            
+            // Now make it kinematic
             rb.isKinematic = true;
             rb.useGravity = false;
         }
         
-        // Disable collider
+        // Disable colliders on this object and ALL children
+        // When held, colliders are not needed and can cause issues
+        Collider[] allColliders = GetComponentsInChildren<Collider>(true);
+        foreach (Collider collider in allColliders)
+        {
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+        }
+        
+        // Also handle the main collider for backward compatibility
         if (itemCollider != null)
         {
             itemCollider.enabled = false;

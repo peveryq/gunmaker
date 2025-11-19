@@ -90,5 +90,14 @@ public class MoneySystem : MonoBehaviour
         currentMoney = startingMoney;
         OnMoneyChanged?.Invoke(currentMoney);
     }
+    
+    /// <summary>
+    /// Set money directly (used by SaveSystemManager during load)
+    /// </summary>
+    internal void SetMoneyDirect(int amount)
+    {
+        currentMoney = amount;
+        OnMoneyChanged?.Invoke(currentMoney);
+    }
 }
 

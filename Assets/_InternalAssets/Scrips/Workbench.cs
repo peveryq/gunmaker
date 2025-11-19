@@ -397,6 +397,33 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     {
         if (mountedWeapon != null && mountedWeapon == weaponBody)
         {
+            // Clear preview if exists
+            if (currentPreview != null)
+            {
+                Destroy(currentPreview);
+                currentPreview = null;
+            }
+            
+            // Clear all children from weaponMountPoint (in case weapon wasn't properly detached)
+            if (weaponMountPoint != null)
+            {
+                // Remove the weapon itself if it's still a child
+                if (weaponBody != null && weaponBody.transform.parent == weaponMountPoint)
+                {
+                    weaponBody.transform.SetParent(null, true);
+                }
+                
+                // Remove any other children (previews, etc.)
+                for (int i = weaponMountPoint.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = weaponMountPoint.GetChild(i);
+                    if (child != null && child.gameObject != null)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+            }
+            
             mountedWeapon = null;
             RefreshWeldingUI(null);
         }
@@ -406,6 +433,33 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     {
         if (mountedWeapon != null)
         {
+            // Clear preview if exists
+            if (currentPreview != null)
+            {
+                Destroy(currentPreview);
+                currentPreview = null;
+            }
+            
+            // Clear all children from weaponMountPoint
+            if (weaponMountPoint != null)
+            {
+                // Remove the weapon itself if it's still a child
+                if (mountedWeapon != null && mountedWeapon.transform.parent == weaponMountPoint)
+                {
+                    mountedWeapon.transform.SetParent(null, true);
+                }
+                
+                // Remove any other children (previews, etc.)
+                for (int i = weaponMountPoint.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = weaponMountPoint.GetChild(i);
+                    if (child != null && child.gameObject != null)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+            }
+            
             mountedWeapon = null;
             RefreshWeldingUI(null);
         }
@@ -917,6 +971,55 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     // Properties
     public bool HasWeapon => mountedWeapon != null;
     public WeaponBody MountedWeapon => mountedWeapon;
+    
+    /// <summary>
+    /// Mount weapon on workbench (used by SaveSystemManager for loading)
+    /// This bypasses normal interaction flow for save/load
+    /// </summary>
+    public void MountWeaponForLoad(WeaponBody weaponBody)
+    {
+        if (weaponBody == null) return;
+        
+        // Clear any existing mounted weapon
+        if (mountedWeapon != null)
+        {
+            mountedWeapon = null;
+        }
+        
+        // Mount weapon on workbench (same as MountWeapon but without interaction handler)
+        weaponBody.transform.SetParent(weaponMountPoint);
+        weaponBody.transform.localPosition = Vector3.zero;
+        weaponBody.transform.localRotation = Quaternion.Euler(weaponMountRotation);
+        
+        ItemPickup pickup = weaponBody.GetComponent<ItemPickup>();
+        if (pickup != null)
+        {
+            pickup.SetHeldState(true);
+        }
+        
+        // Setup physics
+        Rigidbody rb = weaponBody.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+        
+        // Enable collider for part installation detection
+        Collider col = weaponBody.GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = true;
+        }
+        
+        // Store original layer and change to non-interactable layer
+        originalWeaponLayer = weaponBody.gameObject.layer;
+        SetLayerRecursively(weaponBody.gameObject, LayerMask.NameToLayer(mountedWeaponLayer));
+        
+        mountedWeapon = weaponBody;
+        
+        RefreshWeldingUI();
+    }
 
     private static string GetKeyDisplay(KeyCode key)
     {

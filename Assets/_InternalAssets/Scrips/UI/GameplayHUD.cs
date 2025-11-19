@@ -1,7 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class GameplayHUD : MonoBehaviour
 {
@@ -42,6 +44,14 @@ public class GameplayHUD : MonoBehaviour
 
     [Header("Interaction")]
     [SerializeField] private HUDInteractionPanel interactionPanel;
+    
+    [Header("Auto-Save Indicator")]
+    [SerializeField] private GameObject autosaveRoot;
+    [SerializeField] private Image autosaveIcon;
+    [SerializeField] private TextMeshProUGUI autosaveText;
+    [SerializeField] private float autosaveIconRotationSpeed = 180f;
+    [SerializeField] private float autosaveDisplayDuration = 1.5f;
+    [SerializeField] private string autosaveTextString = "autosave";
 
     private MoneySystem moneySystem;
     private bool hudVisible = true;
@@ -50,6 +60,8 @@ public class GameplayHUD : MonoBehaviour
     private Quaternion reloadSpinnerInitialRotation;
     private bool reloadSpinnerInitialized;
     private bool hasWeaponEquipped;
+    private Tween autosaveIconRotationTween;
+    private Coroutine autosaveDisplayCoroutine;
 
     private void Awake()
     {
@@ -75,6 +87,12 @@ public class GameplayHUD : MonoBehaviour
         SetReloadState(false);
         ClearAmmo();
         SetUnweldedBarrelWarning(false);
+        
+        // Hide auto-save indicator initially
+        if (autosaveRoot != null)
+        {
+            autosaveRoot.SetActive(false);
+        }
     }
 
     private void OnEnable()
@@ -99,6 +117,18 @@ public class GameplayHUD : MonoBehaviour
         if (GameplayUIContext.HasInstance)
         {
             GameplayUIContext.Instance.UnregisterHud(this);
+        }
+        
+        // Kill rotation tween on destroy
+        if (autosaveIconRotationTween != null && autosaveIconRotationTween.IsActive())
+        {
+            autosaveIconRotationTween.Kill();
+        }
+        
+        // Stop coroutine
+        if (autosaveDisplayCoroutine != null)
+        {
+            StopCoroutine(autosaveDisplayCoroutine);
         }
     }
 
@@ -392,5 +422,82 @@ public class GameplayHUD : MonoBehaviour
         {
             unweldedBarrelWarningText.text = unweldedBarrelWarningTextFormat;
         }
+    }
+    
+    /// <summary>
+    /// Show auto-save indicator with rotating icon and text
+    /// </summary>
+    public void ShowAutoSaveIndicator()
+    {
+        if (autosaveRoot == null) return;
+        
+        // Stop any existing display
+        if (autosaveDisplayCoroutine != null)
+        {
+            StopCoroutine(autosaveDisplayCoroutine);
+        }
+        
+        // Kill any existing rotation tween
+        if (autosaveIconRotationTween != null && autosaveIconRotationTween.IsActive())
+        {
+            autosaveIconRotationTween.Kill();
+        }
+        
+        // Start display coroutine
+        autosaveDisplayCoroutine = StartCoroutine(ShowAutoSaveIndicatorCoroutine());
+    }
+    
+    private IEnumerator ShowAutoSaveIndicatorCoroutine()
+    {
+        // Show root
+        if (autosaveRoot != null)
+        {
+            autosaveRoot.SetActive(true);
+        }
+        
+        // Set text
+        if (autosaveText != null && !string.IsNullOrEmpty(autosaveTextString))
+        {
+            autosaveText.text = autosaveTextString;
+        }
+        
+        // Reset icon rotation
+        if (autosaveIcon != null)
+        {
+            autosaveIcon.rectTransform.localRotation = Quaternion.identity;
+        }
+        
+        // Start rotating icon with DOTween
+        if (autosaveIcon != null && !Mathf.Approximately(autosaveIconRotationSpeed, 0f))
+        {
+            autosaveIconRotationTween = autosaveIcon.rectTransform
+                .DORotate(new Vector3(0f, 0f, -360f), 360f / autosaveIconRotationSpeed, RotateMode.FastBeyond360)
+                .SetLoops(-1, LoopType.Restart)
+                .SetEase(Ease.Linear);
+        }
+        
+        // Wait for display duration
+        yield return new WaitForSeconds(autosaveDisplayDuration);
+        
+        // Hide root
+        if (autosaveRoot != null)
+        {
+            autosaveRoot.SetActive(false);
+        }
+        
+        // Kill rotation tween
+        if (autosaveIconRotationTween != null && autosaveIconRotationTween.IsActive())
+        {
+            autosaveIconRotationTween.Kill();
+            autosaveIconRotationTween = null;
+        }
+        
+        // Reset icon rotation
+        if (autosaveIcon != null)
+        {
+            autosaveIcon.rectTransform.localRotation = Quaternion.identity;
+        }
+        
+        autosaveDisplayCoroutine = null;
     }
 }

@@ -2,10 +2,10 @@
 
 ## Project Snapshot
 - **Scene in focus:** `Assets/_InternalAssets/Scenes/Main.unity`
-- **Active gameplay scripts:** 42 C# files across `_InternalAssets/Scrips`
+- **Active gameplay scripts:** 49 C# files across `_InternalAssets/Scrips`
 - **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`
 - **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets
-- **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, this analysis document
+- **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `LOCATION_TRANSITION_REPORT.md`, this analysis document
 
 ---
 
@@ -49,6 +49,14 @@
 | Locker UX | `WeaponLockerInteractable`, `WeaponLockerSystem`, `WeaponLockerUI`, `WeaponSellModal` | Option buttons (E/F), stashing, per-weapon sell modal, take/close coherence |
 | Camera presentation | `LockerCameraController` | Custom coroutine-based fly-in, adjustable speed/curves, auto-hide camera children |
 
+### Location Transition Layer (2025 Update)
+| System | Key Scripts | Highlights |
+|--------|-------------|-----------|
+| Location management | `LocationManager`, `LocationDoor` | Singleton orchestrator with `DontDestroyOnLoad`, state preservation, location enable/disable, spawn point management |
+| Transition UI | `LocationSelectionUI`, `LoadingScreen`, `FadeScreen` | Fullscreen location browser with weapon readiness validation, progress bar with fake minimum wait time, universal fade system |
+| Testing range | `TestingRangeController`, `ResultsScreenUI`, `EarningsTracker` | Countdown with effects, shooting timer with warnings, door animations, results screen with earnings display and highlight animations |
+| Item management | `ItemResetMarker`, `ItemPickup` (modified) | Location-specific drop containers, automatic item reset system for tools like blowtorch |
+
 ---
 
 ## Data & Flow Overview
@@ -85,6 +93,26 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
                  ↳ LockerCameraController (callback) → WeaponLockerUI.Show()
                  ↳ WeaponSellModal (per-slot sell)
                  ↳ WeaponLockerSystem.RequestTakeWeapon()
+
+Player → LocationDoor (IInteractable)
+       → LocationSelectionUI.OpenLocationSelection()
+            ↳ Weapon readiness check (weapon, barrel, magazine, welding)
+            ↳ Start button (disabled if not ready)
+       → LocationManager.TransitionToLocation()
+            ↳ Save weapon state
+            ↳ FadeScreen.SetFade(1f) [black screen]
+            ↳ LoadingScreen.StartLoading()
+                 ↳ Fake minimum wait time logic
+                 ↳ Progress bar: 0-80% during wait, hold at 80% if loading, jump to 100% when ready
+            ↳ Disable current location root
+            ↳ Enable target location root
+            ↳ Restore weapon state
+            ↳ Set player position/rotation from spawn point
+            ↳ FadeScreen.FadeOut() + LoadingScreen.FadeOut()
+       → TestingRangeController.OnEnable()
+            ↳ Countdown sequence (5-4-3-2-1-shoot!)
+            ↳ Door opens, shooting timer starts
+            ↳ Timer ends → door closes → delay → fade → ResultsScreenUI
 ```
 
 - **Two-phase randomisation:** Tile generation caches rarity, price, mesh, icon, manufacturer. Stat roll occurs when the player inspects a tile, preventing unnecessary calculations.
@@ -101,7 +129,8 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 | GC pressure | ✅ Low | Dictionaries cached per offering; no LINQ in hot paths |
 | UI performance | ✅ Stable | Gameplay HUD persistent; modal UIs reuse pooled widgets |
 | Physics workload | ✅ Light | No continuous forces on spawned parts; Rigidbody removed for static placement |
-| Audio | ✅ | Simplified AudioManager with two dedicated AudioSources (SFX/Music) for 2D sounds, volume control, and simultaneous SFX limit; all systems migrated to centralized audio |
+| Audio | ✅ | Simplified AudioManager with two dedicated AudioSources (SFX/Music) for 2D sounds, volume control, and simultaneous SFX limit; all systems migrated to centralized audio; blowtorch uses local AudioSource for looping with AudioManager volume sync |
+| Location transitions | ✅ | Location root enable/disable reduces active GameObjects by ~50%; state preservation via direct references (no serialization); coroutine-based loading with fake minimum wait time |
 | Randomisation | ✅ | UnityEngine.Random exclusively; no System.Random ambiguities |
 | Pooling | ✅ | Bullet impacts pooled; shop tiles and interaction buttons recycled; bullets and casings use object pooling |
 | Camera effects | ✅ | FOV Kick uses DOTween for efficient interpolation; <0.01% CPU overhead even at 20 shots/sec |
@@ -124,11 +153,13 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 - **Documentation cleanup:** Legacy temporary markdown files removed; setup guide kept canonical.
 
 ### Known Limitations / Next Steps
-1. **Persistence** – Money, slot occupancy, and stored weapon data reset on scene reload. Hook into future save system once defined.
+1. **Persistence** – Money, slot occupancy, stored weapon data, and location state reset on scene reload. Hook into future save system once defined.
 2. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
-3. **Analytics hooks** – Consider emitting events when purchases or locker interactions occur for telemetry or tutorials.
-4. **Localization** – Part and slot UI strings remain hardcoded English.
+3. **Analytics hooks** – Consider emitting events when purchases, locker interactions, or location transitions occur for telemetry or tutorials.
+4. **Localization** – Part, slot, and location UI strings remain hardcoded English.
 5. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet.
+6. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
+7. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
 
 ---
 
@@ -203,13 +234,24 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 ### Appendix I – Audio System (Simplified)
 - **AudioManager:** Singleton with two dedicated `AudioSource` components (SFX and Music) for 2D sound playback. Volume control via `PlayerPrefs` persistence. Limits simultaneous SFX playback to prevent audio spam.
 - **Migration:** All systems migrated from local `AudioSource` usage to centralized `AudioManager.Instance.PlaySFX()`. Fallback to local `AudioSource` or `AudioSource.PlayClipAtPoint` if manager unavailable.
+- **Looping sounds:** For looping sounds (e.g., blowtorch working sound), local `AudioSource` is used (AudioManager doesn't support looping via `PlayOneShot`), but volume is synced with AudioManager in real-time via `LateUpdate`.
 - **WebGL optimization:** 2D sounds only (`spatialBlend = 0f`), no 3D spatialization overhead. Single audio source per type reduces overhead compared to per-object sources.
 
 ### Appendix J – Animation Systems (DOTween Migration)
 - **Target animations:** Fall and reset animations migrated from Unity Animator to DOTween Pro (`DOTweenAnimation` components). Visual editor configuration, `autoPlay = false`, explicit `CreateTween()` and `DORestart()` calls.
 - **Weapon locker:** Door open/close animations migrated from Unity Animator to DOTween. Separate `DOTweenAnimation` arrays for open and close (allows different easing/bounce for each direction). Light control with configurable delays via `DOVirtual.DelayedCall`.
 - **Crosshair:** Weapon lines animation uses DOTween `DOAnchorPos` for real-time recoil feedback. Instant recoil on shot start, smooth return on stop.
+- **Testing range:** Countdown numbers and "shoot!" text use DOTween bubble animations. Shooting timer has bubble animation on warning seconds. Results screen "get x2" button has looping highlight animation (left-to-right cycle with position reset).
 - **Performance:** DOTween provides efficient interpolation with minimal overhead. All animations use pooling-friendly approach (no persistent state in Animator controllers).
+
+### Appendix K – Location Transition System
+- **LocationManager:** Singleton with `DontDestroyOnLoad` safety (moves to root if parented). Manages location transitions, state preservation, spawn point management, and item reset system. Handles `CharacterController` teleportation correctly (temporarily disable, set position, re-enable, call `Move(Vector3.zero)`).
+- **State preservation:** Saves exact `WeaponBody` or `WeaponController` instance held by player. Restores weapon even if dropped during testing range session. Uses direct references (no serialization overhead).
+- **Loading screen:** Progress bar with fake minimum wait time logic. Fills 0-80% during minimum wait, holds at 80% if loading takes longer, jumps to 100% when ready. Prevents jarring instant transitions.
+- **Weapon readiness:** Priority-based validation system checks for weapon, barrel, magazine, and welding status. Dynamic notification messages guide player. Start button disabled until weapon is fully ready.
+- **Item management:** Location-specific drop containers prevent items from disappearing when location is disabled. `ItemResetMarker` component for declarative item reset behavior (e.g., blowtorch returns to original position).
+- **Testing range flow:** Countdown (5-4-3-2-1-shoot!) with animations and sounds, door opens when "shoot!" appears, shooting timer with warning effects (red color, animations, sounds below threshold), door closes when timer ends, configurable delay before fade, results screen with earnings display.
+- **UI layout updates:** Earnings display uses coroutine-based force rebuild with `HorizontalLayoutGroup` and `ContentSizeFitter`. `ForceMeshUpdate()` for TextMeshPro, explicit `SetLayoutHorizontal()`/`SetLayoutVertical()` calls for reliable updates.
 
 ---
 
@@ -240,8 +282,17 @@ Player → WeaponLockerInteractable (IInteractionOptionsProvider)
 24. Implemented object pooling for bullets and casings (BulletPool, CasingPool) for WebGL performance
 25. Added damage multiplier for bullseye hits on targets
 26. Integrated Damage Numbers Pro for money popups on target hits and kills
+27. Implemented comprehensive location transition system: LocationManager, LocationDoor, LocationSelectionUI, LoadingScreen, FadeScreen, TestingRangeController, ResultsScreenUI
+28. Added weapon readiness validation with priority-based checks (weapon, barrel, magazine, welding)
+29. Implemented state preservation system for weapons across location transitions
+30. Added location-specific drop containers and item reset system (ItemResetMarker)
+31. Created loading screen with fake minimum wait time and intelligent progress bar logic
+32. Added testing range countdown and shooting timer with visual/audio effects (DOTween animations, color changes, sounds)
+33. Implemented results screen with earnings display, layout auto-update, and highlight animations
+34. Optimized blowtorch audio: simplified to single working sound, AudioManager volume sync, removed complex crossfade
+35. Added delay between door close and fade start for better UX timing
 
 ---
 
-_Last updated: November 2025_
+_Last updated: December 2025_
 

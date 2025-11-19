@@ -356,15 +356,79 @@ public class WeaponLockerSystem : MonoBehaviour
     {
         if (weaponBody == null) return;
 
+        // Try to find workbench in parent hierarchy
         Workbench workbench = weaponBody.GetComponentInParent<Workbench>();
-        if (workbench != null)
+        
+        // Also try to find workbench by searching for it in the scene
+        // This handles cases where the parent hierarchy might not be set correctly
+        if (workbench == null)
         {
-            int restoreLayer = weaponBody.gameObject.layer;
-            workbench.DetachMountedWeapon(weaponBody);
-            workbench.ResetMountState();
-            weaponBody.transform.SetParent(null, true);
-            SetLayerRecursively(weaponBody.gameObject, workbench.DefaultInteractableLayer);
-            workbench.RecordLastMountedLayer(restoreLayer);
+            workbench = FindFirstObjectByType<Workbench>();
+        }
+        
+        if (workbench == null) return;
+        
+        // Check if this weapon is currently mounted on the workbench
+        // Compare by instance ID to identify the same weapon
+        if (workbench.MountedWeapon != null)
+        {
+            bool isMounted = workbench.MountedWeapon == weaponBody;
+            
+            // Also check by weapon name as fallback (in case instance ID doesn't match)
+            if (!isMounted && !string.IsNullOrEmpty(weaponBody.WeaponName))
+            {
+                isMounted = workbench.MountedWeapon.WeaponName == weaponBody.WeaponName;
+            }
+            
+            if (isMounted)
+            {
+                int restoreLayer = weaponBody.gameObject.layer;
+                
+                // First, ensure weapon is detached from parent (before calling DetachMountedWeapon)
+                if (weaponBody.transform.parent != null)
+                {
+                    weaponBody.transform.SetParent(null, true);
+                }
+                
+                // Then call workbench methods to fully clean up
+                workbench.DetachMountedWeapon(weaponBody);
+                workbench.ResetMountState();
+                
+                // Double-check that weapon is detached (in case it was re-attached)
+                if (weaponBody.transform.parent != null)
+                {
+                    weaponBody.transform.SetParent(null, true);
+                }
+                
+                SetLayerRecursively(weaponBody.gameObject, workbench.DefaultInteractableLayer);
+                workbench.RecordLastMountedLayer(restoreLayer);
+            }
+            else
+            {
+                // This weapon is NOT the mounted weapon, but there IS a mounted weapon
+                // This means we're taking a different weapon from locker while another is on workbench
+                // We should destroy the mounted weapon if it's not in any slot
+                WeaponBody mountedWeapon = workbench.MountedWeapon;
+                if (mountedWeapon != null && mountedWeapon != weaponBody)
+                {
+                    // Check if mounted weapon is in any slot
+                    bool isInSlot = false;
+                    if (WeaponSlotManager.Instance != null)
+                    {
+                        int slotIndex = WeaponSlotManager.Instance.IndexOf(mountedWeapon);
+                        isInSlot = slotIndex >= 0;
+                    }
+                    
+                    if (!isInSlot)
+                    {
+                        // Mounted weapon is not in any slot, destroy it
+                        workbench.DetachMountedWeapon(mountedWeapon);
+                        workbench.ResetMountState();
+                        Destroy(mountedWeapon.gameObject);
+                        Debug.Log("WeaponLockerSystem: Destroyed orphaned weapon from workbench.");
+                    }
+                }
+            }
         }
     }
 
@@ -585,6 +649,49 @@ public class WeaponLockerSystem : MonoBehaviour
     {
         if (!rigidbodyStateCache.TryGetValue(weaponBody, out var states))
         {
+            // No cache found - this weapon was loaded from save and never went through PrepareWeaponForStorage
+            // Initialize Rigidbodies properly for weapons loaded from save
+            // IMPORTANT: Only restore physics on the weapon body itself, not on installed parts
+            // Installed parts should remain kinematic (they're attached via parent transform, not physics)
+            Rigidbody weaponBodyRb = weaponBody.GetComponent<Rigidbody>();
+            if (weaponBodyRb != null)
+            {
+                // Set default values for weapon body Rigidbody (non-kinematic, use gravity)
+                weaponBodyRb.isKinematic = false;
+                weaponBodyRb.useGravity = true;
+                ResetRigidbodyVelocities(weaponBodyRb);
+            }
+            
+            // Also check for Rigidbodies in children that are NOT weapon parts
+            // Weapon parts should remain kinematic
+            Rigidbody[] allRigidbodies = weaponBody.GetComponentsInChildren<Rigidbody>(true);
+            foreach (Rigidbody rb in allRigidbodies)
+            {
+                if (rb == null || rb == weaponBodyRb) continue;
+                
+                // Check if this Rigidbody belongs to a weapon part
+                WeaponPart part = rb.GetComponent<WeaponPart>();
+                if (part == null)
+                {
+                    // Not a weapon part, restore physics (e.g., lens overlay, other child objects)
+                    // But make it kinematic if it's a visual-only object
+                    // For now, keep lens overlays kinematic (they're visual only)
+                    if (rb.gameObject.name.ToLower().Contains("lense") || 
+                        rb.gameObject.name.ToLower().Contains("lens") ||
+                        rb.gameObject.name.ToLower().Contains("overlay"))
+                    {
+                        rb.isKinematic = true;
+                        rb.useGravity = false;
+                    }
+                    else
+                    {
+                        rb.isKinematic = false;
+                        rb.useGravity = true;
+                        ResetRigidbodyVelocities(rb);
+                    }
+                }
+                // Weapon parts remain kinematic (handled by WeaponBody.InstallPart)
+            }
             return;
         }
 
@@ -608,6 +715,38 @@ public class WeaponLockerSystem : MonoBehaviour
     {
         if (!colliderStateCache.TryGetValue(weaponBody, out var states))
         {
+            // No cache found - this weapon was loaded from save and never went through PrepareWeaponForStorage
+            // Enable colliders properly for weapons loaded from save
+            // IMPORTANT: Only enable collider on the weapon body itself, not on installed parts
+            // Installed parts should have colliders disabled (they're attached via parent transform, not physics)
+            Collider weaponBodyCollider = weaponBody.GetComponent<Collider>();
+            if (weaponBodyCollider != null)
+            {
+                weaponBodyCollider.enabled = true;
+            }
+            
+            // Also check for Colliders in children that are NOT weapon parts
+            // Weapon parts should have colliders disabled
+            Collider[] allColliders = weaponBody.GetComponentsInChildren<Collider>(true);
+            foreach (Collider collider in allColliders)
+            {
+                if (collider == null || collider == weaponBodyCollider) continue;
+                
+                // Check if this Collider belongs to a weapon part
+                WeaponPart part = collider.GetComponent<WeaponPart>();
+                if (part == null)
+                {
+                    // Not a weapon part, enable collider if it's not a visual-only object
+                    // Lens overlays should have colliders disabled (they're visual only)
+                    if (!collider.gameObject.name.ToLower().Contains("lense") && 
+                        !collider.gameObject.name.ToLower().Contains("lens") &&
+                        !collider.gameObject.name.ToLower().Contains("overlay"))
+                    {
+                        collider.enabled = true;
+                    }
+                }
+                // Weapon parts keep colliders disabled (handled by WeaponBody.InstallPart)
+            }
             return;
         }
 

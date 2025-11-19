@@ -389,6 +389,12 @@ public class ResultsScreenUI : MonoBehaviour
     
     private void ReturnToWorkshop()
     {
+        // Trigger auto-save before returning to workshop (at results screen moment)
+        if (SaveSystemManager.Instance != null)
+        {
+            SaveSystemManager.Instance.TriggerAutoSaveOnReturn();
+        }
+        
         // Fade out
         if (fadeScreen != null)
         {

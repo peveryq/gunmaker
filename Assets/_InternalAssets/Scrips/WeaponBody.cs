@@ -313,5 +313,49 @@ public class WeaponBody : MonoBehaviour
         record.StatsSnapshot = currentStats != null ? currentStats.Clone() : null;
         record.WeaponName = weaponName;
     }
+    
+    /// <summary>
+    /// Get serializable save data for this weapon
+    /// </summary>
+    public WeaponSaveData GetSaveData()
+    {
+        return new WeaponSaveData(
+            weaponName,
+            currentStats,
+            barrelPart,
+            magazinePart,
+            stockPart,
+            scopePart
+        );
+    }
+    
+    /// <summary>
+    /// Restore weapon parts from save data
+    /// </summary>
+    public void RestoreFromSaveData(WeaponSaveData saveData)
+    {
+        if (saveData == null) return;
+        
+        // Set name
+        weaponName = saveData.weaponName;
+        
+        // Clear existing parts
+        if (barrelPart != null) Destroy(barrelPart.gameObject);
+        if (magazinePart != null) Destroy(magazinePart.gameObject);
+        if (stockPart != null) Destroy(stockPart.gameObject);
+        if (scopePart != null) Destroy(scopePart.gameObject);
+        
+        barrelPart = null;
+        magazinePart = null;
+        stockPart = null;
+        scopePart = null;
+        
+        // Restore parts (will be installed by SaveSystemManager.RestorePartFromSaveData)
+        // This method is a placeholder - actual restoration happens in SaveSystemManager
+        // since we need access to part prefabs and PartSpawner
+        
+        // Update stats
+        UpdateWeaponStats();
+    }
 }
 
