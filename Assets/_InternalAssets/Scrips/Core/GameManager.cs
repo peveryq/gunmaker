@@ -23,6 +23,12 @@ public class GameManager : MonoBehaviour
     [Tooltip("Fade out duration for loading screen (seconds)")]
     [SerializeField] private float loadingScreenFadeDuration = 0.5f;
     
+    [Tooltip("Maximum time to wait for save data loading (seconds). If exceeded, will continue anyway.")]
+    [SerializeField] private float maxSaveLoadWaitTime = 10f;
+    
+    [Tooltip("Maximum time to wait for location to fully load (seconds). If exceeded, will continue anyway.")]
+    [SerializeField] private float maxLocationLoadWaitTime = 5f;
+    
     // State
     private bool isInitialized = false;
     public bool IsInitialized => isInitialized;
@@ -62,6 +68,7 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// Main initialization coroutine. Initializes all systems in order.
     /// All systems are optional - if they don't exist, initialization is skipped.
+    /// Waits for location and save data to fully load before completing.
     /// </summary>
     private IEnumerator InitializeGame()
     {
@@ -80,7 +87,15 @@ public class GameManager : MonoBehaviour
         yield return InitializeLocalization();
         yield return InitializeMobileInput();
         yield return InitializeAdManager();
-        yield return InitializeSaveSystem();
+        
+        // Wait for LocationManager to be ready
+        yield return WaitForLocationManager();
+        
+        // Wait for save system to load data
+        yield return WaitForSaveSystemLoad();
+        
+        // Wait for location to be fully loaded (all objects active)
+        yield return WaitForLocationFullyLoaded();
         
         // Wait a bit for all systems to be ready
         yield return new WaitForSeconds(initializationDelay);
@@ -88,7 +103,7 @@ public class GameManager : MonoBehaviour
         // Mark as initialized
         isInitialized = true;
         
-        Debug.Log("GameManager: All systems initialized!");
+        Debug.Log("GameManager: All systems initialized and location loaded!");
         
         // Hide loading screen
         if (loadingScreen != null)
@@ -171,18 +186,96 @@ public class GameManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Initialize SaveSystemManager (optional).
-    /// SaveSystemManager already exists in project, but we check for safety.
+    /// Wait for LocationManager to be initialized
     /// </summary>
-    private IEnumerator InitializeSaveSystem()
+    private IEnumerator WaitForLocationManager()
     {
-        var saveManager = SaveSystemManager.Instance;
-        if (saveManager != null)
+        float waitStartTime = Time.realtimeSinceStartup;
+        
+        while (LocationManager.Instance == null)
         {
-            Debug.Log("GameManager: SaveSystemManager found and initialized.");
+            if (Time.realtimeSinceStartup - waitStartTime > maxLocationLoadWaitTime)
+            {
+                Debug.LogWarning("GameManager: LocationManager not found after timeout. Continuing anyway...");
+                yield break;
+            }
             yield return null;
         }
-        // If doesn't exist - just continue
+        
+        Debug.Log("GameManager: LocationManager found and ready.");
+    }
+    
+    /// <summary>
+    /// Wait for SaveSystemManager to complete loading save data
+    /// </summary>
+    private IEnumerator WaitForSaveSystemLoad()
+    {
+        var saveManager = SaveSystemManager.Instance;
+        if (saveManager == null)
+        {
+            Debug.Log("GameManager: SaveSystemManager not found. Skipping save load wait.");
+            yield break;
+        }
+        
+        Debug.Log("GameManager: Waiting for save data to load...");
+        
+        float waitStartTime = Time.realtimeSinceStartup;
+        bool loadComplete = false;
+        
+        // Subscribe to load complete event
+        System.Action onLoadComplete = () => { loadComplete = true; };
+        saveManager.OnLoadComplete += onLoadComplete;
+        
+        // Check if already loaded
+        if (saveManager.IsLoadComplete)
+        {
+            loadComplete = true;
+        }
+        
+        // Wait for load to complete or timeout
+        while (!loadComplete)
+        {
+            if (Time.realtimeSinceStartup - waitStartTime > maxSaveLoadWaitTime)
+            {
+                Debug.LogWarning("GameManager: Save data loading timeout. Continuing anyway...");
+                break;
+            }
+            yield return null;
+        }
+        
+        // Unsubscribe
+        saveManager.OnLoadComplete -= onLoadComplete;
+        
+        if (loadComplete)
+        {
+            Debug.Log("GameManager: Save data loading completed.");
+        }
+    }
+    
+    /// <summary>
+    /// Wait for location to be fully loaded (all objects active and ready)
+    /// </summary>
+    private IEnumerator WaitForLocationFullyLoaded()
+    {
+        var locationManager = LocationManager.Instance;
+        if (locationManager == null)
+        {
+            yield break;
+        }
+        
+        Debug.Log("GameManager: Waiting for location to fully load...");
+        
+        float waitStartTime = Time.realtimeSinceStartup;
+        
+        // Wait a few frames for all objects to initialize and become active
+        yield return null;
+        yield return null;
+        yield return null;
+        
+        // Additional wait to ensure all save-loaded objects are spawned and active
+        yield return new WaitForSeconds(0.2f);
+        
+        Debug.Log("GameManager: Location fully loaded.");
     }
     
     void OnDestroy()

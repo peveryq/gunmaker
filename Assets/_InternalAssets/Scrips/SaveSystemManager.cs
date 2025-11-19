@@ -26,6 +26,14 @@ public class SaveSystemManager : MonoBehaviour
     private bool isAutoSaveActive = false;
     private Coroutine autoSaveCoroutine;
     private bool hasLoadedData = false; // Flag to prevent double-loading
+    private bool isLoadingInProgress = false; // Flag to track if loading is in progress
+    private int loadingCoroutinesCount = 0; // Count of active loading coroutines
+    
+    // Event for when loading is complete
+    public System.Action OnLoadComplete;
+    
+    // Property to check if loading is complete
+    public bool IsLoadComplete => hasLoadedData && !isLoadingInProgress;
     
     public static SaveSystemManager Instance
     {
@@ -347,24 +355,31 @@ public class SaveSystemManager : MonoBehaviour
         {
             Debug.Log("SaveSystemManager: No save data to load (first run).");
             hasLoadedData = true; // Mark as loaded to prevent retries
+            isLoadingInProgress = false;
+            OnLoadComplete?.Invoke(); // Notify that loading is complete (no data to load)
             return;
         }
         
         try
         {
             hasLoadedData = true; // Mark as loading to prevent double-loading
+            isLoadingInProgress = true;
+            loadingCoroutinesCount = 0;
             
             // Load money
             if (MoneySystem.Instance != null)
             {
                 // Use a coroutine to ensure MoneySystem is fully initialized
+                loadingCoroutinesCount++;
                 StartCoroutine(LoadMoneyDelayed());
             }
             
             // Load weapon slots (deferred - after scene loads)
+            loadingCoroutinesCount++;
             StartCoroutine(LoadWeaponSlotsDelayed());
             
             // Load workbench weapon (deferred - after scene loads)
+            loadingCoroutinesCount++;
             StartCoroutine(LoadWorkbenchDelayed());
             
             Debug.Log("SaveSystemManager: Game data loading initiated.");
@@ -373,6 +388,9 @@ public class SaveSystemManager : MonoBehaviour
         {
             Debug.LogError($"SaveSystemManager: Error loading game data - {e.Message}");
             hasLoadedData = false; // Reset flag on error to allow retry
+            isLoadingInProgress = false;
+            loadingCoroutinesCount = 0;
+            OnLoadComplete?.Invoke(); // Still notify, even on error
         }
     }
     
@@ -381,12 +399,21 @@ public class SaveSystemManager : MonoBehaviour
         // Wait for MoneySystem to be ready
         yield return null;
         
-        if (MoneySystem.Instance != null && YG2.saves != null)
+        try
         {
-            // Set money directly (bypassing AddMoney to avoid event spam during load)
-            MoneySystem.Instance.SetMoneyDirect(YG2.saves.playerMoney);
-            
-            Debug.Log($"SaveSystemManager: Money loaded - {YG2.saves.playerMoney}");
+            if (MoneySystem.Instance != null && YG2.saves != null)
+            {
+                // Set money directly (bypassing AddMoney to avoid event spam during load)
+                MoneySystem.Instance.SetMoneyDirect(YG2.saves.playerMoney);
+                
+                Debug.Log($"SaveSystemManager: Money loaded - {YG2.saves.playerMoney}");
+            }
+        }
+        finally
+        {
+            // Mark this coroutine as complete
+            loadingCoroutinesCount--;
+            CheckLoadingComplete();
         }
     }
     
@@ -428,6 +455,10 @@ public class SaveSystemManager : MonoBehaviour
             
             Debug.Log($"SaveSystemManager: Weapon slots loaded - {validWeaponsCount} valid weapons out of {YG2.saves.savedWeapons.Count} total entries");
         }
+        
+        // Mark this coroutine as complete
+        loadingCoroutinesCount--;
+        CheckLoadingComplete();
     }
     
     private System.Collections.IEnumerator LoadWorkbenchDelayed()
@@ -522,6 +553,23 @@ public class SaveSystemManager : MonoBehaviour
                 YG2.saves.workbenchWeapon = null;
                 Debug.Log("SaveSystemManager: Skipped invalid workbench weapon data.");
             }
+        }
+        
+        // Mark this coroutine as complete
+        loadingCoroutinesCount--;
+        CheckLoadingComplete();
+    }
+    
+    /// <summary>
+    /// Check if all loading coroutines are complete and notify
+    /// </summary>
+    private void CheckLoadingComplete()
+    {
+        if (loadingCoroutinesCount <= 0 && isLoadingInProgress)
+        {
+            isLoadingInProgress = false;
+            Debug.Log("SaveSystemManager: All loading coroutines completed.");
+            OnLoadComplete?.Invoke();
         }
     }
     
