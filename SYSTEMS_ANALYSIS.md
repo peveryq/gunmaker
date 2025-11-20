@@ -1,8 +1,8 @@
-# Gunmaker Systems Overview — November 2025
+# Gunmaker Systems Overview — December 2025
 
 ## Project Snapshot
 - **Scene in focus:** `Assets/_InternalAssets/Scenes/Main.unity`
-- **Active gameplay scripts:** 49 C# files across `_InternalAssets/Scrips`
+- **Active gameplay scripts:** 50+ C# files across `_InternalAssets/Scrips`
 - **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`
 - **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets
 - **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `LOCATION_TRANSITION_REPORT.md`, this analysis document
@@ -64,6 +64,14 @@
 | Data structures | `WeaponSaveData`, `WeaponPartSaveData`, `WorkbenchSaveData` | Serializable classes for weapon state, part details (stats, mesh name, welding, lens overlay), workbench mounting |
 | Auto-save | `SaveSystemManager`, `GameplayHUD` | Location-aware auto-save with UI indicator (rotating icon + text via DOTween), triggers on return from testing range |
 | Restoration | `SaveSystemManager.RestorePartFromSaveData` | Uses `PartSpawner` and `ShopPartConfig` for runtime mesh lookup, works in Editor and WebGL builds |
+
+### Localization Layer (2025 Update)
+| System | Key Scripts | Highlights |
+|--------|-------------|-----------|
+| Core localization | `LocalizationManager`, `LocalizedText`, `LocalizationHelper`, `LocalizationData` | Singleton manager with YG2 language detection, automatic UI component localization, ScriptableObject-based translation storage |
+| Dynamic content | `PartNameLocalization`, `ShopPartConfig` | Localized weapon part names (adjectives + part types), integrated into shop offering generation |
+| UI integration | All interactive scripts | Localized interaction buttons (`Workbench`, `WeaponLockerInteractable`, `LocationDoor`, `ShopComputer`, `ItemPickup`), dynamic messages (`LocationSelectionUI`), weapon stats (`PurchaseConfirmationUI`, `WeaponStatsUI`, `WeaponSellModal`), HUD elements (`GameplayHUD`) |
+| Initialization | `Bootstrapper`, `GameManager` | Bootstrapper waits for YG2 SDK initialization, loads main scene. GameManager coordinates system initialization including localization |
 
 ---
 
@@ -143,7 +151,7 @@ Save System (Automatic)
 
 - **Two-phase randomisation:** Tile generation caches rarity, price, mesh, icon, manufacturer. Stat roll occurs when the player inspects a tile, preventing unnecessary calculations.
 - **Starter safety net:** Barrel and magazine categories inject a zero-cost, zero-stat offering (with 8 ammo for magazines) as the first tile.
-- **Name localisation prep:** Part type display names now come from `ShopPartConfig.PartTypeConfig.partTypeDisplayName`, enabling future localisation passes.
+- **Name localisation:** Part type display names come from `ShopPartConfig.PartTypeConfig.partTypeDisplayName` and are fully localized via `PartNameLocalization` ScriptableObject. Dynamic part names (adjectives + part types) are generated with localization support.
 - **Icon ↔ Mesh pairing:** `PartMeshData` links meshes, sprites, and optional scope lens prefabs to keep visuals and geometry aligned.
 - **Save system integration:** Centralized `SaveSystemManager` handles all persistence via YG2 Storage module. Auto-saves every 20s in workshop, triggers on return from testing range. Saves money, weapon slots (with full part details including mesh names), and workbench state. Mesh restoration uses `ShopPartConfig` for runtime lookup (works in Editor and WebGL builds).
 
@@ -183,10 +191,10 @@ Save System (Automatic)
 ### Known Limitations / Next Steps
 1. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
 2. **Analytics hooks** – Consider emitting events when purchases, locker interactions, or location transitions occur for telemetry or tutorials.
-3. **Localization** – Part, slot, and location UI strings remain hardcoded English.
-4. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet.
-5. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
-6. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
+3. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet. Device detection system ready for integration.
+4. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
+5. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
+6. **YG2 Integration** – Device detection, interstitial ads, rewarded ads, and pause control systems pending implementation.
 
 ---
 
@@ -280,7 +288,15 @@ Save System (Automatic)
 - **Testing range flow:** Countdown (5-4-3-2-1-shoot!) with animations and sounds, door opens when "shoot!" appears, shooting timer with warning effects (red color, animations, sounds below threshold), door closes when timer ends, configurable delay before fade, results screen with earnings display. Auto-save triggers on return via `SaveSystemManager.TriggerAutoSaveOnReturn()`.
 - **UI layout updates:** Earnings display uses coroutine-based force rebuild with `HorizontalLayoutGroup` and `ContentSizeFitter`. `ForceMeshUpdate()` for TextMeshPro, explicit `SetLayoutHorizontal()`/`SetLayoutVertical()` calls for reliable updates.
 
-### Appendix L – Save & Persistence System
+### Appendix L – Localization System
+- **LocalizationManager:** Singleton with `DontDestroyOnLoad`, automatically detects language from YG2 SDK (`YG2.envir.language`), supports Russian and English. Loads translations from `LocalizationData` ScriptableObject or uses default hardcoded translations. Emits `OnLanguageChanged` event for UI updates.
+- **LocalizedText component:** Automatic localization component for `TextMeshProUGUI` or Unity `Text` components. Subscribes to `LocalizationManager.OnLanguageChanged`, updates text automatically when language changes. Supports translation key and optional fallback text.
+- **LocalizationHelper:** Static helper class for convenient programmatic access to localized strings. Provides `Get(string key, string fallback, string defaultEnglish)` method with fallback chain support.
+- **PartNameLocalization:** ScriptableObject for storing localized weapon part names. Contains `PartTypeName` entries (barrel, magazine, stock, scope) and `AdjectivePool` entries grouped by part type and rarity (1-5). Integrated into `ShopOfferingGenerator` for localized part name generation.
+- **Integration points:** All interactive scripts (`Workbench`, `WeaponLockerInteractable`, `LocationDoor`, `ShopComputer`, `ItemPickup`) use localization keys for button labels. Dynamic messages (`LocationSelectionUI`) and weapon stats (`PurchaseConfirmationUI`, `WeaponStatsUI`, `WeaponSellModal`) use `LocalizationHelper` for runtime translation. HUD elements support both `LocalizedText` component and programmatic localization.
+- **Default translations:** Hardcoded translations for common UI elements (shop, categories, locations, actions, stats, HUD messages) ensure system works even without `LocalizationData` assigned. Translations can be overridden via ScriptableObject.
+
+### Appendix M – Save & Persistence System
 - **SaveSystemManager:** Centralized singleton with `DontDestroyOnLoad`, auto-creates on game start via `RuntimeInitializeOnLoadMethod`. Manages all save/load operations through YG2 Storage module. Subscribes to `LocationManager.OnLocationChangedEvent` for location-aware auto-save control.
 - **Auto-save logic:** Triggers every 20 seconds when in workshop (`LocationType.Workshop`), automatically stops when entering testing range. Timer resets on location change. Also triggers on return from testing range via `TriggerAutoSaveOnReturn()` (called from `ResultsScreenUI`).
 - **Save data structure:** Extends `YG.SavesYG` via `partial class` pattern in `GameSaveData.cs`. Stores `playerMoney` (int), `savedWeapons` (List<WeaponSaveData>), and `workbenchWeapon` (WorkbenchSaveData). All serializable via Unity's `JsonUtility` or Newtonsoft.Json.
@@ -337,6 +353,13 @@ Save System (Automatic)
 41. Improved physics handling: disables Rigidbody and Collider on all children when weapons are held to prevent physics conflicts
 42. Added validation and filtering: prevents loading invalid weapon data, handles duplicates between slots and workbench
 43. Integrated save triggers: auto-save on return from testing range via ResultsScreenUI callback
+44. Implemented comprehensive localization system: LocalizationManager singleton with YG2 language detection, LocalizedText component for automatic UI localization, LocalizationHelper for programmatic access, LocalizationData ScriptableObject for translation storage
+45. Added PartNameLocalization ScriptableObject for dynamic weapon part name localization (adjectives + part types), integrated into shop offering generation including starter offerings
+46. Localized all interactive elements: Workbench, WeaponLockerInteractable, LocationDoor, ShopComputer, ItemPickup interaction buttons with key-based localization
+47. Localized dynamic UI messages: LocationSelectionUI weapon readiness notifications, weapon stats in PurchaseConfirmationUI, WeaponStatsUI, and WeaponSellModal
+48. Localized HUD elements: GameplayHUD unwelded barrel warning and autosave indicator text
+49. Implemented Bootstrapper: initial scene script that waits for YG2 SDK initialization before loading main scene
+50. Enhanced GameManager: coordinates system initialization including optional LocalizationManager, MobileInputManager, and AdManager initialization via reflection
 
 ---
 
