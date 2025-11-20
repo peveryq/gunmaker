@@ -309,11 +309,6 @@ public class WeaponLockerSystem : MonoBehaviour
         }
 
         onSellCompleted?.Invoke();
-
-        if (manager.OccupiedCount == 0)
-        {
-            HandleLockerClosed();
-        }
     }
 
     private bool PrepareWeaponForStorage(WeaponBody weaponBody)
