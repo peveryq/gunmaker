@@ -11,8 +11,18 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     [SerializeField] private float interactionRange = 3f;
     [SerializeField] private string doorName = "Training Range";
     [SerializeField] private bool isLocked = false;
-    [SerializeField] private string unlockedLabel = "enter";
-    [SerializeField] private string lockedLabel = "locked";
+    
+    [Header("Localization Keys")]
+    [Tooltip("Localization key for 'enter' action when door is unlocked. Default: 'action.enter'")]
+    [SerializeField] private string unlockedLabelKey = "action.enter";
+    [Tooltip("Localization key for 'locked' action when door is locked. Default: 'action.locked'")]
+    [SerializeField] private string lockedLabelKey = "action.locked";
+    
+    [Header("Fallback Labels (Optional)")]
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string unlockedLabel = "";
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string lockedLabel = "";
     
     [Header("UI Reference")]
     [SerializeField] private LocationSelectionUI locationSelectionUI;
@@ -63,11 +73,11 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
         
         if (isLocked)
         {
-            resolvedLabel = string.IsNullOrEmpty(lockedLabel) ? "locked" : lockedLabel;
+            resolvedLabel = GetLocalizedLabel(lockedLabelKey, lockedLabel, "locked");
         }
         else
         {
-            resolvedLabel = string.IsNullOrEmpty(unlockedLabel) ? "to testing" : unlockedLabel;
+            resolvedLabel = GetLocalizedLabel(unlockedLabelKey, unlockedLabel, "enter");
         }
         
         options.Add(InteractionOption.Primary(
@@ -91,6 +101,39 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     public void Unlock()
     {
         isLocked = false;
+    }
+    
+    /// <summary>
+    /// Helper method to get localized label with fallback chain:
+    /// 1. Try localization by key
+    /// 2. Use custom fallback if provided
+    /// 3. Use default English fallback
+    /// </summary>
+    private string GetLocalizedLabel(string key, string customFallback, string defaultFallback)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            string localized = LocalizationHelper.Get(key);
+            // If localization returned something (and not just the key itself), use it
+            if (localized != key || LocalizationManager.Instance != null)
+            {
+                // If we got a valid translation or LocalizationManager exists, use it
+                if (localized != key)
+                {
+                    return localized;
+                }
+                // If key was returned, try fallback
+            }
+        }
+        
+        // Use custom fallback if provided
+        if (!string.IsNullOrEmpty(customFallback))
+        {
+            return customFallback;
+        }
+        
+        // Use default English fallback
+        return defaultFallback;
     }
 }
 

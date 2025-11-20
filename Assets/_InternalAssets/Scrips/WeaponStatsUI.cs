@@ -171,7 +171,10 @@ public class WeaponStatsUI : MonoBehaviour
     {
         weaponPart.PopulateModifierEntries((label, value) =>
         {
-            bool useInt = string.Equals(label, "Ammo", System.StringComparison.OrdinalIgnoreCase);
+            // Try to localize the label
+            string localizedLabel = GetLocalizedStatNameFromLabel(label);
+            bool useInt = string.Equals(localizedLabel, GetLocalizedStatName("stats.ammo", "Ammo"), System.StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(label, "Ammo", System.StringComparison.OrdinalIgnoreCase);
             
             Color valueColor = neutralColor;
             if (value > 0f) valueColor = positiveColor;
@@ -179,7 +182,7 @@ public class WeaponStatsUI : MonoBehaviour
             
             statEntriesBuffer.Add(new StatEntry
             {
-                label = label,
+                label = localizedLabel,
                 deltaText = string.Empty,
                 valueText = FormatModifierValue(value, useInt),
                 showDelta = false,
@@ -203,13 +206,13 @@ public class WeaponStatsUI : MonoBehaviour
         float previewAmmo = hasPreview ? previewStats.ammo : currentStats.ammo;
         float previewScope = hasPreview ? previewStats.scope : currentStats.scope;
 
-        AddStatEntry("Power", currentStats.power, previewPower, hasPreview);
-        AddStatEntry("Reload Speed", currentStats.reloadSpeed, previewReload, hasPreview);
-        AddStatEntry("Accuracy", currentStats.accuracy, previewAccuracy, hasPreview);
-        AddStatEntry("Rapidity", currentStats.rapidity, previewRapidity, hasPreview);
-        AddStatEntry("Recoil", currentStats.recoil, previewRecoil, hasPreview);
-        AddStatEntry("Ammo", currentStats.ammo, previewAmmo, hasPreview, true);
-        AddStatEntry("Aim", currentStats.scope, previewScope, hasPreview);
+        AddStatEntry(GetLocalizedStatName("stats.power", "Power"), currentStats.power, previewPower, hasPreview);
+        AddStatEntry(GetLocalizedStatName("stats.reload_speed", "Reload Speed"), currentStats.reloadSpeed, previewReload, hasPreview);
+        AddStatEntry(GetLocalizedStatName("stats.accuracy", "Accuracy"), currentStats.accuracy, previewAccuracy, hasPreview);
+        AddStatEntry(GetLocalizedStatName("stats.rapidity", "Rapidity"), currentStats.rapidity, previewRapidity, hasPreview);
+        AddStatEntry(GetLocalizedStatName("stats.recoil", "Recoil"), currentStats.recoil, previewRecoil, hasPreview);
+        AddStatEntry(GetLocalizedStatName("stats.ammo", "Ammo"), currentStats.ammo, previewAmmo, hasPreview, true);
+        AddStatEntry(GetLocalizedStatName("stats.aim", "Aim"), currentStats.scope, previewScope, hasPreview);
     }
 
     private static WeaponStats BuildStatsFromSettings(WeaponSettings settings)
@@ -508,6 +511,44 @@ public class WeaponStatsUI : MonoBehaviour
 
         statEntriesBuffer.Clear();
         PresentEntries(string.Empty, false);
+    }
+    
+    /// <summary>
+    /// Get localized stat name by key
+    /// </summary>
+    private string GetLocalizedStatName(string key, string fallback)
+    {
+        return LocalizationHelper.Get(key, null, fallback);
+    }
+    
+    /// <summary>
+    /// Get localized stat name from English label (for backward compatibility)
+    /// </summary>
+    private string GetLocalizedStatNameFromLabel(string englishLabel)
+    {
+        if (string.IsNullOrEmpty(englishLabel))
+            return englishLabel;
+        
+        // Map English labels to localization keys
+        string key = englishLabel switch
+        {
+            "Power" => "stats.power",
+            "Accuracy" => "stats.accuracy",
+            "Rapidity" => "stats.rapidity",
+            "Recoil" => "stats.recoil",
+            "Reload Speed" => "stats.reload_speed",
+            "Aim" => "stats.aim",
+            "Ammo" => "stats.ammo",
+            _ => null
+        };
+        
+        if (!string.IsNullOrEmpty(key))
+        {
+            return LocalizationHelper.Get(key, englishLabel);
+        }
+        
+        // Return original label if no mapping found
+        return englishLabel;
     }
 }
 

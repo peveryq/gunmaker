@@ -10,7 +10,14 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
     [Header("Computer Settings")]
     [SerializeField] private float interactionRange = 3f;
     [SerializeField] private bool requiresWeaponInHand = false;
-    [SerializeField] private string interactLabel = "shop";
+    
+    [Header("Localization Keys")]
+    [Tooltip("Localization key for 'open shop' action. Default: 'action.open'")]
+    [SerializeField] private string interactLabelKey = "action.open";
+    
+    [Header("Fallback Labels (Optional)")]
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string interactLabel = "";
     
     [Header("Shop UI")]
     [SerializeField] private ShopUI shopUI;
@@ -74,7 +81,9 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
             return;
         }
 
-        string resolvedLabel = string.IsNullOrEmpty(interactLabel) ? "shop" : interactLabel;
+        // Use localization with fallback chain
+        string resolvedLabel = GetLocalizedLabel(interactLabelKey, interactLabel, "shop");
+        
         options.Add(InteractionOption.Primary(
             id: "shop.open",
             label: resolvedLabel,
@@ -99,5 +108,38 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
     public Transform Transform => transform;
     public float InteractionRange => interactionRange;
     public bool ShowOutline => true;
+    
+    /// <summary>
+    /// Helper method to get localized label with fallback chain:
+    /// 1. Try localization by key
+    /// 2. Use custom fallback if provided
+    /// 3. Use default English fallback
+    /// </summary>
+    private string GetLocalizedLabel(string key, string customFallback, string defaultFallback)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            string localized = LocalizationHelper.Get(key);
+            // If localization returned something (and not just the key itself), use it
+            if (localized != key || LocalizationManager.Instance != null)
+            {
+                // If we got a valid translation or LocalizationManager exists, use it
+                if (localized != key)
+                {
+                    return localized;
+                }
+                // If key was returned, try fallback
+            }
+        }
+        
+        // Use custom fallback if provided
+        if (!string.IsNullOrEmpty(customFallback))
+        {
+            return customFallback;
+        }
+        
+        // Use default English fallback
+        return defaultFallback;
+    }
 }
 

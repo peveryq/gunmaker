@@ -182,6 +182,10 @@ public class ShopPartConfig : ScriptableObject
     [Tooltip("Star icon for empty stars")]
     public Sprite emptyStarIcon;
     
+    [Header("Localization (Optional)")]
+    [Tooltip("Part name localization data. If assigned, part names will be localized. If not, original names will be used.")]
+    public PartNameLocalization partNameLocalization;
+    
     /// <summary>
     /// Get configuration for a specific part type
     /// </summary>
@@ -211,8 +215,40 @@ public class ShopPartConfig : ScriptableObject
     /// </summary>
     public string GetPartTypeLabel(PartType type)
     {
+        // Try to get localized part type name first
+        if (partNameLocalization != null)
+        {
+            string localized = partNameLocalization.GetLocalizedPartTypeName(type);
+            if (!string.IsNullOrEmpty(localized))
+            {
+                return localized;
+            }
+        }
+        
+        // Fallback to PartTypeConfig display name
         PartTypeConfig config = GetPartTypeConfig(type);
         return config != null ? config.GetDisplayName() : type.ToString().ToLowerInvariant();
+    }
+    
+    /// <summary>
+    /// Get localized part name (adjective + part type)
+    /// </summary>
+    /// <param name="type">Part type</param>
+    /// <param name="rarity">Rarity tier (1-5)</param>
+    /// <param name="originalAdjective">Original adjective from partNamePool</param>
+    /// <returns>Localized part name or original if localization not available</returns>
+    public string GetLocalizedPartName(PartType type, int rarity, string originalAdjective)
+    {
+        // Try to get localized name if PartNameLocalization is assigned
+        if (partNameLocalization != null && !string.IsNullOrEmpty(originalAdjective))
+        {
+            return partNameLocalization.GetLocalizedPartName(type, rarity, originalAdjective);
+        }
+        
+        // Fallback to original generation
+        string firstPart = !string.IsNullOrEmpty(originalAdjective) ? originalAdjective : $"{rarity}-star";
+        string typeLabel = GetPartTypeLabel(type);
+        return !string.IsNullOrWhiteSpace(typeLabel) ? $"{firstPart} {typeLabel}" : firstPart;
     }
     
     /// <summary>

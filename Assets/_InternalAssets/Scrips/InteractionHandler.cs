@@ -229,12 +229,17 @@ public class InteractionHandler : MonoBehaviour
 
             if (optionsBuffer.Count == 0)
             {
-                string prompt = target.GetInteractionPrompt(this);
-                if (!string.IsNullOrEmpty(prompt))
+                // Only create default button if interaction is actually available
+                // This prevents showing disabled buttons when interaction is unavailable
+                bool available = target.CanInteract(this);
+                if (available)
                 {
-                    string label = NormalizePrompt(prompt);
-                    bool available = target.CanInteract(this);
-                    optionsBuffer.Add(InteractionOption.Primary("default", label, interactKey, available, handler => handler.PerformInteraction(target)));
+                    string prompt = target.GetInteractionPrompt(this);
+                    if (!string.IsNullOrEmpty(prompt))
+                    {
+                        string label = NormalizePrompt(prompt);
+                        optionsBuffer.Add(InteractionOption.Primary("default", label, interactKey, available, handler => handler.PerformInteraction(target)));
+                    }
                 }
             }
         }

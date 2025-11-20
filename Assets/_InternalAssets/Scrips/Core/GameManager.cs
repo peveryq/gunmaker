@@ -116,27 +116,29 @@ public class GameManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Initialize LocalizationManager (optional).
-    /// If LocalizationManager doesn't exist, this is skipped.
-    /// Uses reflection to safely check if class exists.
+    /// Initialize LocalizationManager.
+    /// LocalizationManager is now part of the project, so we initialize it directly.
     /// </summary>
     private IEnumerator InitializeLocalization()
     {
-        // Safe check using reflection - if system doesn't exist, just skip
-        var locManagerType = System.Type.GetType("LocalizationManager");
-        if (locManagerType != null)
+        // Wait a frame for LocalizationManager to initialize
+        yield return null;
+        
+        var locManager = LocalizationManager.Instance;
+        if (locManager != null)
         {
-            var instanceProperty = locManagerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (instanceProperty != null)
+            Debug.Log("GameManager: LocalizationManager found and initialized.");
+            
+            // If YG2 wasn't ready when LocalizationManager started, reload language
+            if (YG2.isSDKEnabled)
             {
-                var instance = instanceProperty.GetValue(null);
-                if (instance != null)
-                {
-                    Debug.Log("GameManager: LocalizationManager found and initialized.");
-                }
+                locManager.ReloadLanguageFromYG2();
             }
         }
-        yield return null;
+        else
+        {
+            Debug.LogWarning("GameManager: LocalizationManager not found. Localization will not work.");
+        }
     }
     
     /// <summary>

@@ -20,6 +20,7 @@ public class ShopOffering
     private bool statsCalculated = false;
     private string cachedName;
     private bool nameGenerated = false;
+    private string cachedOriginalAdjective; // Store the original adjective for localization
     private bool hasCustomStats = false;
     private Dictionary<StatInfluence.StatType, float> customStats;
     private string overrideName;
@@ -131,30 +132,52 @@ public class ShopOffering
 
     /// <summary>
     /// Get or generate a display name for this offering
+    /// Supports localization if PartNameLocalization is assigned in ShopPartConfig
     /// </summary>
     public string GetGeneratedName(ShopPartConfig config)
     {
         if (!string.IsNullOrWhiteSpace(overrideName))
             return overrideName;
         
-        if (nameGenerated && !string.IsNullOrEmpty(cachedName))
+        // Get the original adjective (only once, to keep it consistent)
+        string firstPart = cachedOriginalAdjective;
+        if (string.IsNullOrEmpty(firstPart))
+        {
+            if (config != null)
+            {
+                firstPart = config.GetRandomNameFragment(partType, rarity);
+            }
+            
+            if (string.IsNullOrWhiteSpace(firstPart))
+            {
+                firstPart = $"{rarity}-star";
+            }
+            
+            // Cache the original adjective
+            cachedOriginalAdjective = firstPart;
+        }
+        
+        // Always try to get localized name if PartNameLocalization is available
+        // This ensures that if localization becomes available later, names will be localized
+        if (config != null && config.partNameLocalization != null && !string.IsNullOrEmpty(firstPart))
+        {
+            // Regenerate localized name (in case language changed or localization was just assigned)
+            string localizedName = config.GetLocalizedPartName(partType, rarity, firstPart);
+            cachedName = localizedName.Trim();
+            nameGenerated = true;
             return cachedName;
-        
-        string firstPart = null;
-        if (config != null)
-        {
-            firstPart = config.GetRandomNameFragment(partType, rarity);
         }
         
-        if (string.IsNullOrWhiteSpace(firstPart))
+        // Fallback to original generation (without localization)
+        // Only regenerate if not already cached
+        if (!nameGenerated || string.IsNullOrEmpty(cachedName))
         {
-            firstPart = $"{rarity}-star";
+            string typeLabel = config != null ? config.GetPartTypeLabel(partType) : partType.ToString().ToLowerInvariant();
+            string combinedName = string.IsNullOrWhiteSpace(typeLabel) ? firstPart : $"{firstPart} {typeLabel}";
+            cachedName = combinedName.Trim();
+            nameGenerated = true;
         }
         
-        string typeLabel = config != null ? config.GetPartTypeLabel(partType) : partType.ToString().ToLowerInvariant();
-        string combinedName = string.IsNullOrWhiteSpace(typeLabel) ? firstPart : $"{firstPart} {typeLabel}";
-        cachedName = combinedName.Trim();
-        nameGenerated = true;
         return cachedName;
     }
 
@@ -164,6 +187,7 @@ public class ShopOffering
     public void ResetName()
     {
         cachedName = null;
+        cachedOriginalAdjective = null;
         nameGenerated = false;
     }
     
@@ -182,6 +206,18 @@ public class ShopOffering
     public void SetOverrideName(string name)
     {
         overrideName = name;
+        cachedName = null;
+        nameGenerated = false;
+    }
+    
+    /// <summary>
+    /// Set the original adjective for localization (used for starter offerings)
+    /// This allows GetGeneratedName to properly localize the name
+    /// </summary>
+    public void SetOriginalAdjective(string adjective)
+    {
+        cachedOriginalAdjective = adjective;
+        // Reset cached name so it will be regenerated with localization
         cachedName = null;
         nameGenerated = false;
     }
@@ -375,14 +411,20 @@ public class ShopOfferingGenerator : MonoBehaviour
         }
         starter.SetCustomStats(stats);
 
+        // Get original adjective from rarity 1 pool
         string firstPart = partConfig.GetRandomNameFragment(baseTier.rarity);
         if (string.IsNullOrWhiteSpace(firstPart))
         {
             firstPart = "basic";
         }
-        string typeLabel = shopConfig != null ? shopConfig.GetPartTypeLabel(partType) : partType.ToString().ToLowerInvariant();
-        string starterName = string.IsNullOrWhiteSpace(typeLabel) ? firstPart : $"{firstPart} {typeLabel}";
-        starter.SetOverrideName(starterName.Trim());
+        
+        // Set the original adjective so GetGeneratedName can use it for localization
+        // This allows the name to be properly localized when GetGeneratedName is called
+        starter.SetOriginalAdjective(firstPart);
+        
+        // Pre-generate the name to ensure it's cached with localization
+        // This will use the cachedOriginalAdjective we just set
+        string _ = starter.GetGeneratedName(shopConfig);
 
         return starter;
     }

@@ -45,6 +45,32 @@ public class PurchaseConfirmationUI : MonoBehaviour
     private void Awake()
     {
         InitializeListeners();
+        
+        // Subscribe to language changes to update stats header
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged += UpdateStatsHeader;
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        // Unsubscribe from language changes
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateStatsHeader;
+        }
+    }
+    
+    /// <summary>
+    /// Update stats header text when language changes
+    /// </summary>
+    private void UpdateStatsHeader()
+    {
+        if (statsHeaderText != null && modalPanel != null && modalPanel.activeSelf)
+        {
+            statsHeaderText.text = LocalizationHelper.Get("stats.header", "STATS");
+        }
     }
     
     /// <summary>
@@ -166,10 +192,10 @@ public class PurchaseConfirmationUI : MonoBehaviour
     /// </summary>
     private void DisplayStats(Dictionary<StatInfluence.StatType, float> stats)
     {
-        // Set header (делаем это до очистки контейнера)
+        // Set header with localization
         if (statsHeaderText != null)
         {
-            statsHeaderText.text = "STATS";
+            statsHeaderText.text = LocalizationHelper.Get("stats.header", "STATS");
         }
         
         // Clear existing stat lines (но НЕ удаляем header!)
@@ -250,21 +276,42 @@ public class PurchaseConfirmationUI : MonoBehaviour
     }
     
     /// <summary>
-    /// Get display name for stat type
+    /// Get display name for stat type (localized)
     /// </summary>
     private string GetStatDisplayName(StatInfluence.StatType statType)
     {
-        switch (statType)
+        string key = statType switch
         {
-            case StatInfluence.StatType.Power: return "Power";
-            case StatInfluence.StatType.Accuracy: return "Accuracy";
-            case StatInfluence.StatType.Rapidity: return "Rapidity";
-            case StatInfluence.StatType.Recoil: return "Recoil";
-            case StatInfluence.StatType.ReloadSpeed: return "Reload Speed";
-            case StatInfluence.StatType.Aim: return "Aim";
-            case StatInfluence.StatType.Ammo: return "Ammo";
-            default: return statType.ToString();
+            StatInfluence.StatType.Power => "stats.power",
+            StatInfluence.StatType.Accuracy => "stats.accuracy",
+            StatInfluence.StatType.Rapidity => "stats.rapidity",
+            StatInfluence.StatType.Recoil => "stats.recoil",
+            StatInfluence.StatType.ReloadSpeed => "stats.reload_speed",
+            StatInfluence.StatType.Aim => "stats.aim",
+            StatInfluence.StatType.Ammo => "stats.ammo",
+            _ => null
+        };
+        
+        if (!string.IsNullOrEmpty(key))
+        {
+            // Provide English fallback for each stat
+            string englishFallback = statType switch
+            {
+                StatInfluence.StatType.Power => "Power",
+                StatInfluence.StatType.Accuracy => "Accuracy",
+                StatInfluence.StatType.Rapidity => "Rapidity",
+                StatInfluence.StatType.Recoil => "Recoil",
+                StatInfluence.StatType.ReloadSpeed => "Reload Speed",
+                StatInfluence.StatType.Aim => "Aim",
+                StatInfluence.StatType.Ammo => "Ammo",
+                _ => statType.ToString()
+            };
+            
+            return LocalizationHelper.Get(key, null, englishFallback);
         }
+        
+        // Fallback to enum name
+        return statType.ToString();
     }
     
     /// <summary>

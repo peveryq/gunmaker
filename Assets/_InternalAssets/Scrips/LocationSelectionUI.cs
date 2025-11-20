@@ -22,12 +22,29 @@ public class LocationSelectionUI : MonoBehaviour
     [SerializeField] private GameObject grabGunFirstNotification;
     [SerializeField] private TextMeshProUGUI notificationText; // Text component for notification message
     
-    [Header("Notification Messages")]
-    [SerializeField] private string noWeaponMessage = "grab a gun first";
-    [SerializeField] private string noBarrelMessage = "attach a barrel to the gun";
-    [SerializeField] private string noMagazineMessage = "attach a mag to the gun";
-    [SerializeField] private string noBarrelAndMagazineMessage = "attach a barrel and a mag to the gun";
-    [SerializeField] private string unweldedBarrelMessage = "weld the barrel to the gun";
+    [Header("Localization Keys")]
+    [Tooltip("Localization key for 'grab a gun first' message. Default: 'location.no_weapon'")]
+    [SerializeField] private string noWeaponMessageKey = "location.no_weapon";
+    [Tooltip("Localization key for 'attach a barrel' message. Default: 'location.no_barrel'")]
+    [SerializeField] private string noBarrelMessageKey = "location.no_barrel";
+    [Tooltip("Localization key for 'attach a mag' message. Default: 'location.no_magazine'")]
+    [SerializeField] private string noMagazineMessageKey = "location.no_magazine";
+    [Tooltip("Localization key for 'attach barrel and mag' message. Default: 'location.no_barrel_and_magazine'")]
+    [SerializeField] private string noBarrelAndMagazineMessageKey = "location.no_barrel_and_magazine";
+    [Tooltip("Localization key for 'weld the barrel' message. Default: 'location.unwelded_barrel'")]
+    [SerializeField] private string unweldedBarrelMessageKey = "location.unwelded_barrel";
+    
+    [Header("Fallback Messages (Optional)")]
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string noWeaponMessage = "";
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string noBarrelMessage = "";
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string noMagazineMessage = "";
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string noBarrelAndMagazineMessage = "";
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string unweldedBarrelMessage = "";
     
     [Header("References")]
     [SerializeField] private LocationManager locationManager;
@@ -288,19 +305,19 @@ public class LocationSelectionUI : MonoBehaviour
             switch (readiness)
             {
                 case WeaponReadiness.NoWeapon:
-                    notificationText.text = noWeaponMessage;
+                    notificationText.text = GetLocalizedMessage(noWeaponMessageKey, noWeaponMessage, "grab a gun first");
                     break;
                 case WeaponReadiness.NoBarrel:
-                    notificationText.text = noBarrelMessage;
+                    notificationText.text = GetLocalizedMessage(noBarrelMessageKey, noBarrelMessage, "attach a barrel to the gun");
                     break;
                 case WeaponReadiness.NoMagazine:
-                    notificationText.text = noMagazineMessage;
+                    notificationText.text = GetLocalizedMessage(noMagazineMessageKey, noMagazineMessage, "attach a mag to the gun");
                     break;
                 case WeaponReadiness.NoBarrelAndMagazine:
-                    notificationText.text = noBarrelAndMagazineMessage;
+                    notificationText.text = GetLocalizedMessage(noBarrelAndMagazineMessageKey, noBarrelAndMagazineMessage, "attach a barrel and a mag to the gun");
                     break;
                 case WeaponReadiness.UnweldedBarrel:
-                    notificationText.text = unweldedBarrelMessage;
+                    notificationText.text = GetLocalizedMessage(unweldedBarrelMessageKey, unweldedBarrelMessage, "weld the barrel to the gun");
                     break;
                 default:
                     notificationText.text = string.Empty;
@@ -330,6 +347,39 @@ public class LocationSelectionUI : MonoBehaviour
         {
             GameplayUIContext.Instance.ReleaseHud(this);
         }
+    }
+    
+    /// <summary>
+    /// Helper method to get localized message with fallback chain:
+    /// 1. Try localization by key
+    /// 2. Use custom fallback if provided
+    /// 3. Use default English fallback
+    /// </summary>
+    private string GetLocalizedMessage(string key, string customFallback, string defaultFallback)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            string localized = LocalizationHelper.Get(key);
+            // If localization returned something (and not just the key itself), use it
+            if (localized != key || LocalizationManager.Instance != null)
+            {
+                // If we got a valid translation or LocalizationManager exists, use it
+                if (localized != key)
+                {
+                    return localized;
+                }
+                // If key was returned, try fallback
+            }
+        }
+        
+        // Use custom fallback if provided
+        if (!string.IsNullOrEmpty(customFallback))
+        {
+            return customFallback;
+        }
+        
+        // Use default English fallback
+        return defaultFallback;
     }
 }
 

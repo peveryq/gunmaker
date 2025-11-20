@@ -141,8 +141,9 @@ public class WeaponSellModal : MonoBehaviour
         {
             WeaponStatRowUI row = activeRows[i];
             (string label, float value) entry = entries[i];
+            string localizedLabel = GetLocalizedStatNameFromLabel(entry.label);
             string valueText = FormatStatValue(entry.value, entry.label == "Ammo");
-            row.SetData(entry.label, string.Empty, valueText, false, statsValueColor, statsDeltaColor);
+            row.SetData(localizedLabel, string.Empty, valueText, false, statsValueColor, statsDeltaColor);
         }
     }
 
@@ -298,6 +299,38 @@ public class WeaponSellModal : MonoBehaviour
         {
             AudioSource.PlayClipAtPoint(clickAudioClip, transform.position);
         }
+    }
+    
+    /// <summary>
+    /// Get localized stat name from English label (for backward compatibility)
+    /// </summary>
+    private string GetLocalizedStatNameFromLabel(string englishLabel)
+    {
+        if (string.IsNullOrEmpty(englishLabel))
+            return englishLabel;
+        
+        // Map English labels to localization keys
+        string key = englishLabel switch
+        {
+            "Power" => "stats.power",
+            "Accuracy" => "stats.accuracy",
+            "Rapidity" => "stats.rapidity",
+            "Recoil" => "stats.recoil",
+            "Reload Speed" => "stats.reload_speed",
+            "Aim" => "stats.aim",
+            "Ammo" => "stats.ammo",
+            _ => null
+        };
+        
+        if (!string.IsNullOrEmpty(key))
+        {
+            // Provide English fallback for each stat
+            string englishFallback = englishLabel;
+            return LocalizationHelper.Get(key, null, englishFallback);
+        }
+        
+        // Return original label if no mapping found
+        return englishLabel;
     }
 }
 

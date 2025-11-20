@@ -6,7 +6,14 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
     [Header("Pickup Settings")]
     [SerializeField] private float pickupRange = 3f;
     [SerializeField] private string itemName = "Item";
-    [SerializeField] private string pickupLabel = "grab";
+    
+    [Header("Localization Keys")]
+    [Tooltip("Localization key for 'grab' action. Default: 'action.grab'")]
+    [SerializeField] private string pickupLabelKey = "action.grab";
+    
+    [Header("Fallback Labels (Optional)")]
+    [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+    [SerializeField] private string pickupLabel = "";
     
     [Header("Auto-Settings (Optional)")]
     [Tooltip("If checked, will automatically apply settings from WeaponPart type")]
@@ -90,7 +97,9 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
             return;
         }
 
-        string resolvedLabel = string.IsNullOrEmpty(pickupLabel) ? "grab" : pickupLabel;
+        // Use localization with fallback chain
+        string resolvedLabel = GetLocalizedLabel(pickupLabelKey, pickupLabel, "grab");
+        
         options.Add(InteractionOption.Primary(
             id: $"pickup.{GetInstanceID()}",
             label: resolvedLabel,
@@ -432,5 +441,38 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
     public string ItemName => itemName;
     public Vector3 OriginalLocalPosition => originalLocalPosition;
     public Vector3 DropRotation => dropRotation;
+    
+    /// <summary>
+    /// Helper method to get localized label with fallback chain:
+    /// 1. Try localization by key
+    /// 2. Use custom fallback if provided
+    /// 3. Use default English fallback
+    /// </summary>
+    private string GetLocalizedLabel(string key, string customFallback, string defaultFallback)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            string localized = LocalizationHelper.Get(key);
+            // If localization returned something (and not just the key itself), use it
+            if (localized != key || LocalizationManager.Instance != null)
+            {
+                // If we got a valid translation or LocalizationManager exists, use it
+                if (localized != key)
+                {
+                    return localized;
+                }
+                // If key was returned, try fallback
+            }
+        }
+        
+        // Use custom fallback if provided
+        if (!string.IsNullOrEmpty(customFallback))
+        {
+            return customFallback;
+        }
+        
+        // Use default English fallback
+        return defaultFallback;
+    }
 }
 

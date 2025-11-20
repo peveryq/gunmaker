@@ -1,0 +1,331 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39bf61d1c9bbe984ab522c7afcc30565, type: 3}
+  m_Name: PartNameLocalization
+  m_EditorClassIdentifier: 
+  partTypeNames:
+  - partType: 0
+    russian: "\u0441\u0442\u0432\u043E\u043B"
+    english: barrel
+  - partType: 1
+    russian: "\u043C\u0430\u0433\u0430\u0437\u0438\u043D"
+    english: magazine
+  - partType: 2
+    russian: "\u043F\u0440\u0438\u043A\u043B\u0430\u0434"
+    english: stock
+  - partType: 3
+    russian: "\u043F\u0440\u0438\u0446\u0435\u043B"
+    english: scope
+  adjectivePools:
+  - partType: 0
+    rarity: 1
+    adjectives:
+    - original: rusty
+      russian: "\u0440\u0436\u0430\u0432\u044B\u0439"
+      english: rusty
+    - original: low-grade
+      russian: "\u043D\u0438\u0437\u043A\u043E\u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439"
+      english: low-grade
+    - original: old
+      russian: "\u0441\u0442\u0430\u0440\u044B\u0439"
+      english: old
+    - original: crude
+      russian: "\u0433\u0440\u0443\u0431\u044B\u0439"
+      english: crude
+    - original: damaged
+      russian: "\u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u043D\u044B\u0439"
+      english: damaged
+  - partType: 0
+    rarity: 2
+    adjectives:
+    - original: used
+      russian: "\u0431\u044B\u0432\u0448\u0438\u0439 \u0432 \u0443\u043F\u043E\u0442\u0440\u0435\u0431\u043B\u0435\u043D\u0438\u0438"
+      english: used
+    - original: battle-tested
+      russian: "\u0431\u043E\u0435\u0432\u043E\u0439"
+      english: battle-tested
+    - original: standard-issue
+      russian: "\u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439"
+      english: standard-issue
+    - original: refurbished
+      russian: "\u043E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439"
+      english: refurbished
+  - partType: 0
+    rarity: 3
+    adjectives:
+    - original: reinforced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: reinforced
+    - original: reliable
+      russian: "\u043D\u0430\u0434\u0435\u0436\u043D\u044B\u0439"
+      english: reliable
+    - original: serviceable
+      russian: "\u0433\u043E\u0434\u043D\u044B\u0439"
+      english: serviceable
+    - original: improved
+      russian: "\u0443\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: improved
+  - partType: 0
+    rarity: 4
+    adjectives:
+    - original: enhanced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: enhanced
+    - original: tuned
+      russian: "\u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0439"
+      english: tuned
+    - original: precision
+      russian: "\u0442\u043E\u0447\u043D\u044B\u0439"
+      english: precision
+    - original: upgraded
+      russian: "\u0443\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: upgraded
+  - partType: 0
+    rarity: 5
+    adjectives:
+    - original: mastercrafted
+      russian: "\u043C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0438\u0439"
+      english: mastercrafted
+    - original: elite
+      russian: "\u044D\u043B\u0438\u0442\u043D\u044B\u0439"
+      english: elite
+    - original: premium
+      russian: "\u043F\u0440\u0435\u043C\u0438\u0443\u043C\u043D\u044B\u0439"
+      english: premium
+    - original: spec-ops
+      russian: "\u0441\u043F\u0435\u0446\u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F"
+      english: spec-ops
+  - partType: 2
+    rarity: 1
+    adjectives:
+    - original: dented
+      russian: "\u0432\u043C\u044F\u0442\u044B\u0439"
+      english: dented
+    - original: rusty
+      russian: "\u0440\u0436\u0430\u0432\u044B\u0439"
+      english: rusty
+    - original: unbalanced
+      russian: "\u043D\u0435\u0441\u0431\u0430\u043B\u0430\u043D\u0441\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439"
+      english: unbalanced
+    - original: low-capacity
+      russian: "\u043C\u0430\u043B\u043E\u0435\u043C\u043A\u043E\u0441\u0442\u043D\u044B\u0439"
+      english: low-capacity
+  - partType: 2
+    rarity: 2
+    adjectives:
+    - original: standard
+      russian: "\u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439"
+      english: standard
+    - original: field-worn
+      russian: "\u0431\u044B\u0432\u0448\u0438\u0439 \u0432 \u043F\u043E\u043B\u0435"
+      english: field-worn
+    - original: service-used
+      russian: "\u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439"
+      english: service-used
+    - original: issued
+      russian: "\u043A\u0430\u0437\u0435\u043D\u043D\u044B\u0439"
+      english: issued
+  - partType: 2
+    rarity: 3
+    adjectives:
+    - original: reinforced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: reinforced
+    - original: extended
+      russian: "\u0443\u0434\u043B\u0438\u043D\u0435\u043D\u043D\u044B\u0439"
+      english: extended
+    - original: polished
+      russian: "\u043E\u0442\u043F\u043E\u043B\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439"
+      english: polished
+    - original: reliable
+      russian: "\u043D\u0430\u0434\u0435\u0436\u043D\u044B\u0439"
+      english: reliable
+  - partType: 2
+    rarity: 4
+    adjectives:
+    - original: high-capacity
+      russian: "\u0432\u044B\u0441\u043E\u043A\u043E\u0435\u043C\u043A\u043E\u0441\u0442\u043D\u044B\u0439"
+      english: high-capacity
+    - original: rapid-feed
+      russian: "\u0431\u044B\u0441\u0442\u0440\u043E\u043F\u043E\u0434\u0430\u044E\u0449\u0438\u0439"
+      english: rapid-feed
+    - original: optimized
+      russian: "\u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439"
+      english: optimized
+    - original: tactical
+      russian: "\u0442\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439"
+      english: tactical
+  - partType: 2
+    rarity: 5
+    adjectives:
+    - original: precision
+      russian: "\u0442\u043E\u0447\u043D\u044B\u0439"
+      english: precision
+    - original: custom-tuned
+      russian: "\u0438\u043D\u0434\u0438\u0432\u0438\u0434\u0443\u0430\u043B\u044C\u043D\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0439"
+      english: custom-tuned
+    - original: elite-grade
+      russian: "\u044D\u043B\u0438\u0442\u043D\u043E\u0433\u043E \u043A\u043B\u0430\u0441\u0441\u0430"
+      english: elite-grade
+    - original: performance
+      russian: "\u0432\u044B\u0441\u043E\u043A\u043E\u043F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439"
+      english: performance
+  - partType: 1
+    rarity: 1
+    adjectives:
+    - original: worn
+      russian: "\u0438\u0437\u043D\u043E\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: worn
+    - original: crude
+      russian: "\u0433\u0440\u0443\u0431\u044B\u0439"
+      english: crude
+    - original: damaged
+      russian: "\u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u043D\u044B\u0439"
+      english: damaged
+    - original: low-grade
+      russian: "\u043D\u0438\u0437\u043A\u043E\u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439"
+      english: low-grade
+  - partType: 1
+    rarity: 2
+    adjectives:
+    - original: used
+      russian: "\u0431\u044B\u0432\u0448\u0438\u0439 \u0432 \u0443\u043F\u043E\u0442\u0440\u0435\u0431\u043B\u0435\u043D\u0438\u0438"
+      english: used
+    - original: battle-tested
+      russian: "\u0431\u043E\u0435\u0432\u043E\u0439"
+      english: battle-tested
+    - original: standard-issue
+      russian: "\u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439"
+      english: standard-issue
+    - original: refurbished
+      russian: "\u043E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439"
+      english: refurbished
+  - partType: 1
+    rarity: 3
+    adjectives:
+    - original: reinforced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: reinforced
+    - original: reliable
+      russian: "\u043D\u0430\u0434\u0435\u0436\u043D\u044B\u0439"
+      english: reliable
+    - original: serviceable
+      russian: "\u0433\u043E\u0434\u043D\u044B\u0439"
+      english: serviceable
+    - original: improved
+      russian: "\u0443\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: improved
+  - partType: 1
+    rarity: 4
+    adjectives:
+    - original: enhanced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: enhanced
+    - original: tuned
+      russian: "\u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0439"
+      english: tuned
+    - original: precision
+      russian: "\u0442\u043E\u0447\u043D\u044B\u0439"
+      english: precision
+    - original: upgraded
+      russian: "\u0443\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: upgraded
+  - partType: 1
+    rarity: 5
+    adjectives:
+    - original: mastercrafted
+      russian: "\u043C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0438\u0439"
+      english: mastercrafted
+    - original: elite
+      russian: "\u044D\u043B\u0438\u0442\u043D\u044B\u0439"
+      english: elite
+    - original: custom-made
+      russian: "\u0438\u043D\u0434\u0438\u0432\u0438\u0434\u0443\u0430\u043B\u044C\u043D\u043E \u0438\u0437\u0433\u043E\u0442\u043E\u0432\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: custom-made
+    - original: premium
+      russian: "\u043F\u0440\u0435\u043C\u0438\u0443\u043C\u043D\u044B\u0439"
+      english: premium
+  - partType: 3
+    rarity: 1
+    adjectives:
+    - original: worn
+      russian: "\u0438\u0437\u043D\u043E\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: worn
+    - original: crude
+      russian: "\u0433\u0440\u0443\u0431\u044B\u0439"
+      english: crude
+    - original: damaged
+      russian: "\u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u043D\u044B\u0439"
+      english: damaged
+    - original: low-grade
+      russian: "\u043D\u0438\u0437\u043A\u043E\u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439"
+      english: low-grade
+  - partType: 3
+    rarity: 2
+    adjectives:
+    - original: used
+      russian: "\u0431\u044B\u0432\u0448\u0438\u0439 \u0432 \u0443\u043F\u043E\u0442\u0440\u0435\u0431\u043B\u0435\u043D\u0438\u0438"
+      english: used
+    - original: battle-tested
+      russian: "\u0431\u043E\u0435\u0432\u043E\u0439"
+      english: battle-tested
+    - original: standard-issue
+      russian: "\u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439"
+      english: standard-issue
+    - original: refurbished
+      russian: "\u043E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439"
+      english: refurbished
+  - partType: 3
+    rarity: 3
+    adjectives:
+    - original: reinforced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: reinforced
+    - original: reliable
+      russian: "\u043D\u0430\u0434\u0435\u0436\u043D\u044B\u0439"
+      english: reliable
+    - original: serviceable
+      russian: "\u0433\u043E\u0434\u043D\u044B\u0439"
+      english: serviceable
+    - original: improved
+      russian: "\u0443\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: improved
+  - partType: 3
+    rarity: 4
+    adjectives:
+    - original: enhanced
+      russian: "\u0443\u0441\u0438\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: enhanced
+    - original: tuned
+      russian: "\u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0439"
+      english: tuned
+    - original: precision
+      russian: "\u0442\u043E\u0447\u043D\u044B\u0439"
+      english: precision
+    - original: upgraded
+      russian: "\u0443\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u044B\u0439"
+      english: upgraded
+  - partType: 3
+    rarity: 5
+    adjectives:
+    - original: mastercrafted
+      russian: "\u043C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0438\u0439"
+      english: mastercrafted
+    - original: elite
+      russian: "\u044D\u043B\u0438\u0442\u043D\u044B\u0439"
+      english: elite
+    - original: custom-made
+      russian: "\u0438\u043D\u0434\u0438\u0432\u0438\u0434\u0443\u0430\u043B\u044C\u043D\u043E \u0438\u0437\u0433\u043E\u0442\u043E\u0432\u043B\u0435\u043D\u043D\u044B\u0439"
+      english: custom-made
+    - original: premium
+      russian: "\u043F\u0440\u0435\u043C\u0438\u0443\u043C\u043D\u044B\u0439"
+      english: premium

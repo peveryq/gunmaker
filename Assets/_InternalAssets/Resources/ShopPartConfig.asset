@@ -429,3 +429,4 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 18fe3a9313a2f9d469b466c996e7f018, type: 3}
   filledStarIcon: {fileID: 21300000, guid: 3b5c59eca7093f442b9c3554cd0b30f6, type: 3}
   emptyStarIcon: {fileID: 21300000, guid: 54a73a774f78fbc4ebb4646fa5c36a19, type: 3}
+  partNameLocalization: {fileID: 11400000, guid: 6224fcfaaf47bd940b8cc7752dd81123, type: 2}

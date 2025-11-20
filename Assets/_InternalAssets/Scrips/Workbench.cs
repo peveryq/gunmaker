@@ -6,11 +6,28 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     [System.Serializable]
     private class WorkbenchInteractionLabels
     {
-        public string emptyHands = "create new gun";
-        public string placeGun = "place gun";
-        public string takeGun = "take gun";
-        public string installPart = "install part";
-        public string weld = "weld";
+        [Tooltip("Localization key for 'create new gun' action. Default: 'action.create'")]
+        public string emptyHandsKey = "action.create";
+        [Tooltip("Localization key for 'place gun' action. Default: 'action.place'")]
+        public string placeGunKey = "action.place";
+        [Tooltip("Localization key for 'take gun' action. Default: 'action.take'")]
+        public string takeGunKey = "action.take";
+        [Tooltip("Localization key for 'install part' action. Default: 'action.install'")]
+        public string installPartKey = "action.install";
+        [Tooltip("Localization key for 'weld' action. Default: 'action.weld'")]
+        public string weldKey = "action.weld";
+        
+        [Header("Fallback Labels (Optional)")]
+        [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+        public string emptyHands = "";
+        [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+        public string placeGun = "";
+        [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+        public string takeGun = "";
+        [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+        public string installPart = "";
+        [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+        public string weld = "";
     }
 
     [Header("Workbench Settings")]
@@ -736,29 +753,29 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
 
         if (mountedWeapon == null && heldItem == null)
         {
-            label = string.IsNullOrEmpty(interactionLabels.emptyHands) ? "create new gun" : interactionLabels.emptyHands;
+            label = GetLocalizedLabel(interactionLabels.emptyHandsKey, interactionLabels.emptyHands, "create new gun");
             optionId = "workbench.create";
         }
         else if (mountedWeapon == null && heldItem != null && heldItem.GetComponent<WeaponBody>() != null)
         {
-            label = string.IsNullOrEmpty(interactionLabels.placeGun) ? "place gun" : interactionLabels.placeGun;
+            label = GetLocalizedLabel(interactionLabels.placeGunKey, interactionLabels.placeGun, "place gun");
             optionId = "workbench.place";
         }
         else if (mountedWeapon != null && heldItem == null)
         {
-            label = string.IsNullOrEmpty(interactionLabels.takeGun) ? "take gun" : interactionLabels.takeGun;
+            label = GetLocalizedLabel(interactionLabels.takeGunKey, interactionLabels.takeGun, "take gun");
             optionId = "workbench.take";
         }
         else if (mountedWeapon != null && heldItem != null && heldItem.GetComponent<WeaponPart>() != null)
         {
-            label = string.IsNullOrEmpty(interactionLabels.installPart) ? "install part" : interactionLabels.installPart;
+            label = GetLocalizedLabel(interactionLabels.installPartKey, interactionLabels.installPart, "install part");
             optionId = "workbench.install";
         }
         else if (heldBlowtorch != null)
         {
             if (FindUnweldedBarrel() != null)
             {
-                label = string.IsNullOrEmpty(interactionLabels.weld) ? "weld" : interactionLabels.weld;
+                label = GetLocalizedLabel(interactionLabels.weldKey, interactionLabels.weld, "weld");
                 optionId = "workbench.weld";
             }
         }
@@ -1051,6 +1068,39 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
 
         return Input.GetKey(weldKey);
+    }
+    
+    /// <summary>
+    /// Helper method to get localized label with fallback chain:
+    /// 1. Try localization by key
+    /// 2. Use custom fallback if provided
+    /// 3. Use default English fallback
+    /// </summary>
+    private string GetLocalizedLabel(string key, string customFallback, string defaultFallback)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            string localized = LocalizationHelper.Get(key);
+            // If localization returned something (and not just the key itself), use it
+            if (localized != key || LocalizationManager.Instance != null)
+            {
+                // If we got a valid translation or LocalizationManager exists, use it
+                if (localized != key)
+                {
+                    return localized;
+                }
+                // If key was returned, try fallback
+            }
+        }
+        
+        // Use custom fallback if provided
+        if (!string.IsNullOrEmpty(customFallback))
+        {
+            return customFallback;
+        }
+        
+        // Use default English fallback
+        return defaultFallback;
     }
 }
 

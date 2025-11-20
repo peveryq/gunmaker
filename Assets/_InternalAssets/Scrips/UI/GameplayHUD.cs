@@ -418,9 +418,11 @@ public class GameplayHUD : MonoBehaviour
             unweldedBarrelWarningRoot.SetActive(show);
         }
 
-        if (show && unweldedBarrelWarningText != null && !string.IsNullOrEmpty(unweldedBarrelWarningTextFormat))
+        if (show && unweldedBarrelWarningText != null)
         {
-            unweldedBarrelWarningText.text = unweldedBarrelWarningTextFormat;
+            // Use localization if available, otherwise fallback to format string
+            string localizedText = LocalizationHelper.Get("hud.unwelded_barrel_warning", unweldedBarrelWarningTextFormat, "Barrel not welded");
+            unweldedBarrelWarningText.text = localizedText;
         }
     }
     
@@ -455,10 +457,21 @@ public class GameplayHUD : MonoBehaviour
             autosaveRoot.SetActive(true);
         }
         
-        // Set text
-        if (autosaveText != null && !string.IsNullOrEmpty(autosaveTextString))
+        // Text is managed by LocalizedText component if present
+        // If no LocalizedText component, we can set it manually as fallback
+        if (autosaveText != null)
         {
-            autosaveText.text = autosaveTextString;
+            // Check if LocalizedText component exists - if so, don't override
+            LocalizedText localizedTextComponent = autosaveText.GetComponent<LocalizedText>();
+            if (localizedTextComponent == null)
+            {
+                // No LocalizedText component, use fallback text
+                if (!string.IsNullOrEmpty(autosaveTextString))
+                {
+                    autosaveText.text = autosaveTextString;
+                }
+            }
+            // If LocalizedText exists, it will handle the text automatically
         }
         
         // Reset icon rotation
