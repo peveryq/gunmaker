@@ -7,11 +7,11 @@
         false,
         false
     ],
-    "idSave": 34,
+    "idSave": 35,
     "playerMoney": 40469,
     "savedWeapons": [
         {
-            "weaponName": "1",
+            "weaponName": "",
             "statsSnapshot": {
                 "power": 1.0,
                 "accuracy": 1.0,
@@ -20,7 +20,7 @@
                 "reloadSpeed": 1.0,
                 "scope": 1.0,
                 "ammo": 0,
-                "damage": 25.0,
+                "damage": 10.0,
                 "totalPartCost": 0
             },
             "barrelPart": {
