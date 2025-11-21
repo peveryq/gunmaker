@@ -54,7 +54,7 @@ public class MobileInputManager : MonoBehaviour
     
     private void Start()
     {
-        Debug.Log("MobileInputManager: Initialized");
+        // MobileInputManager initialized
     }
     
     /// <summary>
@@ -70,12 +70,6 @@ public class MobileInputManager : MonoBehaviour
         if (previousInput != MovementInput)
         {
             OnMovementChanged?.Invoke(MovementInput);
-            
-            // Debug movement input
-            if (MovementInput.magnitude > 0.1f)
-            {
-                Debug.Log($"MobileInputManager: Movement input: {MovementInput}");
-            }
         }
     }
     
@@ -111,12 +105,10 @@ public class MobileInputManager : MonoBehaviour
         
         if (!wasPressed && pressed)
         {
-            Debug.Log("MobileInputManager: Aim button pressed");
             OnAimPressed?.Invoke();
         }
         else if (wasPressed && !pressed)
         {
-            Debug.Log("MobileInputManager: Aim button released");
             OnAimReleased?.Invoke();
         }
     }

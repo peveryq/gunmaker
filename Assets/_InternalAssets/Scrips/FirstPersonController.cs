@@ -81,6 +81,10 @@ public class FirstPersonController : MonoBehaviour
     
     private bool cursorLocked = true;
     
+    // Mobile camera control
+    private Vector2 externalMouseInput = Vector2.zero;
+    private bool useExternalMouseInput = false;
+    
     // FOV Kick (camera FOV expansion on shot)
     private float baseFOV; // Base FOV (stored at start, before any modifications)
     private float fovKickOffset = 0f; // Current FOV kick offset (added to base FOV)
@@ -153,11 +157,8 @@ public class FirstPersonController : MonoBehaviour
         // Check if grounded (always, even when cursor is unlocked)
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
         
-        // Handle mouse look only when cursor is locked
-        if (cursorLocked)
-        {
-            HandleMouseLook();
-        }
+        // Always handle mouse look (for mobile camera testing)
+        HandleMouseLook();
         
         // Always handle movement (for mobile input testing)
         HandleMovement();
@@ -220,9 +221,23 @@ public class FirstPersonController : MonoBehaviour
     
     private void HandleMouseLook()
     {
-        // Get base mouse input
-        float mouseX = Input.GetAxis("Mouse X");
-        float mouseY = Input.GetAxis("Mouse Y");
+        // Get base mouse input - check if we should use external input (mobile) or regular input
+        float mouseX, mouseY;
+        
+        if (useExternalMouseInput)
+        {
+            // Use external input from mobile camera controller
+            mouseX = externalMouseInput.x;
+            mouseY = externalMouseInput.y;
+            // Reset external input after use
+            externalMouseInput = Vector2.zero;
+        }
+        else
+        {
+            // Use regular mouse input
+            mouseX = Input.GetAxis("Mouse X");
+            mouseY = Input.GetAxis("Mouse Y");
+        }
         
         // Get current FOV once (used for both sensitivity reduction and smoothing)
         float currentFOV = playerCamera != null ? playerCamera.fieldOfView : baseFOV;
@@ -491,6 +506,30 @@ public class FirstPersonController : MonoBehaviour
         .OnComplete(() => {
             fovKickOffset = 0f; // Ensure it's exactly zero
         });
+    }
+    
+    /// <summary>
+    /// Set external mouse input for mobile camera control
+    /// </summary>
+    public void SetExternalMouseInput(float mouseX, float mouseY)
+    {
+        externalMouseInput = new Vector2(mouseX, mouseY);
+    }
+    
+    /// <summary>
+    /// Enable or disable external mouse input mode (for mobile devices)
+    /// </summary>
+    public void SetUseExternalMouseInput(bool useExternal)
+    {
+        useExternalMouseInput = useExternal;
+    }
+    
+    /// <summary>
+    /// Check if external mouse input is being used
+    /// </summary>
+    public bool IsUsingExternalMouseInput
+    {
+        get { return useExternalMouseInput; }
     }
     
     private void OnDestroy()

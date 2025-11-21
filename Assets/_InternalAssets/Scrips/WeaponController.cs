@@ -85,19 +85,34 @@ public class WeaponController : MonoBehaviour
         // Check if cursor is locked (for FPS control)
         bool cursorLocked = Cursor.lockState == CursorLockMode.Locked;
         
+        // Check device type once for the entire method
+        bool isMobileDevice = DeviceDetectionManager.Instance != null && 
+                             DeviceDetectionManager.Instance.IsMobileOrTablet;
+        
         // Handle shooting - combine desktop and mobile input
         bool isShootingThisFrame = false;
         
-        // Desktop input (only when cursor is locked)
-        if (cursorLocked)
+        if (isMobileDevice)
         {
-            isShootingThisFrame = Input.GetMouseButton(0);
+            // Mobile input only - ignore mouse input to prevent accidental shooting
+            if (MobileInputManager.Instance != null)
+            {
+                isShootingThisFrame = MobileInputManager.Instance.IsShootPressed;
+            }
         }
-        
-        // Mobile input (always available for testing)
-        if (MobileInputManager.Instance != null)
+        else
         {
-            isShootingThisFrame = isShootingThisFrame || MobileInputManager.Instance.IsShootPressed;
+            // Desktop input (only when cursor is locked)
+            if (cursorLocked)
+            {
+                isShootingThisFrame = Input.GetMouseButton(0);
+            }
+            
+            // Also check mobile input for desktop testing
+            if (MobileInputManager.Instance != null)
+            {
+                isShootingThisFrame = isShootingThisFrame || MobileInputManager.Instance.IsShootPressed;
+            }
         }
         
         // Check if we can actually shoot (not empty, not reloading, has barrel, etc.)
@@ -168,17 +183,13 @@ public class WeaponController : MonoBehaviour
             bool aimInputReleased = false;
             bool aimInputHeld = false;
             
-            // Desktop input (only when cursor is locked)
-            if (cursorLocked)
-            {
-                aimInputPressed = Input.GetMouseButtonDown(1);
-                aimInputReleased = Input.GetMouseButtonUp(1);
-                aimInputHeld = Input.GetMouseButton(1);
-            }
+            // Use device type determined at method start
             
-            // Mobile input - support both click and hold like desktop
-            if (MobileInputManager.Instance != null)
+            if (isMobileDevice)
             {
+                // Mobile input only - ignore mouse input
+                if (MobileInputManager.Instance != null)
+                {
                 bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
                 
                 // Detect mobile aim button press/release
@@ -205,6 +216,49 @@ public class WeaponController : MonoBehaviour
                 if (mobileAimPressed)
                 {
                     aimInputHeld = true;
+                }
+                }
+            }
+            else
+            {
+                // Desktop input (only when cursor is locked)
+                if (cursorLocked)
+                {
+                    aimInputPressed = Input.GetMouseButtonDown(1);
+                    aimInputReleased = Input.GetMouseButtonUp(1);
+                    aimInputHeld = Input.GetMouseButton(1);
+                }
+                
+                // Also check mobile input for desktop testing
+                if (MobileInputManager.Instance != null)
+                {
+                    bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
+                    
+                    // Detect mobile aim button press/release
+                    if (mobileAimPressed && !wasAiming)
+                    {
+                        // Mobile aim button pressed - treat like desktop mouse down
+                        aimInputPressed = true;
+                        rightMouseDownTime = Time.time;
+                        isRightMouseHeld = true;
+                        wasToggleModeOnPress = isAimingToggleMode;
+                        isAiming = true;
+                        
+                        if (wasToggleModeOnPress)
+                        {
+                            isAimingToggleMode = false;
+                        }
+                    }
+                    else if (!mobileAimPressed && isRightMouseHeld)
+                    {
+                        // Mobile aim button released - treat like desktop mouse up
+                        aimInputReleased = true;
+                    }
+                    
+                    if (mobileAimPressed)
+                    {
+                        aimInputHeld = true;
+                    }
                 }
             }
             
@@ -276,19 +330,32 @@ public class WeaponController : MonoBehaviour
             HandleAiming();
         }
         
-        // Handle reload - combine desktop and mobile input
+        // Handle reload - separate desktop and mobile input
         bool reloadTriggered = false;
         
-        // Desktop input (only when cursor is locked)
-        if (cursorLocked)
-        {
-            reloadTriggered = Input.GetKeyDown(KeyCode.R);
-        }
+        // Use device type determined at method start
         
-        // Mobile input (always available for testing)
-        if (MobileInputManager.Instance != null)
+        if (isMobileDevice)
         {
-            reloadTriggered = reloadTriggered || MobileInputManager.Instance.IsReloadPressed;
+            // Mobile input only
+            if (MobileInputManager.Instance != null)
+            {
+                reloadTriggered = MobileInputManager.Instance.IsReloadPressed;
+            }
+        }
+        else
+        {
+            // Desktop input (only when cursor is locked)
+            if (cursorLocked)
+            {
+                reloadTriggered = Input.GetKeyDown(KeyCode.R);
+            }
+            
+            // Also check mobile input for desktop testing
+            if (MobileInputManager.Instance != null)
+            {
+                reloadTriggered = reloadTriggered || MobileInputManager.Instance.IsReloadPressed;
+            }
         }
         
         if (reloadTriggered)

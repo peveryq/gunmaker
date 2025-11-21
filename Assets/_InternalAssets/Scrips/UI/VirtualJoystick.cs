@@ -156,8 +156,6 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         inputVector = Vector2.zero;
         OnValueChanged?.Invoke(inputVector);
         
-        Debug.Log("VirtualJoystick: Finger lifted, movement stopped immediately");
-        
         // Knob will return to center in Update() (visual only)
     }
     

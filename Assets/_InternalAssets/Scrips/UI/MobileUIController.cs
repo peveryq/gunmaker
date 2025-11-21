@@ -23,17 +23,28 @@ public class MobileUIController : MonoBehaviour
     private WeaponController currentWeapon;
     private FirstPersonController playerController;
     private bool hasItemInHands = false;
+    private MobileCameraController cameraController;
     
     private void Start()
     {
         // Find player controller
-        playerController = FindObjectOfType<FirstPersonController>();
+        playerController = FindFirstObjectByType<FirstPersonController>();
+        
+        // Find or create mobile camera controller
+        cameraController = FindFirstObjectByType<MobileCameraController>();
+        if (cameraController == null && playerController != null)
+        {
+            cameraController = playerController.gameObject.AddComponent<MobileCameraController>();
+        }
         
         // Setup button events
         SetupButtonEvents();
         
         // Setup joystick events
         SetupJoystickEvents();
+        
+        // Setup camera controller exclusion areas
+        SetupCameraExclusionAreas();
         
         // Check device type and initialize UI
         StartCoroutine(InitializeMobileUI());
@@ -143,8 +154,6 @@ public class MobileUIController : MonoBehaviour
             MobileInputManager.Instance.SetMobileInputEnabled(active);
         }
         
-        Debug.Log($"MobileUIController: Mobile UI {(active ? "enabled" : "disabled")}");
-        
         // Update button visibility based on current state
         if (active)
         {
@@ -244,5 +253,41 @@ public class MobileUIController : MonoBehaviour
     public bool IsMobileUIActive()
     {
         return isMobileUIActive && mobileUIRoot != null && mobileUIRoot.activeInHierarchy;
+    }
+    
+    /// <summary>
+    /// Setup camera exclusion areas to prevent camera movement when touching UI elements
+    /// </summary>
+    private void SetupCameraExclusionAreas()
+    {
+        if (cameraController == null) return;
+        
+        // Add joystick area as exclusion
+        if (movementJoystick != null)
+        {
+            RectTransform joystickRect = movementJoystick.GetComponent<RectTransform>();
+            if (joystickRect != null)
+            {
+                cameraController.AddExclusionArea(joystickRect);
+            }
+        }
+        
+        // Add all action buttons as exclusions
+        AddButtonExclusionArea(shootButton);
+        AddButtonExclusionArea(aimButton);
+        AddButtonExclusionArea(reloadButton);
+        AddButtonExclusionArea(dropButton);
+    }
+    
+    private void AddButtonExclusionArea(MobileButton button)
+    {
+        if (button != null && cameraController != null)
+        {
+            RectTransform buttonRect = button.GetComponent<RectTransform>();
+            if (buttonRect != null)
+            {
+                cameraController.AddExclusionArea(buttonRect);
+            }
+        }
     }
 }

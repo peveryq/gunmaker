@@ -397,7 +397,7 @@ public class InteractionHandler : MonoBehaviour
         currentItem = item;
         
         // Notify mobile UI about item pickup
-        MobileUIController mobileUI = FindObjectOfType<MobileUIController>();
+        MobileUIController mobileUI = FindFirstObjectByType<MobileUIController>();
         if (mobileUI != null)
         {
             mobileUI.OnItemPickedUp();
@@ -448,7 +448,7 @@ public class InteractionHandler : MonoBehaviour
         DetachWeaponController();
         
         // Notify mobile UI about item drop
-        MobileUIController mobileUI = FindObjectOfType<MobileUIController>();
+        MobileUIController mobileUI = FindFirstObjectByType<MobileUIController>();
         if (mobileUI != null)
         {
             mobileUI.OnItemDropped();
@@ -496,6 +496,13 @@ public class InteractionHandler : MonoBehaviour
             currentWeaponController.ReloadStateChanged -= HandleReloadStateChanged;
             currentWeaponController.ReloadProgressChanged -= HandleReloadProgressChanged;
             currentWeaponController = null;
+            
+            // Notify mobile UI about weapon unequip
+            MobileUIController mobileUI = FindFirstObjectByType<MobileUIController>();
+            if (mobileUI != null)
+            {
+                mobileUI.OnWeaponUnequipped();
+            }
         }
 
         gameplayHud?.ClearAmmo();
