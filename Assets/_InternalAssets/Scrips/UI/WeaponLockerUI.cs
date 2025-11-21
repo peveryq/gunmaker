@@ -6,6 +6,17 @@ using UnityEngine.UI;
 
 public class WeaponLockerUI : MonoBehaviour
 {
+    [System.Serializable]
+    private class EmptyStateLabels
+    {
+        [Tooltip("Localization key for empty state message. Default: 'locker.empty'")]
+        public string emptyStateKey = "locker.empty";
+        
+        [Header("Fallback Labels (Optional)")]
+        [Tooltip("Fallback text if localization fails. Leave empty to use default English.")]
+        public string emptyState = "";
+    }
+
     [Header("Root")]
     [SerializeField] private GameObject rootPanel;
     [SerializeField] private CanvasGroup rootCanvasGroup;
@@ -23,7 +34,10 @@ public class WeaponLockerUI : MonoBehaviour
     [Header("State")]
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TextMeshProUGUI emptyStateLabel;
-    [SerializeField] private string emptyStateText = "No stored weapons";
+    [SerializeField] private string emptyStateText = "No stored weapons"; // Deprecated - use emptyStateLabels instead
+    
+    [Header("Localization")]
+    [SerializeField] private EmptyStateLabels emptyStateLabels = new();
     
     [Header("Actions")]
     [SerializeField] private Button takeButton;
@@ -329,7 +343,13 @@ public class WeaponLockerUI : MonoBehaviour
         {
             if (emptyStateLabel != null)
             {
-                emptyStateLabel.text = emptyStateText;
+                // Use localized text with fallback chain
+                string localizedText = GetLocalizedLabel(
+                    emptyStateLabels.emptyStateKey, 
+                    emptyStateLabels.emptyState, 
+                    !string.IsNullOrEmpty(emptyStateText) ? emptyStateText : "No stored weapons"
+                );
+                emptyStateLabel.text = localizedText;
             }
 
             if (weaponNameLabel != null)
@@ -592,6 +612,39 @@ public class WeaponLockerUI : MonoBehaviour
         }
 
         controlCaptured = false;
+    }
+    
+    /// <summary>
+    /// Helper method to get localized label with fallback chain:
+    /// 1. Try localization by key
+    /// 2. Use custom fallback if provided
+    /// 3. Use default English fallback
+    /// </summary>
+    private string GetLocalizedLabel(string key, string customFallback, string defaultFallback)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            string localized = LocalizationHelper.Get(key);
+            // If localization returned something (and not just the key itself), use it
+            if (localized != key || LocalizationManager.Instance != null)
+            {
+                // If we got a valid translation or LocalizationManager exists, use it
+                if (localized != key)
+                {
+                    return localized;
+                }
+                // If key was returned, try fallback
+            }
+        }
+        
+        // Use custom fallback if provided
+        if (!string.IsNullOrEmpty(customFallback))
+        {
+            return customFallback;
+        }
+        
+        // Use default English fallback
+        return defaultFallback;
     }
 }
 
