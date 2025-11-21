@@ -88,7 +88,7 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     private void Update()
     {
         FindPlayer();
-        HandleWelding();
+        HandleWeldingInput(); // Only handle input, not welding logic
     }
     
     private void FindPlayer()
@@ -103,7 +103,7 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
     }
     
-    private void HandleWelding()
+    private void HandleWeldingInput()
     {
         if (interactionHandler == null) return;
         
@@ -118,43 +118,31 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         WeldingSystem unweldedBarrel = FindUnweldedBarrel();
         RefreshWeldingUI(unweldedBarrel);
         
-        // Show welding UI if holding blowtorch and looking at workbench with unwelded barrel
+        // Handle keyboard input for welding (unified with button system)
         if (blowtorch != null && isLookingAtWorkbench && unweldedBarrel != null)
         {
             bool weldInputActive = IsWeldInputHeld(blowtorch);
-            if (weldInputActive)
+            bool isWeldingActive = WeldingController.Instance != null && WeldingController.Instance.IsWelding;
+            
+            if (weldInputActive && !isWeldingActive)
             {
-                blowtorch.StartWorking(blowtorchWorkPosition);
-                
-                if (blowtorch.IsWorking)
-                {
-                    float progressAdded = blowtorch.WeldingSpeed * Time.deltaTime;
-                    unweldedBarrel.AddWeldingProgress(progressAdded);
-                    
-                    // Show sparks at welding point
-                    ShowWeldingSparks(unweldedBarrel);
-                }
+                // Start welding via WeldingController (keyboard input)
+                WeldingController.Instance.StartWelding(this, blowtorch, unweldedBarrel, fromKeyboard: true);
             }
-            else
+            else if (!weldInputActive && isWeldingActive && WeldingController.Instance.IsKeyboardWelding)
             {
-                blowtorch.StopWorking();
-                HideWeldingSparks();
+                // Only stop if welding was started by keyboard
+                WeldingController.Instance.StopWelding();
             }
         }
-        else
+        else if (WeldingController.Instance != null && WeldingController.Instance.IsWelding)
         {
-            // Stop blowtorch if not looking at workbench
-            if (blowtorch != null)
-            {
-                blowtorch.StopWorking();
-            }
-            
-            // Hide sparks
-            HideWeldingSparks();
+            // Stop welding if conditions are no longer met (moved away, dropped blowtorch, etc.)
+            WeldingController.Instance.StopWelding();
         }
     }
     
-    private void ShowWeldingSparks(WeldingSystem weldingTarget)
+    public void ShowWeldingSparks(WeldingSystem weldingTarget)
     {
         if (weldingSparks == null || mountedWeapon == null) return;
         
@@ -198,7 +186,7 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
     }
     
-    private void HideWeldingSparks()
+    public void HideWeldingSparks()
     {
         if (weldingSparks != null && weldingSparks.isPlaying)
         {
@@ -773,10 +761,17 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
         else if (heldBlowtorch != null)
         {
-            if (FindUnweldedBarrel() != null)
+            WeldingSystem unweldedBarrel = FindUnweldedBarrel();
+            if (unweldedBarrel != null)
             {
                 label = GetLocalizedLabel(interactionLabels.weldKey, interactionLabels.weld, "weld");
                 optionId = "workbench.weld";
+                
+                // Setup welding context for WeldingController
+                if (WeldingController.Instance != null)
+                {
+                    WeldingController.Instance.SetupWeldingContext(this, heldBlowtorch, unweldedBarrel);
+                }
             }
         }
 
@@ -794,12 +789,27 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
                 optionKey = heldBlowtorch.WeldKey != KeyCode.None ? heldBlowtorch.WeldKey : handler.InteractKey;
             }
 
+            // Check if this is a welding interaction
+            bool requiresHold = optionId == "workbench.weld";
+            
+            // For welding, use custom callback that starts/stops welding
+            System.Action<InteractionHandler> callback;
+            if (requiresHold)
+            {
+                callback = h => StartWeldingInteraction(h);
+            }
+            else
+            {
+                callback = h => h.PerformInteraction(this);
+            }
+            
             options.Add(InteractionOption.Primary(
                 id: optionId ?? "workbench.generic",
                 label: label,
                 key: optionKey,
                 isAvailable: true,
-                callback: h => h.PerformInteraction(this)));
+                callback: callback,
+                requiresHold: requiresHold));
         }
     }
     
@@ -1062,12 +1072,55 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
 
         KeyCode weldKey = blowtorch.WeldKey;
+        bool isHeld;
+        
         if (weldKey == KeyCode.None)
         {
-            return Input.GetMouseButton(0);
+            isHeld = Input.GetMouseButton(0);
         }
-
-        return Input.GetKey(weldKey);
+        else
+        {
+            isHeld = Input.GetKey(weldKey);
+        }
+        
+        
+        return isHeld;
+    }
+    
+    /// <summary>
+    /// Start welding interaction (called from interaction button)
+    /// </summary>
+    private void StartWeldingInteraction(InteractionHandler handler)
+    {
+        if (handler == null) return;
+        
+        ItemPickup heldItem = handler.CurrentItem;
+        Blowtorch blowtorch = heldItem?.GetComponent<Blowtorch>();
+        WeldingSystem unweldedBarrel = FindUnweldedBarrel();
+        
+        if (blowtorch != null && unweldedBarrel != null && WeldingController.Instance != null)
+        {
+            WeldingController.Instance.StartWelding(this, blowtorch, unweldedBarrel);
+        }
+    }
+    
+    /// <summary>
+    /// Stop welding interaction (called when interaction button is released)
+    /// </summary>
+    public void StopWeldingInteraction()
+    {
+        if (WeldingController.Instance != null)
+        {
+            WeldingController.Instance.StopWelding();
+        }
+    }
+    
+    /// <summary>
+    /// Get blowtorch work position (public accessor for WeldingController)
+    /// </summary>
+    public Transform GetBlowtorchWorkPosition()
+    {
+        return blowtorchWorkPosition;
     }
     
     /// <summary>

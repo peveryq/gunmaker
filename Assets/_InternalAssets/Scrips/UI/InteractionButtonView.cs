@@ -1,13 +1,15 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class InteractionButtonView : MonoBehaviour
+public class InteractionButtonView : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
 {
     [SerializeField] private TextMeshProUGUI labelText;
     [SerializeField] private TextMeshProUGUI keyText;
     [SerializeField] private GameObject keyHintRoot;
     [SerializeField] private Button button;
+    // MobileButton removed - using built-in hold logic instead
     [SerializeField] private Image background;
     [SerializeField] private RectTransform contentRow;
 
@@ -24,6 +26,11 @@ public class InteractionButtonView : MonoBehaviour
     private InteractionOption currentOption;
     private InteractionHandler boundHandler;
     private RectTransform cachedRectTransform;
+    private bool isMobileDevice = false;
+    
+    // Hold interaction support
+    private bool isHoldInteraction = false;
+    private bool isCurrentlyHolding = false;
 
     private void Awake()
     {
@@ -36,6 +43,16 @@ public class InteractionButtonView : MonoBehaviour
         {
             cachedRectTransform = transform as RectTransform;
         }
+        
+        // Ensure we have an Image component for IPointerDownHandler to work
+        Image rootImage = GetComponent<Image>();
+        if (rootImage == null)
+        {
+            rootImage = gameObject.AddComponent<Image>();
+            rootImage.color = Color.clear; // Make it invisible
+            rootImage.raycastTarget = true; // But still receive events
+        }
+        
     }
 
     private void OnEnable()
@@ -45,8 +62,12 @@ public class InteractionButtonView : MonoBehaviour
 
     public void Configure(InteractionOption option, InteractionHandler handler)
     {
+        
         currentOption = option;
         boundHandler = handler;
+
+        // Check if we're on mobile device
+        isMobileDevice = DeviceDetectionManager.Instance != null && DeviceDetectionManager.Instance.IsMobileOrTablet;
 
         if (labelText != null)
         {
@@ -58,22 +79,94 @@ public class InteractionButtonView : MonoBehaviour
             keyText.text = option.Key == KeyCode.None ? string.Empty : option.Key.ToString().ToUpperInvariant();
         }
 
-        // Show/hide key hint root based on availability and key presence
+        // Show/hide key hint root based on availability, key presence, and device type
         if (keyHintRoot != null)
         {
             bool showKeyHint = option.IsAvailable && option.Key != KeyCode.None;
+            
+            // Hide key hints on mobile/tablet devices
+            if (isMobileDevice)
+            {
+                showKeyHint = false;
+            }
+            
             keyHintRoot.SetActive(showKeyHint);
         }
 
-        if (button != null)
-        {
-            button.onClick.RemoveListener(HandleClicked);
-            button.onClick.AddListener(HandleClicked);
-            button.interactable = option.IsAvailable;
-        }
+        // Configure appropriate button based on device type
+        ConfigureButtons(option);
 
         ApplyStyle(option.Style);
         ForceLayoutUpdate();
+    }
+    
+    private void ConfigureButtons(InteractionOption option)
+    {
+        // Check if this is a hold interaction
+        isHoldInteraction = IsHoldInteraction(option);
+        
+        if (button != null)
+        {
+            if (isHoldInteraction)
+            {
+                // For hold interactions, keep Button enabled but remove onClick listeners
+                button.enabled = true;
+                button.interactable = option.IsAvailable;
+                button.onClick.RemoveAllListeners();
+            }
+            else
+            {
+                // For regular interactions, use the Button component
+                ConfigureRegularButton(option);
+                button.enabled = true;
+                button.interactable = option.IsAvailable;
+            }
+        }
+        
+        // No mobile button to disable anymore
+    }
+    
+    private void ConfigureRegularButton(InteractionOption option)
+    {
+        if (button != null)
+        {
+            button.onClick.RemoveListener(HandleClicked);
+            
+            // For hold interactions, don't add onClick listener
+            if (!isHoldInteraction)
+            {
+                button.onClick.AddListener(HandleClicked);
+            }
+            else
+            {
+            }
+        }
+    }
+    
+    // ConfigureMobileButton removed - using built-in hold logic instead
+    
+    private bool IsHoldInteraction(InteractionOption option)
+    {
+        // Use the RequiresHold property from InteractionOption
+        return option.RequiresHold;
+    }
+    
+    // HandleMobilePressed and HandleMobileReleased removed - using built-in hold logic instead
+    
+    /// <summary>
+    /// Find the workbench that the player is currently looking at for welding
+    /// </summary>
+    private Workbench FindWorkbenchForWelding()
+    {
+        if (boundHandler == null) return null;
+        
+        // Check if current target is a workbench
+        if (boundHandler.CurrentTarget is Workbench workbench)
+        {
+            return workbench;
+        }
+        
+        return null;
     }
 
     private void ApplyStyle(InteractionOptionStyle style)
@@ -136,5 +229,53 @@ public class InteractionButtonView : MonoBehaviour
     {
         if (!currentOption.IsAvailable) return;
         currentOption.Callback?.Invoke(boundHandler);
+    }
+    
+    // IPointerDownHandler implementation
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (!currentOption.IsAvailable) return;
+        
+        if (isHoldInteraction)
+        {
+            // Start hold interaction (like welding)
+            isCurrentlyHolding = true;
+            currentOption.Callback?.Invoke(boundHandler);
+        }
+    }
+    
+    // IPointerUpHandler implementation
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        if (isCurrentlyHolding && isHoldInteraction)
+        {
+            // Stop hold interaction
+            isCurrentlyHolding = false;
+            StopHoldInteraction();
+        }
+    }
+    
+    // IPointerExitHandler implementation
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (isCurrentlyHolding && isHoldInteraction)
+        {
+            // Stop hold interaction when pointer leaves the button
+            isCurrentlyHolding = false;
+            StopHoldInteraction();
+        }
+    }
+    
+    private void StopHoldInteraction()
+    {
+        // For welding, find the workbench and stop welding
+        if (currentOption.Id == "workbench.weld")
+        {
+            var workbench = FindWorkbenchForWelding();
+            if (workbench != null)
+            {
+                workbench.StopWeldingInteraction();
+            }
+        }
     }
 }

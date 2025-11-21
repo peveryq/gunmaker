@@ -153,14 +153,16 @@ public class FirstPersonController : MonoBehaviour
         // Check if grounded (always, even when cursor is unlocked)
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
         
-        // Only handle movement and camera when cursor is locked
+        // Handle mouse look only when cursor is locked
         if (cursorLocked)
         {
             HandleMouseLook();
-            HandleMovement();
-            HandleHeadBob();
-            HandleFootsteps();
         }
+        
+        // Always handle movement (for mobile input testing)
+        HandleMovement();
+        HandleHeadBob();
+        HandleFootsteps();
         
         // Apply gravity always (after jump to allow jump velocity to be set)
         ApplyGravity();
@@ -283,11 +285,27 @@ public class FirstPersonController : MonoBehaviour
     
     private void HandleMovement()
     {
-        // Get input - use GetAxisRaw for instant response
+        // Get input - combine desktop and mobile input
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         
-        // Determine if running
+        // Add mobile input if available
+        if (MobileInputManager.Instance != null)
+        {
+            // Always check mobile input, regardless of device detection for debugging
+            Vector2 mobileInput = MobileInputManager.Instance.MovementInput;
+            if (mobileInput.magnitude > 0.01f)
+            {
+                horizontal += mobileInput.x;
+                vertical += mobileInput.y;
+                
+                // Clamp to prevent over-acceleration when both inputs are active
+                horizontal = Mathf.Clamp(horizontal, -1f, 1f);
+                vertical = Mathf.Clamp(vertical, -1f, 1f);
+            }
+        }
+        
+        // Determine if running (no mobile run button for now, always walk speed on mobile)
         isRunning = Input.GetKey(KeyCode.LeftShift);
         
         // Calculate movement direction relative to player rotation

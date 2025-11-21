@@ -84,8 +84,10 @@ public class GameManager : MonoBehaviour
         yield return null;
         
         // Initialize systems in order (all optional)
+        yield return InitializeDeviceDetection();
         yield return InitializeLocalization();
         yield return InitializeMobileInput();
+        yield return InitializeWeldingController();
         yield return InitializeAdManager();
         
         // Wait for LocationManager to be ready
@@ -116,6 +118,32 @@ public class GameManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Initialize DeviceDetectionManager.
+    /// DeviceDetectionManager is now part of the project, so we initialize it directly.
+    /// </summary>
+    private IEnumerator InitializeDeviceDetection()
+    {
+        // Wait a frame for DeviceDetectionManager to initialize
+        yield return null;
+        
+        var deviceManager = DeviceDetectionManager.Instance;
+        if (deviceManager != null)
+        {
+            Debug.Log("GameManager: DeviceDetectionManager found and initialized.");
+            
+            // Force refresh detection if YG2 is ready
+            if (YG2.isSDKEnabled)
+            {
+                deviceManager.RefreshDeviceDetection();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("GameManager: DeviceDetectionManager not found. Device detection will not work.");
+        }
+    }
+    
+    /// <summary>
     /// Initialize LocalizationManager.
     /// LocalizationManager is now part of the project, so we initialize it directly.
     /// </summary>
@@ -142,24 +170,40 @@ public class GameManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Initialize MobileInputManager (optional).
-    /// If MobileInputManager doesn't exist, this is skipped.
-    /// Uses reflection to safely check if class exists.
+    /// Initialize MobileInputManager.
+    /// MobileInputManager is now part of the project, so we initialize it directly.
     /// </summary>
     private IEnumerator InitializeMobileInput()
     {
-        var mobileManagerType = System.Type.GetType("MobileInputManager");
-        if (mobileManagerType != null)
+        // Wait a frame for MobileInputManager to initialize
+        yield return null;
+        
+        var mobileManager = MobileInputManager.Instance;
+        if (mobileManager != null)
         {
-            var instanceProperty = mobileManagerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (instanceProperty != null)
-            {
-                var instance = instanceProperty.GetValue(null);
-                if (instance != null)
-                {
-                    Debug.Log("GameManager: MobileInputManager found and initialized.");
-                }
-            }
+            Debug.Log("GameManager: MobileInputManager found and initialized.");
+        }
+        else
+        {
+            Debug.LogWarning("GameManager: MobileInputManager not found. Mobile input will not work.");
+        }
+    }
+    
+    /// <summary>
+    /// Initialize WeldingController (optional).
+    /// Creates WeldingController instance if it doesn't exist.
+    /// </summary>
+    private IEnumerator InitializeWeldingController()
+    {
+        if (WeldingController.Instance == null)
+        {
+            GameObject weldingControllerObj = new GameObject("WeldingController");
+            weldingControllerObj.AddComponent<WeldingController>();
+            Debug.Log("GameManager: WeldingController created and initialized.");
+        }
+        else
+        {
+            Debug.Log("GameManager: WeldingController already exists.");
         }
         yield return null;
     }

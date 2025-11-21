@@ -60,7 +60,24 @@ public class InteractionHandler : MonoBehaviour
         DetectInteractable();
         ProcessInteractionInputs();
 
+        // Handle drop input - combine desktop and mobile input
+        bool dropTriggered = false;
+        
         if (Input.GetKeyDown(dropKey) && currentItem != null)
+        {
+            dropTriggered = true;
+        }
+        
+        // Add mobile input
+        if (MobileInputManager.Instance != null && MobileInputManager.Instance.IsMobileInputActive())
+        {
+            if (MobileInputManager.Instance.IsDropPressed && currentItem != null)
+            {
+                dropTriggered = true;
+            }
+        }
+        
+        if (dropTriggered)
         {
             DropCurrentItem();
         }
@@ -379,11 +396,24 @@ public class InteractionHandler : MonoBehaviour
         item.Pickup(itemHoldPoint);
         currentItem = item;
         
+        // Notify mobile UI about item pickup
+        MobileUIController mobileUI = FindObjectOfType<MobileUIController>();
+        if (mobileUI != null)
+        {
+            mobileUI.OnItemPickedUp();
+        }
+        
         WeaponController weapon = item.GetComponent<WeaponController>();
         if (weapon != null)
         {
             weapon.Equip(playerCamera);
             AttachWeaponController(weapon);
+            
+            // Notify mobile UI about weapon equip
+            if (mobileUI != null)
+            {
+                mobileUI.OnWeaponEquipped(weapon);
+            }
         }
         else
         {
@@ -416,6 +446,13 @@ public class InteractionHandler : MonoBehaviour
         currentItem.Drop(worldDropPosition, dropForceVector, finalRotation);
         currentItem = null;
         DetachWeaponController();
+        
+        // Notify mobile UI about item drop
+        MobileUIController mobileUI = FindObjectOfType<MobileUIController>();
+        if (mobileUI != null)
+        {
+            mobileUI.OnItemDropped();
+        }
     }
     
     public void ClearCurrentItem()

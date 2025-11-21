@@ -2,7 +2,7 @@
 
 ## Project Snapshot
 - **Scene in focus:** `Assets/_InternalAssets/Scenes/Main.unity`
-- **Active gameplay scripts:** 50+ C# files across `_InternalAssets/Scrips`
+- **Active gameplay scripts:** 60+ C# files across `_InternalAssets/Scrips`
 - **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`
 - **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets
 - **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `LOCATION_TRANSITION_REPORT.md`, this analysis document
@@ -22,7 +22,7 @@
 | System | Key Scripts | Highlights |
 |--------|-------------|-----------|
 | Modular weapon assembly | `WeaponBody`, `WeaponPart`, `PartTypeDefaultSettings` | Runtime swapping of meshes, stat aggregation, per-part cost tracking |
-| Welding gameplay | `Blowtorch`, `WeldingSystem`, `WeldingUI` | Event-driven transitions, pooled VFX |
+| Welding gameplay | `Blowtorch`, `WeldingSystem`, `WeldingUI`, `WeldingController` | Unified welding system supporting both keyboard and button input; event-driven transitions, pooled VFX, hold interaction support |
 | Ballistics & impact FX | `WeaponController`, `Bullet`, `BulletHoleManager` | Bullet holes pooled for WebGL friendliness; reload now coroutine-driven with cancellation and HUD update events; FOV Kick applied on shot for powerful feel |
 | Target practice | `ShootingTarget`, `ShootingTargetZone` | Configurable payouts, bullseye multipliers, HP system with damage application, optional fall/raise via DOTween, punch animation on hit (DOTween), zone-specific audio/VFX |
 
@@ -30,7 +30,8 @@
 | Subsystem | Files | Summary |
 |-----------|-------|---------|
 | Gameplay HUD | `GameplayHUD`, `GameplayUIContext`, `CrosshairController` | Singleton HUD group for crosshair (static dot, weapon lines with shot animation, hit lines for normal/bullseye hits, kill lines for target kills), money, ammo, reload indicator (fill + spinner), interaction buttons; hide/show via requester tokens |
-| Interaction buttons | `HUDInteractionPanel`, `InteractionButtonView`, `InteractionOption` | Pooled UI buttons fed by `IInteractionOptionsProvider` implementations |
+| Interaction buttons | `HUDInteractionPanel`, `InteractionButtonView`, `InteractionOption` | Pooled UI buttons fed by `IInteractionOptionsProvider` implementations; built-in hold interaction support via Unity UI events |
+| Mobile input | `DeviceDetectionManager`, `MobileInputManager`, `MobileUIController`, `VirtualJoystick`, `MobileButton` | Device detection via YG2 SDK, virtual joystick for movement, mobile buttons for weapon actions, adaptive UI based on device type |
 | Economy display | `GameplayHUD`, `MoneySystem`, `WeaponController` | Money/ammo events drive HUD labels, controller subscribe/unsubscribe |
 
 ### Economy & Shop Layer (2025 Update)
@@ -191,10 +192,9 @@ Save System (Automatic)
 ### Known Limitations / Next Steps
 1. **Unlock progression** – Lasers/foregrips are locked via UI only; add data-driven availability when gameplay requires it.
 2. **Analytics hooks** – Consider emitting events when purchases, locker interactions, or location transitions occur for telemetry or tutorials.
-3. **Mobile/touch UI** – Interaction buttons ready for touch but no input abstraction yet. Device detection system ready for integration.
-4. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
-5. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
-6. **YG2 Integration** – Device detection, interstitial ads, rewarded ads, and pause control systems pending implementation.
+3. **Multiple locations** – Currently supports workshop ↔ testing range; architecture ready for expansion to additional locations.
+4. **Async loading** – Loading screen ready for Unity's async scene loading API integration.
+5. **YG2 Integration** – Interstitial ads, rewarded ads, and pause control systems pending implementation.
 
 ---
 
@@ -296,7 +296,17 @@ Save System (Automatic)
 - **Integration points:** All interactive scripts (`Workbench`, `WeaponLockerInteractable`, `LocationDoor`, `ShopComputer`, `ItemPickup`) use localization keys for button labels. Dynamic messages (`LocationSelectionUI`) and weapon stats (`PurchaseConfirmationUI`, `WeaponStatsUI`, `WeaponSellModal`) use `LocalizationHelper` for runtime translation. HUD elements support both `LocalizedText` component and programmatic localization.
 - **Default translations:** Hardcoded translations for common UI elements (shop, categories, locations, actions, stats, HUD messages) ensure system works even without `LocalizationData` assigned. Translations can be overridden via ScriptableObject.
 
-### Appendix M – Save & Persistence System
+### Appendix M – Mobile Input & Hold Interactions System
+- **Device Detection:** `DeviceDetectionManager` singleton detects device type via YG2 SDK (`YG2.envir.deviceType`, `YG2.envir.isMobile`, `YG2.envir.isTablet`). Provides `IsMobile`, `IsTablet`, `IsDesktop` properties and `SetDeviceTypeForTesting` for editor debugging.
+- **Mobile Input Management:** `MobileInputManager` singleton abstracts mobile input states (`MovementInput`, `IsShootPressed`, `IsAimPressed`, `IsReloadPressed`, `IsDropPressed`). Provides methods to set states and trigger one-time actions.
+- **Mobile UI Controller:** `MobileUIController` singleton manages visibility of mobile UI elements based on device type and game state. Subscribes to device changes, weapon equip/unequip events, and item pickup/drop events.
+- **Virtual Joystick:** `VirtualJoystick` component for movement input with configurable knob bounds, visual feedback, and smooth return animation via DOTween. Implements Unity UI pointer events for touch handling.
+- **Mobile Buttons:** `MobileButton` component with expandable hit area (`hitAreaMultiplier`), visual feedback (color/scale animations), and support for both tap and hold interactions. Uses DOTween for smooth animations.
+- **Hold Interactions:** `InteractionButtonView` has built-in hold support via Unity UI events (`IPointerDownHandler`, `IPointerUpHandler`, `IPointerExitHandler`). Automatically detects hold interactions via `InteractionOption.RequiresHold` property. Works universally on desktop (mouse) and mobile (touch).
+- **Unified Welding System:** `WeldingController` singleton manages all welding (keyboard and button input) with source tracking (`IsKeyboardWelding` property). Prevents conflicts between input methods. Handles blowtorch control, sparks management, and automatic completion at 100% progress.
+- **Input Integration:** Desktop and mobile input combined in `FirstPersonController` (movement) and `WeaponController` (shooting, aiming, reloading). `InteractionHandler` supports mobile drop button. Aim button supports both toggle (quick tap) and hold modes like desktop.
+
+### Appendix N – Save & Persistence System
 - **SaveSystemManager:** Centralized singleton with `DontDestroyOnLoad`, auto-creates on game start via `RuntimeInitializeOnLoadMethod`. Manages all save/load operations through YG2 Storage module. Subscribes to `LocationManager.OnLocationChangedEvent` for location-aware auto-save control.
 - **Auto-save logic:** Triggers every 20 seconds when in workshop (`LocationType.Workshop`), automatically stops when entering testing range. Timer resets on location change. Also triggers on return from testing range via `TriggerAutoSaveOnReturn()` (called from `ResultsScreenUI`).
 - **Save data structure:** Extends `YG.SavesYG` via `partial class` pattern in `GameSaveData.cs`. Stores `playerMoney` (int), `savedWeapons` (List<WeaponSaveData>), and `workbenchWeapon` (WorkbenchSaveData). All serializable via Unity's `JsonUtility` or Newtonsoft.Json.
@@ -360,6 +370,13 @@ Save System (Automatic)
 48. Localized HUD elements: GameplayHUD unwelded barrel warning and autosave indicator text
 49. Implemented Bootstrapper: initial scene script that waits for YG2 SDK initialization before loading main scene
 50. Enhanced GameManager: coordinates system initialization including optional LocalizationManager, MobileInputManager, and AdManager initialization via reflection
+51. Implemented comprehensive mobile input system: DeviceDetectionManager (YG2 device detection), MobileInputManager (input state management), MobileUIController (adaptive UI visibility)
+52. Added mobile UI components: VirtualJoystick (movement input with DOTween animations), MobileButton (tap/hold support with expandable hit areas and visual feedback)
+53. Integrated mobile input with existing systems: FirstPersonController (combined desktop/mobile movement), WeaponController (combined shooting/aiming/reloading), InteractionHandler (mobile drop button)
+54. Implemented universal hold interaction system: InteractionButtonView with built-in hold support via Unity UI events (IPointerDownHandler/Up/Exit), works on both desktop and mobile
+55. Created unified welding system: WeldingController singleton manages all welding (keyboard/button) with source tracking, prevents input conflicts, handles automatic completion
+56. Enhanced interaction system: InteractionOption.RequiresHold property for hold interactions, automatic detection and configuration in InteractionButtonView
+57. Added mobile UI layout: bottom-right buttons (shoot/aim/reload), bottom-left elements (drop button/movement joystick), adaptive visibility based on game state and device type
 
 ---
 

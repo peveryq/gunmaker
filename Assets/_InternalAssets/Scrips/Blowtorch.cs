@@ -41,12 +41,18 @@ public class Blowtorch : MonoBehaviour, IInteractable
     
     private void LateUpdate()
     {
-        // Only work when held
-        if (itemPickup == null || !itemPickup.IsHeld)
+        // Only work when held (WeldingController manages welding state)
+        bool isHeld = itemPickup != null && itemPickup.IsHeld;
+        
+        
+        if (!isHeld && !isWorking)
         {
-            StopWorking();
+            // Don't interfere if not held and not working
             return;
         }
+        
+        // If not held but working, let WeldingController manage the state
+        // (don't auto-stop when welding via WeldingController)
         
         // Handle position movement
         if (isWorking && targetWorkingTransform != null)

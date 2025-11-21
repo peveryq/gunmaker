@@ -85,8 +85,20 @@ public class WeaponController : MonoBehaviour
         // Check if cursor is locked (for FPS control)
         bool cursorLocked = Cursor.lockState == CursorLockMode.Locked;
         
-        // Handle shooting only when cursor is locked
-        bool isShootingThisFrame = cursorLocked && Input.GetMouseButton(0);
+        // Handle shooting - combine desktop and mobile input
+        bool isShootingThisFrame = false;
+        
+        // Desktop input (only when cursor is locked)
+        if (cursorLocked)
+        {
+            isShootingThisFrame = Input.GetMouseButton(0);
+        }
+        
+        // Mobile input (always available for testing)
+        if (MobileInputManager.Instance != null)
+        {
+            isShootingThisFrame = isShootingThisFrame || MobileInputManager.Instance.IsShootPressed;
+        }
         
         // Check if we can actually shoot (not empty, not reloading, has barrel, etc.)
         bool canShoot = isShootingThisFrame && !isReloading && currentAmmo > 0 && Time.time >= nextFireTime;
@@ -148,13 +160,56 @@ public class WeaponController : MonoBehaviour
             hasPlayedEmptySound = false;
         }
         
-        // Handle aiming
-        if (cursorLocked && settings != null && settings.canAim)
+        // Handle aiming - combine desktop and mobile input
+        if (settings != null && settings.canAim)
         {
             bool wasAiming = isAiming;
+            bool aimInputPressed = false;
+            bool aimInputReleased = false;
+            bool aimInputHeld = false;
             
-            // Check for right mouse button down
-            if (Input.GetMouseButtonDown(1))
+            // Desktop input (only when cursor is locked)
+            if (cursorLocked)
+            {
+                aimInputPressed = Input.GetMouseButtonDown(1);
+                aimInputReleased = Input.GetMouseButtonUp(1);
+                aimInputHeld = Input.GetMouseButton(1);
+            }
+            
+            // Mobile input - support both click and hold like desktop
+            if (MobileInputManager.Instance != null)
+            {
+                bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
+                
+                // Detect mobile aim button press/release
+                if (mobileAimPressed && !wasAiming)
+                {
+                    // Mobile aim button pressed - treat like desktop mouse down
+                    aimInputPressed = true;
+                    rightMouseDownTime = Time.time;
+                    isRightMouseHeld = true;
+                    wasToggleModeOnPress = isAimingToggleMode;
+                    isAiming = true;
+                    
+                    if (wasToggleModeOnPress)
+                    {
+                        isAimingToggleMode = false;
+                    }
+                }
+                else if (!mobileAimPressed && isRightMouseHeld)
+                {
+                    // Mobile aim button released - treat like desktop mouse up
+                    aimInputReleased = true;
+                }
+                
+                if (mobileAimPressed)
+                {
+                    aimInputHeld = true;
+                }
+            }
+            
+            // Desktop aiming logic (only process if we have desktop input)
+            if (aimInputPressed)
             {
                 rightMouseDownTime = Time.time;
                 isRightMouseHeld = true;
@@ -173,15 +228,15 @@ public class WeaponController : MonoBehaviour
                 }
             }
             
-            // Check for right mouse button held
-            if (isRightMouseHeld && Input.GetMouseButton(1))
+            // Check for aim button held (desktop or mobile)
+            if (isRightMouseHeld && aimInputHeld)
             {
                 // While held, keep aim active
                 isAiming = true;
             }
             
-            // Check for right mouse button up
-            if (Input.GetMouseButtonUp(1))
+            // Check for aim button release (desktop or mobile)
+            if (aimInputReleased)
             {
                 if (isRightMouseHeld)
                 {
@@ -221,8 +276,22 @@ public class WeaponController : MonoBehaviour
             HandleAiming();
         }
         
-        // Handle reload only when cursor is locked
-        if (cursorLocked && Input.GetKeyDown(KeyCode.R))
+        // Handle reload - combine desktop and mobile input
+        bool reloadTriggered = false;
+        
+        // Desktop input (only when cursor is locked)
+        if (cursorLocked)
+        {
+            reloadTriggered = Input.GetKeyDown(KeyCode.R);
+        }
+        
+        // Mobile input (always available for testing)
+        if (MobileInputManager.Instance != null)
+        {
+            reloadTriggered = reloadTriggered || MobileInputManager.Instance.IsReloadPressed;
+        }
+        
+        if (reloadTriggered)
         {
             StartReload();
         }
