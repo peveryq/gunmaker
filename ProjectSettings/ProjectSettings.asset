@@ -661,24 +661,24 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    Android: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
+    Android: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
     EmbeddedLinux: DOTWEEN
     GameCoreScarlett: DOTWEEN
     GameCoreXboxOne: DOTWEEN
     Kepler: DOTWEEN
-    LinuxHeadlessSimulation: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    Nintendo Switch: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    PS4: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    PS5: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
+    LinuxHeadlessSimulation: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    Nintendo Switch: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    PS4: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    PS5: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
     QNX: DOTWEEN
     ReservedCFE: DOTWEEN
-    Standalone: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
+    Standalone: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
     VisionOS: DOTWEEN
-    WebGL: NODECANVAS;CINEMACHINE;DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    Windows Store Apps: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    XboxOne: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    iPhone: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
-    tvOS: DOTWEEN;YandexGamesPlatform_yg;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg
+    WebGL: NODECANVAS;CINEMACHINE;DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    Windows Store Apps: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    XboxOne: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    iPhone: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
+    tvOS: DOTWEEN;PLUGIN_YG_2;TMP_YG2;RU_YG2;Storage_yg;Authorization_yg;Localization_yg;InterstitialAdv_yg;RewardedAdv_yg;EnvirData_yg;YandexGamesPlatform_yg
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
