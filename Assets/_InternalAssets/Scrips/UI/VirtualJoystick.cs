@@ -28,7 +28,13 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     
     [Header("Hit Area")]
     [Tooltip("Multiplier for hit area size. 1.0 = same as background size")]
-    [SerializeField] private float hitAreaMultiplier = 1.2f;
+    [SerializeField] private float hitAreaMultiplier = 1.5f;
+    
+    [Header("Floating Joystick")]
+    [Tooltip("If true, joystick moves to touch position on first touch")]
+    [SerializeField] private bool floatingJoystick = true;
+    [Tooltip("If true, joystick returns to original position when released")]
+    [SerializeField] private bool returnToOriginalPosition = true;
     
     private Vector2 inputVector;
     private bool isDragging = false;
@@ -37,6 +43,8 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     private Camera canvasCamera;
     private CanvasGroup canvasGroup;
     private Vector2 knobStartPosition;
+    private Vector2 backgroundOriginalPosition;
+    private Vector2 joystickOriginalPosition; // Original position of the joystick root
     
     // Events
     public event Action<Vector2> OnValueChanged;
@@ -66,11 +74,18 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
             }
         }
         
-        // Store knob's starting position
+        // Store original positions
         if (knob != null)
         {
             knobStartPosition = knob.anchoredPosition;
         }
+        
+        if (background != null)
+        {
+            backgroundOriginalPosition = background.anchoredPosition;
+        }
+        
+        joystickOriginalPosition = rectTransform.anchoredPosition;
         
         // Setup hit area
         SetupHitArea();
@@ -85,7 +100,7 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         if (!isDragging && knob != null)
         {
             Vector2 currentPos = knob.anchoredPosition;
-            Vector2 targetPos = knobStartPosition;
+            Vector2 targetPos = backgroundOriginalPosition; // Always return to center
             
             if (Vector2.Distance(currentPos, targetPos) > 0.1f)
             {
@@ -96,6 +111,7 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
             {
                 // Ensure knob reaches exactly center position
                 knob.anchoredPosition = targetPos;
+                knobStartPosition = targetPos; // Update start position
             }
         }
     }
@@ -104,25 +120,21 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     {
         if (background != null && hitAreaMultiplier > 1f)
         {
-            // Expand background hit area while keeping visual size
+            // Expand the main rectTransform hit area while keeping background visual size
             Vector2 originalSize = background.sizeDelta;
             Vector2 expandedSize = originalSize * hitAreaMultiplier;
             
-            // Create invisible hit area
-            GameObject hitArea = new GameObject("HitArea");
-            hitArea.transform.SetParent(background.transform, false);
+            // Expand the main joystick rectTransform to create larger hit area
+            rectTransform.sizeDelta = expandedSize;
             
-            RectTransform hitAreaRect = hitArea.AddComponent<RectTransform>();
-            hitAreaRect.sizeDelta = expandedSize;
-            hitAreaRect.anchoredPosition = Vector2.zero;
-            
-            // Add invisible image for hit detection
-            Image hitImage = hitArea.AddComponent<Image>();
+            // Ensure we have an Image component for raycast detection
+            Image hitImage = GetComponent<Image>();
+            if (hitImage == null)
+            {
+                hitImage = gameObject.AddComponent<Image>();
+            }
             hitImage.color = Color.clear;
             hitImage.raycastTarget = true;
-            
-            // Move the hit area to be the main interaction target
-            // We'll handle events on this component but apply them to the joystick
         }
     }
     
@@ -131,16 +143,37 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         isDragging = true;
         SetVisualState(true);
         
-        // Convert screen position to local position
+        // Convert screen position to local position in parent canvas
         Vector2 localPoint;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            background, eventData.position, canvasCamera, out localPoint))
+            rectTransform.parent as RectTransform, eventData.position, canvasCamera, out localPoint))
         {
-            if (snapToPointer && knob != null)
+            if (floatingJoystick)
             {
-                // Clamp the knob position to the handle range
-                Vector2 clampedPosition = Vector2.ClampMagnitude(localPoint, handleRange);
-                knob.anchoredPosition = knobStartPosition + clampedPosition;
+                // Move joystick root to touch position
+                rectTransform.anchoredPosition = localPoint;
+                
+                // Reset knob to center (relative to new background position)
+                if (knob != null)
+                {
+                    knob.anchoredPosition = backgroundOriginalPosition; // Center relative to background
+                    knobStartPosition = backgroundOriginalPosition; // Update start position
+                }
+            }
+            else
+            {
+                // Original behavior: convert to background local coordinates
+                Vector2 backgroundLocalPoint;
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    background, eventData.position, canvasCamera, out backgroundLocalPoint))
+                {
+                    if (snapToPointer && knob != null)
+                    {
+                        // Clamp the knob position to the handle range
+                        Vector2 clampedPosition = Vector2.ClampMagnitude(backgroundLocalPoint, handleRange);
+                        knob.anchoredPosition = knobStartPosition + clampedPosition;
+                    }
+                }
             }
         }
         
@@ -156,21 +189,36 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         inputVector = Vector2.zero;
         OnValueChanged?.Invoke(inputVector);
         
+        // Return joystick to original position if enabled
+        if (floatingJoystick && returnToOriginalPosition)
+        {
+            rectTransform.anchoredPosition = joystickOriginalPosition;
+        }
+        
+        // Reset knob to center
+        if (knob != null)
+        {
+            knobStartPosition = backgroundOriginalPosition;
+        }
+        
         // Knob will return to center in Update() (visual only)
     }
     
     public void OnDrag(PointerEventData eventData)
     {
-        if (!isDragging || knob == null) return;
+        if (!isDragging || knob == null || background == null) return;
         
-        // Convert screen position to local position
+        // Convert screen position to local position relative to background
         Vector2 localPoint;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
             background, eventData.position, canvasCamera, out localPoint))
         {
+            // Calculate offset from center (backgroundOriginalPosition is the center)
+            Vector2 offsetFromCenter = localPoint - backgroundOriginalPosition;
+            
             // Clamp the knob position to the handle range
-            Vector2 clampedPosition = Vector2.ClampMagnitude(localPoint, handleRange);
-            knob.anchoredPosition = knobStartPosition + clampedPosition;
+            Vector2 clampedOffset = Vector2.ClampMagnitude(offsetFromCenter, handleRange);
+            knob.anchoredPosition = knobStartPosition + clampedOffset;
         }
         
         UpdateInputVector();
@@ -181,6 +229,7 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         if (knob == null) return;
         
         // Calculate input vector based on knob position relative to center
+        // knobStartPosition is always the center (backgroundOriginalPosition)
         Vector2 knobOffset = knob.anchoredPosition - knobStartPosition;
         Vector2 newInputVector = knobOffset / handleRange;
         
@@ -239,7 +288,13 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     {
         if (knob != null)
         {
-            knob.anchoredPosition = knobStartPosition;
+            knob.anchoredPosition = backgroundOriginalPosition;
+            knobStartPosition = backgroundOriginalPosition;
+        }
+        
+        if (floatingJoystick && returnToOriginalPosition)
+        {
+            rectTransform.anchoredPosition = joystickOriginalPosition;
         }
         
         inputVector = Vector2.zero;

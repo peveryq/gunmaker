@@ -2,10 +2,10 @@
 
 ## Project Snapshot
 - **Scene in focus:** `Assets/_InternalAssets/Scenes/Main.unity`
-- **Active gameplay scripts:** 60+ C# files across `_InternalAssets/Scrips`
-- **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`
-- **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets
-- **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `LOCATION_TRANSITION_REPORT.md`, this analysis document
+- **Active gameplay scripts:** 70+ C# files across `_InternalAssets/Scrips`
+- **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`, `LocalizationData.asset`, `PartNameLocalization.asset`
+- **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets, mobile UI elements
+- **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `SETTINGS_SYSTEM_GUIDE.md`, `BUTTON_SOUND_SYSTEM_GUIDE.md`, `MOBILE_UI_SETUP_GUIDE.md`, this analysis document
 
 ---
 
@@ -31,7 +31,9 @@
 |-----------|-------|---------|
 | Gameplay HUD | `GameplayHUD`, `GameplayUIContext`, `CrosshairController` | Singleton HUD group for crosshair (static dot, weapon lines with shot animation, hit lines for normal/bullseye hits, kill lines for target kills), money, ammo, reload indicator (fill + spinner), interaction buttons; hide/show via requester tokens |
 | Interaction buttons | `HUDInteractionPanel`, `InteractionButtonView`, `InteractionOption` | Pooled UI buttons fed by `IInteractionOptionsProvider` implementations; built-in hold interaction support via Unity UI events |
-| Mobile input | `DeviceDetectionManager`, `MobileInputManager`, `MobileUIController`, `VirtualJoystick`, `MobileButton` | Device detection via YG2 SDK, virtual joystick for movement, mobile buttons for weapon actions, adaptive UI based on device type |
+| Mobile input | `DeviceDetectionManager`, `MobileInputManager`, `MobileUIController`, `VirtualJoystick`, `MobileButton` | Device detection via YG2 SDK, floating virtual joystick (moves to touch position), mobile buttons for weapon actions, adaptive UI based on device type and game state |
+| Settings UI | `SettingsUI`, `SettingsManager`, `GameSettings` | Settings panel (Q key or mobile button) with sensitivity (device-specific), SFX/music volume sliders, clear save data button; auto-save integration, camera movement blocking when open, full localization support |
+| Button sounds | `ButtonSoundComponent` | Universal component for automatic button sounds (click/hover/disabled), AudioManager integration, fallback support, runtime configuration |
 | Economy display | `GameplayHUD`, `MoneySystem`, `WeaponController` | Money/ammo events drive HUD labels, controller subscribe/unsubscribe |
 
 ### Economy & Shop Layer (2025 Update)
@@ -299,12 +301,15 @@ Save System (Automatic)
 ### Appendix M – Mobile Input & Hold Interactions System
 - **Device Detection:** `DeviceDetectionManager` singleton detects device type via YG2 SDK (`YG2.envir.deviceType`, `YG2.envir.isMobile`, `YG2.envir.isTablet`). Provides `IsMobile`, `IsTablet`, `IsDesktop` properties and `SetDeviceTypeForTesting` for editor debugging.
 - **Mobile Input Management:** `MobileInputManager` singleton abstracts mobile input states (`MovementInput`, `IsShootPressed`, `IsAimPressed`, `IsReloadPressed`, `IsDropPressed`). Provides methods to set states and trigger one-time actions.
-- **Mobile UI Controller:** `MobileUIController` singleton manages visibility of mobile UI elements based on device type and game state. Subscribes to device changes, weapon equip/unequip events, and item pickup/drop events.
-- **Virtual Joystick:** `VirtualJoystick` component for movement input with configurable knob bounds, visual feedback, and smooth return animation via DOTween. Implements Unity UI pointer events for touch handling.
-- **Mobile Buttons:** `MobileButton` component with expandable hit area (`hitAreaMultiplier`), visual feedback (color/scale animations), and support for both tap and hold interactions. Uses DOTween for smooth animations.
+- **Mobile UI Controller:** `MobileUIController` singleton manages visibility of mobile UI elements based on device type and game state. Subscribes to device changes, weapon equip/unequip events, and item pickup/drop events. Properly handles drop button visibility when items are placed on workbench.
+- **Virtual Joystick (Floating):** `VirtualJoystick` component with floating behavior - moves to touch position on first contact, center aligns with finger, remains fixed during drag. Returns to original position on release (optional). Eliminates need for precise center targeting. Configurable hit area multiplier (1.5x default), visual feedback via CanvasGroup alpha, smooth return animation via DOTween.
+- **Mobile Camera Control:** `MobileCameraController` with exclusive finger tracking (only one finger controls camera at a time). Correct sensitivity calculation without incorrect Time.deltaTime scaling. Exclusion areas check UI element state (active/interactable) before blocking camera. Proper handling of inactive/disabled UI elements.
+- **Mobile Buttons:** `MobileButton` component with expandable hit area (`hitAreaMultiplier`), visual feedback (color/scale animations), and support for both tap and hold interactions. Uses DOTween for smooth animations. Proper state management (SetEnabled/SetVisible) for exclusion area logic.
+- **Button Sound System:** `ButtonSoundComponent` universal component for automatic button sounds. Supports click, hover, and disabled sounds. Integrated with AudioManager with fallback support. Can be added to any Button GameObject for consistent audio feedback.
+- **Settings System:** `SettingsManager` singleton with device-specific sensitivity (mouse/touch automatically applied), SFX/music volume controls, UI panel with sliders (Q key or mobile button), auto-save integration (saves every 20s with game data), camera movement blocking when settings open, clear save data button for testing. Full localization support for all labels.
 - **Hold Interactions:** `InteractionButtonView` has built-in hold support via Unity UI events (`IPointerDownHandler`, `IPointerUpHandler`, `IPointerExitHandler`). Automatically detects hold interactions via `InteractionOption.RequiresHold` property. Works universally on desktop (mouse) and mobile (touch).
 - **Unified Welding System:** `WeldingController` singleton manages all welding (keyboard and button input) with source tracking (`IsKeyboardWelding` property). Prevents conflicts between input methods. Handles blowtorch control, sparks management, and automatic completion at 100% progress.
-- **Input Integration:** Desktop and mobile input combined in `FirstPersonController` (movement) and `WeaponController` (shooting, aiming, reloading). `InteractionHandler` supports mobile drop button. Aim button supports both toggle (quick tap) and hold modes like desktop.
+- **Input Integration:** Desktop and mobile input combined in `FirstPersonController` (movement) and `WeaponController` (shooting, aiming, reloading). `InteractionHandler` supports mobile drop button. Aim button supports both toggle (quick tap) and hold modes like desktop. Camera control properly disabled when settings menu is open.
 
 ### Appendix N – Save & Persistence System
 - **SaveSystemManager:** Centralized singleton with `DontDestroyOnLoad`, auto-creates on game start via `RuntimeInitializeOnLoadMethod`. Manages all save/load operations through YG2 Storage module. Subscribes to `LocationManager.OnLocationChangedEvent` for location-aware auto-save control.
@@ -377,6 +382,74 @@ Save System (Automatic)
 55. Created unified welding system: WeldingController singleton manages all welding (keyboard/button) with source tracking, prevents input conflicts, handles automatic completion
 56. Enhanced interaction system: InteractionOption.RequiresHold property for hold interactions, automatic detection and configuration in InteractionButtonView
 57. Added mobile UI layout: bottom-right buttons (shoot/aim/reload), bottom-left elements (drop button/movement joystick), adaptive visibility based on game state and device type
+58. Implemented universal button sound system: ButtonSoundComponent for automatic click/hover/disabled sounds on all UI buttons, AudioManager integration, fallback support, runtime configuration
+59. Created comprehensive settings system: SettingsManager singleton with device-specific sensitivity (mouse/touch), SFX/music volume controls, UI panel with sliders, auto-save integration, camera movement blocking when settings open, clear save data button for testing
+60. Fixed mobile camera control issues: corrected sensitivity calculation (removed incorrect Time.deltaTime), implemented exclusive finger tracking (only one finger controls camera at a time), added blocking of inactive/disabled UI elements, improved exclusion area logic to check UI element state
+61. Enhanced mobile UI state management: MobileUIController now properly hides drop button when items are placed on workbench, calls OnItemDropped() in Workbench.MountWeapon() and InstallPart()
+62. Implemented floating virtual joystick: joystick moves to touch position on first contact, center aligns with finger, remains fixed during drag, returns to original position on release (optional), eliminates need for precise center targeting
+
+---
+
+## Publication Readiness Progress
+
+### Core Systems Status
+| System | Status | Notes |
+|--------|--------|-------|
+| **Player Controls** | ✅ Complete | Desktop + mobile input unified, camera control polished |
+| **Weapon System** | ✅ Complete | Modular assembly, welding, shooting mechanics fully functional |
+| **Shop & Economy** | ✅ Complete | Purchase flow, part generation, localization integrated |
+| **Storage System** | ✅ Complete | Weapon locker, slot management, sell functionality |
+| **Location Transitions** | ✅ Complete | Workshop ↔ Testing range with state preservation |
+| **Save System** | ✅ Complete | Auto-save every 20s, cloud sync via YG2, mesh restoration working |
+| **Localization** | ✅ Complete | Russian + English, dynamic content support, UI fully localized |
+| **Mobile Support** | ✅ Complete | Adaptive UI, floating joystick, button sounds, settings system |
+| **Settings & Options** | ✅ Complete | Sensitivity, volume controls, auto-save integration |
+| **UI Polish** | ✅ Complete | Button sounds, crosshair animations, HUD feedback |
+
+### Mobile Experience (2025 Update)
+- ✅ **Device Detection:** Automatic mobile/tablet/desktop detection via YG2 SDK
+- ✅ **Adaptive UI:** Mobile UI elements shown/hidden based on device type
+- ✅ **Floating Joystick:** Moves to touch position, eliminates targeting issues
+- ✅ **Camera Control:** Exclusive finger tracking, inactive UI blocking fixed
+- ✅ **Button Sounds:** Universal ButtonSoundComponent for all UI interactions
+- ✅ **Settings Integration:** Device-specific sensitivity, volume controls
+- ✅ **State Management:** Proper button visibility for game state changes
+
+### Remaining Tasks for Publication
+1. **YG2 SDK Integration**
+   - [ ] Interstitial ads integration
+   - [ ] Rewarded ads for bonuses/currency
+   - [ ] Pause control system
+   - [ ] Leaderboards (if planned)
+
+2. **Polish & Optimization**
+   - [ ] Final performance profiling on target platforms
+   - [ ] Asset optimization (textures, audio compression)
+   - [ ] Build size optimization
+   - [ ] Loading time optimization
+
+3. **Testing & QA**
+   - [ ] Comprehensive mobile device testing (iOS/Android)
+   - [ ] Cross-browser WebGL testing
+   - [ ] Localization verification (all languages)
+   - [ ] Save/load system stress testing
+   - [ ] Edge case handling verification
+
+4. **Documentation**
+   - [ ] Player tutorial/onboarding (if needed)
+   - [ ] In-game help system
+   - [ ] Build deployment documentation
+
+5. **Final Integration**
+   - [ ] Analytics integration (if needed)
+   - [ ] Crash reporting setup
+   - [ ] Version management system
+   - [ ] Build automation pipeline
+
+### Known Limitations (Acceptable for MVP)
+- Unlock progression: UI-only locking for lasers/foregrips (data-driven system ready)
+- Analytics: Hooks ready but not integrated (can be added post-launch)
+- Multiple locations: Architecture supports expansion (workshop + testing range functional)
 
 ---
 
