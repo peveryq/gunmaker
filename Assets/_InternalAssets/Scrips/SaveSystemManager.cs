@@ -301,7 +301,7 @@ public class SaveSystemManager : MonoBehaviour
             }
             
             // Save workbench weapon
-            Workbench workbench = FindObjectOfType<Workbench>();
+            Workbench workbench = FindFirstObjectByType<Workbench>();
             if (workbench != null && workbench.MountedWeapon != null)
             {
                 YG2.saves.workbenchWeapon = new WorkbenchSaveData(workbench.MountedWeapon);
@@ -309,6 +309,12 @@ public class SaveSystemManager : MonoBehaviour
             else
             {
                 YG2.saves.workbenchWeapon = null;
+            }
+            
+            // Save game settings
+            if (SettingsManager.Instance != null)
+            {
+                YG2.saves.gameSettings = JsonUtility.ToJson(SettingsManager.Instance.CurrentSettings);
             }
             
             // Save to YG2 storage
@@ -466,7 +472,7 @@ public class SaveSystemManager : MonoBehaviour
         // Wait for Workbench to be ready and scene to load (after weapon slots are loaded)
         yield return new WaitForSeconds(0.3f);
         
-        Workbench workbench = FindObjectOfType<Workbench>();
+        Workbench workbench = FindFirstObjectByType<Workbench>();
         if (workbench == null) yield break;
         
         // First, clear any existing weapon on workbench (from previous session or leftover)
@@ -636,7 +642,7 @@ public class SaveSystemManager : MonoBehaviour
         }
         
         // Get workbench to access emptyWeaponBodyPrefab
-        Workbench workbench = FindObjectOfType<Workbench>();
+        Workbench workbench = FindFirstObjectByType<Workbench>();
         if (workbench == null)
         {
             Debug.LogError("SaveSystemManager: Cannot restore weapon - Workbench not found.");

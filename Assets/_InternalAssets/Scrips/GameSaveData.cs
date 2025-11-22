@@ -16,6 +16,9 @@ namespace YG
         
         // Weapon currently on workbench (null if no weapon)
         public WorkbenchSaveData workbenchWeapon = null;
+        
+        // Game settings (serialized as JSON string)
+        public string gameSettings = "";
     }
 }
 

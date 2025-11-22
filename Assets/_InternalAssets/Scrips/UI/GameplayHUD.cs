@@ -48,6 +48,9 @@ public class GameplayHUD : MonoBehaviour
     [Header("Auto-Save Indicator")]
     [SerializeField] private GameObject autosaveRoot;
     [SerializeField] private Image autosaveIcon;
+    
+    [Header("Settings Button")]
+    [SerializeField] private Button settingsButton;
     [SerializeField] private TextMeshProUGUI autosaveText;
     [SerializeField] private float autosaveIconRotationSpeed = 180f;
     [SerializeField] private float autosaveDisplayDuration = 1.5f;
@@ -93,6 +96,9 @@ public class GameplayHUD : MonoBehaviour
         {
             autosaveRoot.SetActive(false);
         }
+        
+        // Setup settings button
+        SetupSettingsButton();
     }
 
     private void OnEnable()
@@ -512,5 +518,32 @@ public class GameplayHUD : MonoBehaviour
         }
         
         autosaveDisplayCoroutine = null;
+    }
+    
+    /// <summary>
+    /// Setup settings button event handler
+    /// </summary>
+    private void SetupSettingsButton()
+    {
+        if (settingsButton != null)
+        {
+            settingsButton.onClick.AddListener(OnSettingsButtonClicked);
+        }
+    }
+    
+    /// <summary>
+    /// Handle settings button click - opens settings UI
+    /// </summary>
+    private void OnSettingsButtonClicked()
+    {
+        SettingsUI settingsUI = FindFirstObjectByType<SettingsUI>();
+        if (settingsUI != null)
+        {
+            settingsUI.OnSettingsButtonClicked();
+        }
+        else
+        {
+            Debug.LogWarning("GameplayHUD: SettingsUI not found in scene!");
+        }
     }
 }

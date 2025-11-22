@@ -190,33 +190,24 @@ public class WeaponController : MonoBehaviour
                 // Mobile input only - ignore mouse input
                 if (MobileInputManager.Instance != null)
                 {
-                bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
-                
-                // Detect mobile aim button press/release
-                if (mobileAimPressed && !wasAiming)
-                {
-                    // Mobile aim button pressed - treat like desktop mouse down
-                    aimInputPressed = true;
-                    rightMouseDownTime = Time.time;
-                    isRightMouseHeld = true;
-                    wasToggleModeOnPress = isAimingToggleMode;
-                    isAiming = true;
+                    bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
                     
-                    if (wasToggleModeOnPress)
+                    // Detect mobile aim button press/release
+                    if (mobileAimPressed && !isRightMouseHeld)
                     {
-                        isAimingToggleMode = false;
+                        // Mobile aim button pressed - treat like desktop mouse down
+                        aimInputPressed = true;
                     }
-                }
-                else if (!mobileAimPressed && isRightMouseHeld)
-                {
-                    // Mobile aim button released - treat like desktop mouse up
-                    aimInputReleased = true;
-                }
-                
-                if (mobileAimPressed)
-                {
-                    aimInputHeld = true;
-                }
+                    else if (!mobileAimPressed && isRightMouseHeld)
+                    {
+                        // Mobile aim button released - treat like desktop mouse up
+                        aimInputReleased = true;
+                    }
+                    
+                    if (mobileAimPressed)
+                    {
+                        aimInputHeld = true;
+                    }
                 }
             }
             else
@@ -235,19 +226,10 @@ public class WeaponController : MonoBehaviour
                     bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
                     
                     // Detect mobile aim button press/release
-                    if (mobileAimPressed && !wasAiming)
+                    if (mobileAimPressed && !isRightMouseHeld)
                     {
                         // Mobile aim button pressed - treat like desktop mouse down
                         aimInputPressed = true;
-                        rightMouseDownTime = Time.time;
-                        isRightMouseHeld = true;
-                        wasToggleModeOnPress = isAimingToggleMode;
-                        isAiming = true;
-                        
-                        if (wasToggleModeOnPress)
-                        {
-                            isAimingToggleMode = false;
-                        }
                     }
                     else if (!mobileAimPressed && isRightMouseHeld)
                     {
@@ -262,7 +244,7 @@ public class WeaponController : MonoBehaviour
                 }
             }
             
-            // Desktop aiming logic (only process if we have desktop input)
+            // Universal aiming logic (works for both desktop and mobile input)
             if (aimInputPressed)
             {
                 rightMouseDownTime = Time.time;

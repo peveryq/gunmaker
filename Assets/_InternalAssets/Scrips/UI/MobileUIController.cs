@@ -16,6 +16,9 @@ public class MobileUIController : MonoBehaviour
     [SerializeField] private MobileButton aimButton;
     [SerializeField] private MobileButton reloadButton;
     
+    [Header("Additional Action Buttons")]
+    [SerializeField] private MobileButton shootButton2; // Second shoot button (e.g., for left side)
+    
     [Header("Utility Buttons (Bottom Left)")]
     [SerializeField] private MobileButton dropButton;
     
@@ -83,6 +86,19 @@ public class MobileUIController : MonoBehaviour
                     MobileInputManager.Instance.SetShootPressed(true);
             };
             shootButton.OnReleased += () => {
+                if (MobileInputManager.Instance != null)
+                    MobileInputManager.Instance.SetShootPressed(false);
+            };
+        }
+        
+        // Second shoot button (same functionality as first)
+        if (shootButton2 != null)
+        {
+            shootButton2.OnPressed += () => {
+                if (MobileInputManager.Instance != null)
+                    MobileInputManager.Instance.SetShootPressed(true);
+            };
+            shootButton2.OnReleased += () => {
                 if (MobileInputManager.Instance != null)
                     MobileInputManager.Instance.SetShootPressed(false);
             };
@@ -181,6 +197,10 @@ public class MobileUIController : MonoBehaviour
         if (reloadButton != null)
             reloadButton.SetVisible(hasWeaponWithMagazine);
         
+        // Additional action buttons
+        if (shootButton2 != null)
+            shootButton2.SetVisible(hasWeapon);
+        
         // Drop button (bottom left) - visible when holding anything
         if (dropButton != null)
             dropButton.SetVisible(hasItemInHands);
@@ -277,6 +297,9 @@ public class MobileUIController : MonoBehaviour
         AddButtonExclusionArea(aimButton);
         AddButtonExclusionArea(reloadButton);
         AddButtonExclusionArea(dropButton);
+        
+        // Add additional action buttons
+        AddButtonExclusionArea(shootButton2);
     }
     
     private void AddButtonExclusionArea(MobileButton button)

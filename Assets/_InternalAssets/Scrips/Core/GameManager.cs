@@ -52,7 +52,7 @@ public class GameManager : MonoBehaviour
         // Find LoadingScreen if not assigned
         if (loadingScreen == null)
         {
-            loadingScreen = FindObjectOfType<LoadingScreen>();
+            loadingScreen = FindFirstObjectByType<LoadingScreen>();
             if (loadingScreen == null)
             {
                 Debug.LogWarning("GameManager: LoadingScreen not found. Game will initialize without loading screen.");
@@ -86,6 +86,7 @@ public class GameManager : MonoBehaviour
         // Initialize systems in order (all optional)
         yield return InitializeDeviceDetection();
         yield return InitializeLocalization();
+        yield return InitializeSettings();
         yield return InitializeMobileInput();
         yield return InitializeWeldingController();
         yield return InitializeAdManager();
@@ -167,6 +168,27 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("GameManager: LocalizationManager not found. Localization will not work.");
         }
+    }
+    
+    /// <summary>
+    /// Initialize SettingsManager.
+    /// SettingsManager handles game settings loading/saving and applying.
+    /// </summary>
+    private IEnumerator InitializeSettings()
+    {
+        Debug.Log("GameManager: Initializing Settings...");
+        
+        // SettingsManager is a singleton that initializes itself
+        // We just need to ensure it exists
+        if (SettingsManager.Instance == null)
+        {
+            GameObject settingsGO = new GameObject("SettingsManager");
+            settingsGO.AddComponent<SettingsManager>();
+            DontDestroyOnLoad(settingsGO);
+        }
+        
+        yield return null;
+        Debug.Log("GameManager: Settings initialized.");
     }
     
     /// <summary>

@@ -110,12 +110,19 @@ Canvas (Screen Space - Overlay)
 - Настроить MobileUIRoot как родительский объект
 - Иконки настраиваются прямо на каждой MobileButton
 
+**Доступные слоты для кнопок:**
+- **Action Buttons (Bottom Right):** ShootButton, AimButton, ReloadButton
+- **Additional Action Buttons:** ShootButton2 (дополнительная кнопка стрельбы)
+- **Utility Buttons (Bottom Left):** DropButton
+
 ### 3. Настройка кнопок
-- **Shoot button:** `supportHold = true` (для удержания стрельбы)
+- **Shoot button & Shoot button 2:** `supportHold = true` (для удержания стрельбы)
 - **Aim button:** `supportHold = true` (для click/hold прицеливания как на десктопе)
 - **Reload/Drop buttons:** `supportHold = false` (одиночные нажатия)
 - **Hit Area Multiplier:** рекомендуется 1.2-1.5 для удобства
 - **Icon Image:** назначить Sprite иконки прямо в MobileButton.iconImage
+
+**Примечание:** Обе кнопки стрельбы (ShootButton и ShootButton2) работают одинаково - можно разместить их на разных сторонах экрана для удобства.
 
 #### Настройка иконок на каждой кнопке:
 ```
@@ -258,16 +265,33 @@ options.Add(InteractionOption.Primary(
 - Симуляция касаний мышью в Unity Editor для тестирования
 
 **Настройки:**
-- `touchSensitivity` - чувствительность касаний для камеры
 - `invertY` - инвертировать вертикальную ось
 - `exclusionAreas` - области, где касания не управляют камерой (автоматически настраивается)
 - `cameraControlArea` - область для управления камерой (если null, весь экран)
+
+**Чувствительность:** Используется единая настройка `Mouse Sensitivity` из `FirstPersonController` для всех типов ввода (desktop мышь, mobile касания, симуляция мыши).
 
 ### Тестирование в Unity Editor
 **Управление камерой:**
 - В mobile режиме: мышка симулирует касания для поворота камеры
 - Работает только в областях, не занятых UI элементами
 - Безопасно: не вызывает стрельбу (защищено директивами компилятора)
+
+**Симуляция мыши для тестирования:**
+- В `FirstPersonController` есть галочка `Enable Mouse Camera Simulation`
+- При включении: ЛКМ зажатие + движение мыши = поворот камеры
+- **Полностью учитывает настройки** `MobileCameraController`:
+  - Области UI (не поворачивает камеру над кнопками)
+  - Exclusion Areas (исключенные области)
+  - Camera Control Area (область управления камерой)
+  - **Единая чувствительность** из `FirstPersonController.MouseSensitivity`
+- Работает только в mobile режиме (`useExternalMouseInput = true`)
+
+**Единая система чувствительности:**
+- Все типы ввода используют `FirstPersonController.MouseSensitivity`
+- Автоматически работает с системой сглаживания при прицеливании
+- Автоматически работает с системой снижения чувствительности при высоком зуме
+- Одна настройка для desktop мыши, mobile касаний и симуляции мыши
 
 **Управление оружием:**
 - Кнопки мобильного UI работают при клике мышью

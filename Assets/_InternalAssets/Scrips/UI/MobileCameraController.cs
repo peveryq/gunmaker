@@ -9,7 +9,6 @@ using System.Collections.Generic;
 public class MobileCameraController : MonoBehaviour
 {
     [Header("Touch Settings")]
-    [SerializeField] private float touchSensitivity = 2f;
     [SerializeField] private bool invertY = false;
     
     [Header("UI Exclusion Areas")]
@@ -19,6 +18,10 @@ public class MobileCameraController : MonoBehaviour
     [Header("Camera Control Area")]
     [Tooltip("If set, only touches within this area will control camera. If null, entire screen is used.")]
     [SerializeField] private RectTransform cameraControlArea;
+    
+    [Header("Debug")]
+    [Tooltip("Enable debug logging for touch events")]
+    [SerializeField] private bool enableDebugLogging = false;
     
     private FirstPersonController fpsController;
     private Camera playerCamera;
@@ -135,29 +138,53 @@ public class MobileCameraController : MonoBehaviour
     
     private void HandleTouchBegan(int fingerId, Vector2 screenPos)
     {
+        // If camera control is already active, ignore all other touches
+        if (cameraControlTouchId != -1)
+        {
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Ignoring touch {fingerId} - camera control already active with touch {cameraControlTouchId}");
+            }
+            return;
+        }
+        
         // Check if touch is over UI element
         if (IsTouchOverUI(screenPos))
         {
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Touch {fingerId} over UI - ignoring");
+            }
             return;
         }
         
         // Check if touch is in exclusion area
         if (IsTouchInExclusionArea(screenPos))
         {
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Touch {fingerId} in exclusion area - ignoring");
+            }
             return;
         }
         
         // Check if touch is in camera control area (if specified)
         if (cameraControlArea != null && !IsTouchInArea(screenPos, cameraControlArea))
         {
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Touch {fingerId} outside camera control area - ignoring");
+            }
             return;
         }
         
-        // If no camera control touch is active, use this touch for camera
-        if (cameraControlTouchId == -1)
+        // Use this touch for camera control
+        cameraControlTouchId = fingerId;
+        activeTouches[fingerId] = screenPos;
+        
+        if (enableDebugLogging)
         {
-            cameraControlTouchId = fingerId;
-            activeTouches[fingerId] = screenPos;
+            Debug.Log($"MobileCameraController: Started camera control with touch {fingerId} at {screenPos}");
         }
     }
     
@@ -185,6 +212,11 @@ public class MobileCameraController : MonoBehaviour
         if (fingerId == cameraControlTouchId)
         {
             cameraControlTouchId = -1;
+            
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Ended camera control with touch {fingerId}");
+            }
         }
     }
     
@@ -225,9 +257,18 @@ public class MobileCameraController : MonoBehaviour
     {
         if (fpsController == null) return;
         
-        // Convert delta to rotation
-        float deltaX = deltaPosition.x * touchSensitivity * Time.deltaTime;
-        float deltaY = deltaPosition.y * touchSensitivity * Time.deltaTime;
+        // Get touch sensitivity from SettingsManager (device-specific)
+        float touchSensitivity = 2f; // Default fallback
+        if (SettingsManager.Instance != null)
+        {
+            touchSensitivity = SettingsManager.Instance.CurrentSettings.touchSensitivity;
+        }
+        
+        // Convert delta to rotation using touch sensitivity
+        // Don't use Time.deltaTime for touch input - deltaPosition is already frame-based
+        float sensitivity = touchSensitivity * 0.01f; // Scale factor for touch input
+        float deltaX = deltaPosition.x * sensitivity;
+        float deltaY = deltaPosition.y * sensitivity;
         
         if (invertY)
         {
@@ -235,7 +276,6 @@ public class MobileCameraController : MonoBehaviour
         }
         
         // Apply rotation through FPS controller's mouse look system
-        // We'll need to modify FirstPersonController to accept external input
         ApplyExternalMouseInput(deltaX, -deltaY); // Negative Y for proper camera control
     }
     
@@ -318,12 +358,22 @@ public class MobileCameraController : MonoBehaviour
     }
     
     /// <summary>
-    /// Get current touch sensitivity
+    /// Get current touch sensitivity from SettingsManager
     /// </summary>
     public float TouchSensitivity
     {
-        get { return touchSensitivity; }
-        set { touchSensitivity = value; }
+        get 
+        { 
+            return SettingsManager.Instance != null ? 
+                   SettingsManager.Instance.CurrentSettings.touchSensitivity : 2f; 
+        }
+        set 
+        { 
+            if (SettingsManager.Instance != null) 
+            {
+                SettingsManager.Instance.CurrentSettings.touchSensitivity = value;
+            }
+        }
     }
     
     /// <summary>
@@ -332,6 +382,48 @@ public class MobileCameraController : MonoBehaviour
     public bool IsEnabled
     {
         get { return isEnabled; }
+    }
+    
+    /// <summary>
+    /// Get the camera control area (if set)
+    /// </summary>
+    public RectTransform CameraControlArea
+    {
+        get { return cameraControlArea; }
+    }
+    
+    /// <summary>
+    /// Get the exclusion areas array
+    /// </summary>
+    public RectTransform[] ExclusionAreas
+    {
+        get { return exclusionAreas; }
+    }
+    
+    /// <summary>
+    /// Check if a screen position is in a valid camera control area
+    /// </summary>
+    public bool IsValidCameraArea(Vector2 screenPos)
+    {
+        // Check if touch is over UI element
+        if (IsTouchOverUI(screenPos))
+        {
+            return false;
+        }
+        
+        // Check if touch is in exclusion area
+        if (IsTouchInExclusionArea(screenPos))
+        {
+            return false;
+        }
+        
+        // Check if touch is in camera control area (if specified)
+        if (cameraControlArea != null && !IsTouchInArea(screenPos, cameraControlArea))
+        {
+            return false;
+        }
+        
+        return true;
     }
     
     #if UNITY_EDITOR
@@ -351,7 +443,8 @@ public class MobileCameraController : MonoBehaviour
         {
             // Mouse button held - simulate touch moved
             Vector2 currentMousePos = Input.mousePosition;
-            Vector2 deltaPosition = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * 100f; // Scale for visibility
+            // Use raw mouse delta (similar to touch deltaPosition)
+            Vector2 deltaPosition = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * Screen.width * 0.01f;
             HandleTouchMoved(MOUSE_FINGER_ID, currentMousePos, deltaPosition);
         }
         else if (Input.GetMouseButtonUp(0))

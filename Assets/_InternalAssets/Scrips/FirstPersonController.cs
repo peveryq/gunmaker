@@ -3,6 +3,7 @@ using DG.Tweening;
 
 public class FirstPersonController : MonoBehaviour
 {
+    public static FirstPersonController Instance { get; private set; }
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 5f;
     [SerializeField] private float runSpeed = 8f;
@@ -59,6 +60,10 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float groundDistance = 0.4f;
     [SerializeField] private LayerMask groundMask;
     
+    [Header("Debug/Testing")]
+    [Tooltip("Enable mouse simulation for mobile camera testing in editor (simulates touch behavior)")]
+    [SerializeField] private bool enableMouseCameraSimulation = false;
+    
     private CharacterController characterController;
     private Vector3 velocity;
     private bool isGrounded;
@@ -85,11 +90,28 @@ public class FirstPersonController : MonoBehaviour
     private Vector2 externalMouseInput = Vector2.zero;
     private bool useExternalMouseInput = false;
     
+    // Mouse simulation for mobile camera testing
+    private bool isMouseCameraActive = false;
+    private MobileCameraController mobileCameraController;
+    
     // FOV Kick (camera FOV expansion on shot)
     private float baseFOV; // Base FOV (stored at start, before any modifications)
     private float fovKickOffset = 0f; // Current FOV kick offset (added to base FOV)
     private float previousFOVKickOffset = 0f; // Previous frame's offset (to track changes)
     private Tween fovKickReturnTween;
+    
+    private void Awake()
+    {
+        // Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogWarning("Multiple FirstPersonController instances found!");
+        }
+    }
     
     private void Start()
     {
@@ -148,6 +170,9 @@ public class FirstPersonController : MonoBehaviour
         {
             groundMask = 1; // Default layer
         }
+        
+        // Find mobile camera controller for testing
+        mobileCameraController = GetComponent<MobileCameraController>();
     }
     
     private void Update()
@@ -156,6 +181,12 @@ public class FirstPersonController : MonoBehaviour
         
         // Check if grounded (always, even when cursor is unlocked)
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        
+        // Handle mouse simulation for mobile camera testing
+        if (enableMouseCameraSimulation)
+        {
+            HandleMouseCameraSimulation();
+        }
         
         // Always handle mouse look (for mobile camera testing)
         HandleMouseLook();
@@ -219,8 +250,74 @@ public class FirstPersonController : MonoBehaviour
         cursorLocked = false;
     }
     
+    private void HandleMouseCameraSimulation()
+    {
+        // Only simulate if we have a mobile camera controller and are in mobile mode
+        if (mobileCameraController == null || !useExternalMouseInput) return;
+        
+        // Check mouse button state
+        if (Input.GetMouseButtonDown(0))
+        {
+            // Check if mouse is in valid area (not over UI, not in exclusion zones)
+            Vector2 mousePos = Input.mousePosition;
+            
+            // Use mobile camera controller's validation logic
+            if (!IsMouseInValidCameraArea(mousePos))
+            {
+                return;
+            }
+            
+            isMouseCameraActive = true;
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            isMouseCameraActive = false;
+        }
+        
+        // Only send mouse input if mouse is active and being dragged
+        if (isMouseCameraActive && Input.GetMouseButton(0))
+        {
+            // Get current sensitivity from SettingsManager (device-specific)
+            float currentSensitivity = mouseSensitivity; // Fallback
+            if (SettingsManager.Instance != null)
+            {
+                currentSensitivity = SettingsManager.Instance.CurrentSettings.GetCurrentSensitivity();
+            }
+            
+            float mouseX = Input.GetAxis("Mouse X") * currentSensitivity;
+            float mouseY = Input.GetAxis("Mouse Y") * currentSensitivity;
+            
+            // Send to FirstPersonController as external input
+            SetExternalMouseInput(mouseX, mouseY);
+        }
+    }
+    
+    private bool IsMouseInValidCameraArea(Vector2 screenPos)
+    {
+        // Use MobileCameraController's validation logic if available
+        if (mobileCameraController != null)
+        {
+            return mobileCameraController.IsValidCameraArea(screenPos);
+        }
+        
+        // Fallback: check if mouse is over UI
+        UnityEngine.EventSystems.PointerEventData eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current);
+        eventData.position = screenPos;
+        
+        var results = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+        UnityEngine.EventSystems.EventSystem.current.RaycastAll(eventData, results);
+        
+        return results.Count == 0; // Valid if not over UI
+    }
+    
     private void HandleMouseLook()
     {
+        // Skip mouse look if disabled (e.g., when settings menu is open)
+        if (!MouseLookEnabled)
+        {
+            return;
+        }
+        
         // Get base mouse input - check if we should use external input (mobile) or regular input
         float mouseX, mouseY;
         
@@ -242,8 +339,15 @@ public class FirstPersonController : MonoBehaviour
         // Get current FOV once (used for both sensitivity reduction and smoothing)
         float currentFOV = playerCamera != null ? playerCamera.fieldOfView : baseFOV;
         
+        // Get current sensitivity from SettingsManager (device-specific)
+        float currentSensitivity = mouseSensitivity; // Fallback
+        if (SettingsManager.Instance != null)
+        {
+            currentSensitivity = SettingsManager.Instance.CurrentSettings.GetCurrentSensitivity();
+        }
+        
         // Calculate effective sensitivity (may be reduced at high zoom)
-        float effectiveSensitivity = mouseSensitivity;
+        float effectiveSensitivity = currentSensitivity;
         
         // Apply sensitivity reduction if enabled and FOV is below threshold
         if (enableAimSensitivityReduction && playerCamera != null && currentFOV < aimSmoothingFOVThreshold)
@@ -255,7 +359,7 @@ public class FirstPersonController : MonoBehaviour
             
             // Interpolate sensitivity multiplier (lower FOV = lower multiplier)
             float sensitivityMultiplier = Mathf.Lerp(aimSensitivityMultiplierAtThreshold, aimSensitivityMultiplierAtMin, fovNormalized);
-            effectiveSensitivity = mouseSensitivity * sensitivityMultiplier;
+            effectiveSensitivity = currentSensitivity * sensitivityMultiplier;
         }
         
         // Apply sensitivity to mouse input
@@ -531,6 +635,20 @@ public class FirstPersonController : MonoBehaviour
     {
         get { return useExternalMouseInput; }
     }
+    
+    /// <summary>
+    /// Get current mouse sensitivity (unified for all input types)
+    /// </summary>
+    public float MouseSensitivity
+    {
+        get { return mouseSensitivity; }
+        set { mouseSensitivity = value; }
+    }
+    
+    /// <summary>
+    /// Enable/disable mouse look (for UI interactions like settings menu)
+    /// </summary>
+    public bool MouseLookEnabled { get; set; } = true;
     
     private void OnDestroy()
     {
