@@ -118,20 +118,26 @@ public class MobileCameraController : MonoBehaviour
     private void ProcessTouch(Touch touch)
     {
         Vector2 screenPos = touch.position;
+        int fingerId = touch.fingerId;
         
         switch (touch.phase)
         {
             case TouchPhase.Began:
-                HandleTouchBegan(touch.fingerId, screenPos);
+                HandleTouchBegan(fingerId, screenPos);
                 break;
                 
             case TouchPhase.Moved:
-                HandleTouchMoved(touch.fingerId, screenPos, touch.deltaPosition);
+                // CRITICAL: Only process movement for the active camera control touch
+                if (fingerId == cameraControlTouchId)
+                {
+                    HandleTouchMoved(fingerId, screenPos, touch.deltaPosition);
+                }
+                // Completely ignore movement from other fingers
                 break;
                 
             case TouchPhase.Ended:
             case TouchPhase.Canceled:
-                HandleTouchEnded(touch.fingerId);
+                HandleTouchEnded(fingerId);
                 break;
         }
     }
@@ -190,14 +196,23 @@ public class MobileCameraController : MonoBehaviour
     
     private void HandleTouchMoved(int fingerId, Vector2 screenPos, Vector2 deltaPosition)
     {
-        // Only process camera movement for the designated camera control touch
-        if (fingerId != cameraControlTouchId)
+        // DOUBLE CHECK: Only process camera movement for the designated camera control touch
+        if (fingerId != cameraControlTouchId || cameraControlTouchId == -1)
         {
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Ignoring touch movement {fingerId} (active: {cameraControlTouchId})");
+            }
             return;
         }
         
         // Update touch position
         activeTouches[fingerId] = screenPos;
+        
+        if (enableDebugLogging)
+        {
+            Debug.Log($"MobileCameraController: Processing camera movement from touch {fingerId}, delta: {deltaPosition}");
+        }
         
         // Apply camera rotation
         ApplyCameraRotation(deltaPosition);
@@ -248,14 +263,34 @@ public class MobileCameraController : MonoBehaviour
             if (touchId == cameraControlTouchId)
             {
                 cameraControlTouchId = -1;
+                if (enableDebugLogging)
+                {
+                    Debug.Log($"MobileCameraController: Cleanup - cleared camera control touch {touchId}");
+                }
             }
             activeTouches.Remove(touchId);
+        }
+        
+        // Additional safety check: if camera control touch is set but not in active touches, clear it
+        if (cameraControlTouchId != -1 && !activeTouches.ContainsKey(cameraControlTouchId))
+        {
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Safety cleanup - clearing orphaned camera control touch {cameraControlTouchId}");
+            }
+            cameraControlTouchId = -1;
         }
     }
     
     private void ApplyCameraRotation(Vector2 deltaPosition)
     {
         if (fpsController == null) return;
+        
+        // Ignore very small movements (noise)
+        if (deltaPosition.magnitude < 0.1f)
+        {
+            return;
+        }
         
         // Get touch sensitivity from SettingsManager (device-specific)
         float touchSensitivity = 2f; // Default fallback
@@ -273,6 +308,11 @@ public class MobileCameraController : MonoBehaviour
         if (invertY)
         {
             deltaY = -deltaY;
+        }
+        
+        if (enableDebugLogging)
+        {
+            Debug.Log($"MobileCameraController: Applying rotation deltaX: {deltaX}, deltaY: {deltaY} (from touch delta: {deltaPosition})");
         }
         
         // Apply rotation through FPS controller's mouse look system
