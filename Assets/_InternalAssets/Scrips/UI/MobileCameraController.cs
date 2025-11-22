@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
+using YG;
 
 /// <summary>
 /// Handles mobile camera control with touch input filtering.
@@ -95,6 +96,12 @@ public class MobileCameraController : MonoBehaviour
             {
                 Debug.Log($"MobileCameraController: Disabled - not processing {Input.touchCount} touches");
             }
+            return;
+        }
+        
+        // Don't process input if game is paused by YG2
+        if (YG2.isPauseGame)
+        {
             return;
         }
         

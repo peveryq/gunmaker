@@ -83,6 +83,12 @@ public class LoadingScreen : MonoBehaviour
         isLoading = true;
         loadStartTime = Time.realtimeSinceStartup;
         
+        // Block ad timer during loading
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.BlockAdTimer();
+        }
+        
         // Show loading screen root immediately
         if (root != null)
         {
@@ -226,6 +232,24 @@ public class LoadingScreen : MonoBehaviour
                 {
                     root.SetActive(false);
                 }
+                
+                // Unblock ad timer after loading screen is fully hidden
+                // Only unblock if we're in workshop (ads should only show in workshop)
+                // This ensures ads don't show during transitions and only resume when fully back in workshop
+                if (AdManager.Instance != null)
+                {
+                    // Check location before unblocking
+                    if (LocationManager.Instance != null && 
+                        LocationManager.Instance.CurrentLocation == LocationManager.LocationType.Workshop)
+                    {
+                        // We're back in workshop, safe to unblock ad timer
+                        // This will allow the ad timer check to resume
+                        AdManager.Instance.UnblockAdTimer();
+                    }
+                    // If not in workshop, keep blocked (ads won't show anyway, but keep blocked for safety)
+                    // AdManager will handle unblocking when location changes to workshop via OnLocationChanged
+                }
+                
                 onComplete?.Invoke();
             });
     }
@@ -258,6 +282,17 @@ public class LoadingScreen : MonoBehaviour
         {
             fadeTween.Kill();
             fadeTween = null;
+        }
+        
+        // Unblock ad timer after loading screen is stopped
+        // Only unblock if we're in workshop
+        if (AdManager.Instance != null)
+        {
+            if (LocationManager.Instance != null && 
+                LocationManager.Instance.CurrentLocation == LocationManager.LocationType.Workshop)
+            {
+                AdManager.Instance.UnblockAdTimer();
+            }
         }
     }
     

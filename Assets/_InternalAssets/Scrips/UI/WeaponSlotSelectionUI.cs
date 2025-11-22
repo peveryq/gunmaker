@@ -89,6 +89,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
 
     public void Show(Action<int, string> slotConfirmedCallback, Action<WeaponRecord, int> sellRequestedCallback, Action cancelledCallback)
     {
+        // Block ad timer while slot selection UI is open
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.BlockAdTimer();
+        }
+        
         onSlotConfirmed = slotConfirmedCallback;
         onSellRequested = sellRequestedCallback;
         onCancelled = cancelledCallback;
@@ -116,6 +122,12 @@ public class WeaponSlotSelectionUI : MonoBehaviour
     public void Hide()
     {
         if (!isActive) return;
+
+        // Unblock ad timer when slot selection UI closes
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.UnblockAdTimer();
+        }
 
         isActive = false;
         showingNameModal = false;

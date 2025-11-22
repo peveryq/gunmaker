@@ -157,6 +157,12 @@ public class ShopUI : MonoBehaviour
             }
         }
         
+        // Block ad timer while shop is open
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.BlockAdTimer();
+        }
+        
         // Show shop panel
         if (shopPanel != null)
             shopPanel.SetActive(true);
@@ -189,6 +195,12 @@ public class ShopUI : MonoBehaviour
     /// </summary>
     public void CloseShop()
     {
+        // Unblock ad timer when shop closes
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.UnblockAdTimer();
+        }
+        
         // Hide shop panel
         if (shopPanel != null)
             shopPanel.SetActive(false);

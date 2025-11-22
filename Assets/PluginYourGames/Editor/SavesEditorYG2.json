@@ -7,8 +7,8 @@
         false,
         false
     ],
-    "idSave": 975,
-    "playerMoney": 4483,
+    "idSave": 6,
+    "playerMoney": 40000,
     "savedWeapons": [
         {
             "weaponName": "",
@@ -553,5 +553,5 @@
             }
         }
     },
-    "gameSettings": "{\"mouseSensitivity\":2.5382208824157717,\"touchSensitivity\":2.979687213897705,\"masterVolume\":1.0,\"sfxVolume\":1.0,\"musicVolume\":1.0}"
+    "gameSettings": "{\"mouseSensitivity\":2.0,\"touchSensitivity\":2.0,\"masterVolume\":1.0,\"sfxVolume\":1.0,\"musicVolume\":1.0}"
 }

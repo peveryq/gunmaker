@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using YG;
 
 public class InteractionHandler : MonoBehaviour
 {
@@ -57,6 +58,12 @@ public class InteractionHandler : MonoBehaviour
     
     private void Update()
     {
+        // Don't process input if game is paused by YG2
+        if (YG2.isPauseGame)
+        {
+            return;
+        }
+        
         DetectInteractable();
         ProcessInteractionInputs();
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using YG;
 
 public class WeaponController : MonoBehaviour
 {
@@ -81,6 +82,12 @@ public class WeaponController : MonoBehaviour
     private void Update()
     {
         if (!isEquipped) return;
+        
+        // Don't process input if game is paused by YG2
+        if (YG2.isPauseGame)
+        {
+            return;
+        }
         
         // Check if cursor is locked (for FPS control)
         bool cursorLocked = Cursor.lockState == CursorLockMode.Locked;

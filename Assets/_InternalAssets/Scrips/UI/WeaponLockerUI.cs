@@ -185,6 +185,12 @@ public class WeaponLockerUI : MonoBehaviour
 
     public void Show(Action closeCallback, Action<WeaponRecord> takeCallback, Action<WeaponRecord> sellCallback)
     {
+        // Block ad timer while locker UI is open
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.BlockAdTimer();
+        }
+        
         onCloseRequested = closeCallback;
         onTakeRequested = takeCallback;
         onSellRequested = sellCallback;
@@ -208,6 +214,9 @@ public class WeaponLockerUI : MonoBehaviour
 
     public void Hide(bool releaseControl = true, bool clearPreview = true)
     {
+        // Unblock ad timer when locker UI closes
+        bool wasVisible = isVisible;
+        
         if (!isVisible && (!releaseControl || !controlCaptured))
         {
             if (releaseControl && controlCaptured)
@@ -239,6 +248,12 @@ public class WeaponLockerUI : MonoBehaviour
         if (releaseControl && controlCaptured)
         {
             ReleasePlayerControl();
+        }
+        
+        // Unblock ad timer only if UI was actually visible
+        if (wasVisible && AdManager.Instance != null)
+        {
+            AdManager.Instance.UnblockAdTimer();
         }
     }
 

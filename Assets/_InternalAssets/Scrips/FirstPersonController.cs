@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using YG;
 
 public class FirstPersonController : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float gravity = 20f;
     
     [Header("Mouse Look Settings")]
+    [Tooltip("If enabled, uses custom mouse input handling with mobile support and FOV-based features. If disabled, uses standard Unity mouse input.")]
+    [SerializeField] private bool useCustomMouseInput = true;
     [SerializeField] private float mouseSensitivity = 2f;
     [SerializeField] private float minLookAngle = -90f;
     [SerializeField] private float maxLookAngle = 90f;
@@ -177,13 +180,23 @@ public class FirstPersonController : MonoBehaviour
     
     private void Update()
     {
-        HandleCursorToggle();
+        // Don't process input if game is paused by YG2
+        if (YG2.isPauseGame)
+        {
+            return;
+        }
+        
+        // Only handle cursor toggle if custom mouse input is enabled
+        if (useCustomMouseInput)
+        {
+            HandleCursorToggle();
+        }
         
         // Check if grounded (always, even when cursor is unlocked)
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
         
-        // Handle mouse simulation for mobile camera testing
-        if (enableMouseCameraSimulation)
+        // Handle mouse simulation for mobile camera testing (only if custom input enabled)
+        if (useCustomMouseInput && enableMouseCameraSimulation)
         {
             HandleMouseCameraSimulation();
         }
@@ -318,6 +331,30 @@ public class FirstPersonController : MonoBehaviour
             return;
         }
         
+        // If custom mouse input is disabled, use standard Unity behavior
+        if (!useCustomMouseInput)
+        {
+            // Standard Unity mouse input - simple and direct
+            float standardMouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+            float standardMouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+            
+            // Update rotations directly
+            yRotation += standardMouseX;
+            xRotation -= standardMouseY;
+            xRotation = Mathf.Clamp(xRotation, minLookAngle, maxLookAngle);
+            
+            // Apply rotations immediately
+            transform.rotation = Quaternion.Euler(0, yRotation, 0);
+            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
+            
+            // Also update target rotations for consistency
+            targetYRotation = yRotation;
+            targetXRotation = xRotation;
+            
+            return;
+        }
+        
+        // Custom mouse input handling (with mobile support, FOV-based features, etc.)
         // Get base mouse input - check if we should use external input (mobile) or regular input
         float mouseX, mouseY;
         

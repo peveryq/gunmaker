@@ -175,6 +175,12 @@ public class SettingsUI : MonoBehaviour
     
     public void OpenSettings()
     {
+        // Block ad timer while settings UI is open
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.BlockAdTimer();
+        }
+        
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(true);
@@ -209,6 +215,12 @@ public class SettingsUI : MonoBehaviour
     
     public void CloseSettings()
     {
+        // Unblock ad timer when settings UI closes
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.UnblockAdTimer();
+        }
+        
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(false);

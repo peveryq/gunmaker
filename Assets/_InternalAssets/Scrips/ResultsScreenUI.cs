@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using YG;
 
 /// <summary>
 /// Results screen UI showing earnings and options to continue or get x2 reward.
@@ -235,25 +236,89 @@ public class ResultsScreenUI : MonoBehaviour
     {
         PlayButtonSound();
         
-        // Close results screen
+        // Close results screen first
         CloseResults();
         
-        // Return to workshop
-        ReturnToWorkshop();
+        // Show interstitial ad before returning to workshop (if frequency allows)
+        if (AdManager.Instance != null)
+        {
+            // Always try to show ad - AdManager will handle frequency internally
+            // This ensures counter is incremented even if ad is skipped
+            AdManager.Instance.ShowInterstitialAdImmediate();
+            
+            // Check if ad is actually showing
+            if (YG2.nowAdsShow)
+            {
+                // Ad is showing, wait for it to close
+                StartCoroutine(ReturnToWorkshopAfterAd());
+            }
+            else
+            {
+                // Ad was skipped (frequency), return immediately
+                ReturnToWorkshop();
+            }
+        }
+        else
+        {
+            // No AdManager - return immediately
+            ReturnToWorkshop();
+        }
     }
     
     private void OnGetX2Clicked()
     {
         PlayButtonSound();
         
-        // Add earnings again (future: show ad, then reward)
-        if (MoneySystem.Instance != null && currentEarnings > 0)
+        // Show rewarded ad - only give reward if ad is successfully watched
+        if (AdManager.Instance != null)
         {
-            MoneySystem.Instance.AddMoney(currentEarnings);
+            // Don't close results screen yet - wait for ad to complete
+            AdManager.Instance.ShowRewardedAd("DoubleEarnings", () => {
+                // Callback only called if ad was successfully watched
+                if (MoneySystem.Instance != null && currentEarnings > 0)
+                {
+                    MoneySystem.Instance.AddMoney(currentEarnings);
+                }
+                
+                // Close results screen after reward
+                CloseResults();
+                
+                // Return to workshop
+                ReturnToWorkshop();
+            });
+        }
+        else
+        {
+            // No AdManager - give reward immediately (fallback for testing)
+            if (MoneySystem.Instance != null && currentEarnings > 0)
+            {
+                MoneySystem.Instance.AddMoney(currentEarnings);
+            }
+            
+            CloseResults();
+            ReturnToWorkshop();
+        }
+    }
+    
+    /// <summary>
+    /// Return to workshop after interstitial ad closes
+    /// </summary>
+    private IEnumerator ReturnToWorkshopAfterAd()
+    {
+        // Wait for ad to close
+        while (YG2.nowAdsShow)
+        {
+            yield return null;
         }
         
-        // Close results screen
-        CloseResults();
+        // Wait for pause to be released (YG2 may need a frame to resume)
+        while (YG2.isPauseGame)
+        {
+            yield return null;
+        }
+        
+        // Small delay to ensure everything is ready
+        yield return new WaitForSeconds(0.1f);
         
         // Return to workshop
         ReturnToWorkshop();
@@ -389,6 +454,12 @@ public class ResultsScreenUI : MonoBehaviour
     
     private void ReturnToWorkshop()
     {
+        // Ensure game is not paused before returning (in case ad didn't properly resume)
+        if (YG2.isPauseGame)
+        {
+            YG2.PauseGame(false);
+        }
+        
         // Trigger auto-save before returning to workshop (at results screen moment)
         if (SaveSystemManager.Instance != null)
         {

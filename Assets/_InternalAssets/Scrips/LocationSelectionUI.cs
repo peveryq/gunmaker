@@ -121,6 +121,12 @@ public class LocationSelectionUI : MonoBehaviour
     /// </summary>
     public void OpenLocationSelection()
     {
+        // Block ad timer while location selection UI is open
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.BlockAdTimer();
+        }
+        
         // Show root first
         if (root != null)
         {
@@ -160,6 +166,14 @@ public class LocationSelectionUI : MonoBehaviour
     /// </summary>
     public void CloseLocationSelection()
     {
+        // Unblock ad timer when closing location selection UI
+        // If we're transitioning to TestingRange, LoadingScreen will block it again
+        // If we're just closing without transition, we unblock here
+        if (AdManager.Instance != null)
+        {
+            AdManager.Instance.UnblockAdTimer();
+        }
+        
         // Hide panel
         if (locationPanel != null)
         {

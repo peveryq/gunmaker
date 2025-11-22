@@ -21,14 +21,14 @@ MonoBehaviour:
     payingStatus: 0
   InterstitialAdv:
     showFirstAdv: 0
-    interAdvInterval: 60
-    postponeCallByFail: 1
+    interAdvInterval: 90
+    postponeCallByFail: 0
     postponeCallTimer: 10
     labelAdvSimLabel: 0
   Localization:
     setLanguageMod: 1
   RewardedAdv:
-    skipInterAdvAfterReward: 1
+    skipInterAdvAfterReward: 0
     labelAdvSimLabel: 0
   Storage:
     saveLocal: 0
@@ -46,12 +46,12 @@ MonoBehaviour:
     loadSceneIfSDKLate: 0
     loadSceneIndex: 0
     initDelaySimulation: 0
-    buildNumber: 29
+    buildNumber: 33
   Simulation:
-    device: 1
+    device: 0
     language: ru
-    advIntervalSimulation: 60
-    durationAdv: 0.5
+    advIntervalSimulation: 90
+    durationAdv: 5
     loadAdv: 0
     testFailAds: 0
   Templates:
@@ -65,7 +65,7 @@ MonoBehaviour:
     customProgressBar: 1
     progressBarSettigs:
       round: 1
-      roundAngle: 10
+      roundAngle: 5
       width: 30
       height: 24
       color1: {r: 0.25, g: 0.6392, b: 1, a: 1}
