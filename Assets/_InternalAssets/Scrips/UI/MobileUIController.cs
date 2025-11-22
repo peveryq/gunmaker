@@ -189,21 +189,36 @@ public class MobileUIController : MonoBehaviour
         
         // Weapon-related buttons (bottom right)
         if (shootButton != null)
+        {
             shootButton.SetVisible(hasWeapon);
+            shootButton.SetEnabled(hasWeapon); // Also disable to prevent camera blocking
+        }
         
         if (aimButton != null)
+        {
             aimButton.SetVisible(hasWeapon);
+            aimButton.SetEnabled(hasWeapon); // Also disable to prevent camera blocking
+        }
         
         if (reloadButton != null)
+        {
             reloadButton.SetVisible(hasWeaponWithMagazine);
+            reloadButton.SetEnabled(hasWeaponWithMagazine); // Also disable to prevent camera blocking
+        }
         
         // Additional action buttons
         if (shootButton2 != null)
+        {
             shootButton2.SetVisible(hasWeapon);
+            shootButton2.SetEnabled(hasWeapon); // Also disable to prevent camera blocking
+        }
         
         // Drop button (bottom left) - visible when holding anything
         if (dropButton != null)
+        {
             dropButton.SetVisible(hasItemInHands);
+            dropButton.SetEnabled(hasItemInHands); // Also disable to prevent camera blocking
+        }
         
         // Movement joystick is always visible when mobile UI is active
         if (movementJoystick != null)

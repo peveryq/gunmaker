@@ -353,6 +353,13 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
             interactionHandler.ClearCurrentItem();
         }
         
+        // Notify mobile UI that item was dropped/placed
+        MobileUIController mobileUI = FindFirstObjectByType<MobileUIController>();
+        if (mobileUI != null)
+        {
+            mobileUI.OnItemDropped();
+        }
+        
         // Unequip weapon from player
         WeaponController weaponController = weaponBody.GetComponent<WeaponController>();
         if (weaponController != null)
@@ -506,6 +513,13 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         if (interactionHandler != null)
         {
             interactionHandler.ClearCurrentItem();
+        }
+        
+        // Notify mobile UI that item was dropped/placed
+        MobileUIController mobileUI = FindFirstObjectByType<MobileUIController>();
+        if (mobileUI != null)
+        {
+            mobileUI.OnItemDropped();
         }
         
         // Install part on weapon

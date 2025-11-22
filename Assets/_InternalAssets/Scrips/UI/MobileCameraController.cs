@@ -175,7 +175,7 @@ public class MobileCameraController : MonoBehaviour
         {
             if (enableDebugLogging)
             {
-                Debug.Log($"MobileCameraController: Ignoring touch {fingerId} - camera control already active with touch {cameraControlTouchId}");
+                Debug.Log($"MobileCameraController: ❌ BLOCKED - Ignoring touch {fingerId} - camera control already active with touch {cameraControlTouchId}");
             }
             return;
         }
@@ -185,7 +185,7 @@ public class MobileCameraController : MonoBehaviour
         {
             if (enableDebugLogging)
             {
-                Debug.Log($"MobileCameraController: Touch {fingerId} over UI - ignoring");
+                Debug.Log($"MobileCameraController: ❌ BLOCKED - Touch {fingerId} over ACTIVE UI - ignoring");
             }
             return;
         }
@@ -195,7 +195,7 @@ public class MobileCameraController : MonoBehaviour
         {
             if (enableDebugLogging)
             {
-                Debug.Log($"MobileCameraController: Touch {fingerId} in exclusion area - ignoring");
+                Debug.Log($"MobileCameraController: ❌ BLOCKED - Touch {fingerId} in exclusion area - ignoring");
             }
             return;
         }
@@ -205,7 +205,7 @@ public class MobileCameraController : MonoBehaviour
         {
             if (enableDebugLogging)
             {
-                Debug.Log($"MobileCameraController: Touch {fingerId} outside camera control area - ignoring");
+                Debug.Log($"MobileCameraController: ❌ BLOCKED - Touch {fingerId} outside camera control area - ignoring");
             }
             return;
         }
@@ -216,7 +216,7 @@ public class MobileCameraController : MonoBehaviour
         
         if (enableDebugLogging)
         {
-            Debug.Log($"MobileCameraController: ✅ Started camera control with touch {fingerId} at {screenPos}");
+            Debug.Log($"MobileCameraController: ✅ SUCCESS - Started camera control with touch {fingerId} at {screenPos}");
         }
     }
     
@@ -355,30 +355,37 @@ public class MobileCameraController : MonoBehaviour
         bool isOverActiveUI = false;
         int activeUICount = 0;
         
+        if (enableDebugLogging && results.Count > 0)
+        {
+            Debug.Log($"MobileCameraController: 🔍 UI RAYCAST at {screenPos} found {results.Count} elements:");
+        }
+        
         foreach (var result in results)
         {
             GameObject uiObject = result.gameObject;
             
             // Check if the UI element is actually active and interactable
-            if (IsUIElementActiveAndInteractable(uiObject))
+            bool shouldBlock = IsUIElementActiveAndInteractable(uiObject);
+            
+            if (shouldBlock)
             {
                 isOverActiveUI = true;
                 activeUICount++;
                 
                 if (enableDebugLogging)
                 {
-                    Debug.Log($"MobileCameraController: Touch blocked by ACTIVE UI element: {uiObject.name}");
+                    Debug.Log($"MobileCameraController: 🚫 BLOCKING UI: {uiObject.name} (active and interactable)");
                 }
             }
             else if (enableDebugLogging)
             {
-                Debug.Log($"MobileCameraController: Ignoring INACTIVE UI element: {uiObject.name}");
+                Debug.Log($"MobileCameraController: ✅ IGNORING UI: {uiObject.name} (inactive or non-interactable)");
             }
         }
         
         if (enableDebugLogging && results.Count > 0)
         {
-            Debug.Log($"MobileCameraController: Touch at {screenPos} - Total UI: {results.Count}, Active UI: {activeUICount}, Blocked: {isOverActiveUI}");
+            Debug.Log($"MobileCameraController: 📊 SUMMARY - Total UI: {results.Count}, Blocking UI: {activeUICount}, Final Result: {(isOverActiveUI ? "BLOCKED" : "ALLOWED")}");
         }
         
         return isOverActiveUI;
@@ -389,51 +396,87 @@ public class MobileCameraController : MonoBehaviour
     /// </summary>
     private bool IsUIElementActiveAndInteractable(GameObject uiObject)
     {
-        if (uiObject == null) return false;
+        if (uiObject == null) 
+        {
+            if (enableDebugLogging)
+                Debug.Log("IsUIElementActiveAndInteractable: uiObject is null");
+            return false;
+        }
         
         // Check if GameObject is active
-        if (!uiObject.activeInHierarchy) return false;
+        if (!uiObject.activeInHierarchy) 
+        {
+            if (enableDebugLogging)
+                Debug.Log($"  ↳ IsUIElementActiveAndInteractable: {uiObject.name} is NOT ACTIVE in hierarchy → ALLOW");
+            return false;
+        }
+        
+        if (enableDebugLogging)
+            Debug.Log($"  ↳ IsUIElementActiveAndInteractable: {uiObject.name} is ACTIVE, checking components...");
+        
+        // Special check for MobileButton component
+        MobileButton mobileButton = uiObject.GetComponent<MobileButton>();
+        if (mobileButton != null)
+        {
+            bool shouldBlock = mobileButton.IsEnabled;
+            if (enableDebugLogging)
+                Debug.Log($"    ↳ MobileButton {uiObject.name} - IsEnabled: {mobileButton.IsEnabled} → {(shouldBlock ? "BLOCK" : "ALLOW")}");
+            return shouldBlock;
+        }
         
         // Check if it has a Button component and if it's interactable
         UnityEngine.UI.Button button = uiObject.GetComponent<UnityEngine.UI.Button>();
         if (button != null)
         {
-            // Button must be interactable to block input
-            return button.interactable;
+            bool shouldBlock = button.interactable;
+            if (enableDebugLogging)
+                Debug.Log($"IsUIElementActiveAndInteractable: Button {uiObject.name} - interactable: {button.interactable}, shouldBlock: {shouldBlock}");
+            return shouldBlock;
         }
         
         // Check if it has other interactable components
         UnityEngine.UI.Selectable selectable = uiObject.GetComponent<UnityEngine.UI.Selectable>();
         if (selectable != null)
         {
-            // Selectable must be interactable to block input
-            return selectable.interactable;
+            bool shouldBlock = selectable.interactable;
+            if (enableDebugLogging)
+                Debug.Log($"IsUIElementActiveAndInteractable: Selectable {uiObject.name} - interactable: {selectable.interactable}, shouldBlock: {shouldBlock}");
+            return shouldBlock;
         }
         
         // Check if it has a CanvasGroup that might be blocking interaction
         CanvasGroup canvasGroup = uiObject.GetComponent<CanvasGroup>();
         if (canvasGroup != null)
         {
-            // CanvasGroup must allow interaction and be visible
-            return canvasGroup.interactable && canvasGroup.alpha > 0f;
+            bool shouldBlock = canvasGroup.interactable && canvasGroup.alpha > 0f;
+            if (enableDebugLogging)
+                Debug.Log($"IsUIElementActiveAndInteractable: CanvasGroup {uiObject.name} - interactable: {canvasGroup.interactable}, alpha: {canvasGroup.alpha}, shouldBlock: {shouldBlock}");
+            return shouldBlock;
         }
         
         // Check parent CanvasGroups (they can block interaction too)
         CanvasGroup parentCanvasGroup = uiObject.GetComponentInParent<CanvasGroup>();
         if (parentCanvasGroup != null)
         {
-            return parentCanvasGroup.interactable && parentCanvasGroup.alpha > 0f;
+            bool shouldBlock = parentCanvasGroup.interactable && parentCanvasGroup.alpha > 0f;
+            if (enableDebugLogging)
+                Debug.Log($"IsUIElementActiveAndInteractable: Parent CanvasGroup of {uiObject.name} - interactable: {parentCanvasGroup.interactable}, alpha: {parentCanvasGroup.alpha}, shouldBlock: {shouldBlock}");
+            return shouldBlock;
         }
         
         // For other UI elements (like Image, Text), check if they should block raycasts
         UnityEngine.UI.Graphic graphic = uiObject.GetComponent<UnityEngine.UI.Graphic>();
         if (graphic != null)
         {
-            // Only block if raycastTarget is enabled (this is the key!)
-            return graphic.raycastTarget;
+            bool shouldBlock = graphic.raycastTarget;
+            if (enableDebugLogging)
+                Debug.Log($"IsUIElementActiveAndInteractable: Graphic {uiObject.name} - raycastTarget: {graphic.raycastTarget}, shouldBlock: {shouldBlock}");
+            return shouldBlock;
         }
         
         // If we can't determine, assume it's active (safe default)
+        if (enableDebugLogging)
+            Debug.Log($"IsUIElementActiveAndInteractable: {uiObject.name} - unknown type, assuming active");
         return true;
     }
     
@@ -443,10 +486,102 @@ public class MobileCameraController : MonoBehaviour
         
         foreach (RectTransform exclusionArea in exclusionAreas)
         {
-            if (exclusionArea != null && IsTouchInArea(screenPos, exclusionArea))
+            if (exclusionArea == null) continue;
+            
+            // Check if touch is in this exclusion area
+            if (!IsTouchInArea(screenPos, exclusionArea))
             {
+                continue; // Not in this area, check next
+            }
+            
+            // KEY FIX: Check if the UI element is actually active/interactable
+            // If it's disabled or invisible, don't block camera control
+            GameObject uiObject = exclusionArea.gameObject;
+            
+            // Check if GameObject is active
+            if (!uiObject.activeInHierarchy)
+            {
+                // UI element is hidden, don't block
+                if (enableDebugLogging)
+                {
+                    Debug.Log($"IsTouchInExclusionArea: Exclusion area {uiObject.name} is NOT ACTIVE in hierarchy → ALLOW");
+                }
+                continue;
+            }
+            
+            // Check if it's a MobileButton and if it's enabled
+            MobileButton mobileButton = uiObject.GetComponent<MobileButton>();
+            if (mobileButton != null)
+            {
+                // Only block if button is enabled
+                if (!mobileButton.IsEnabled)
+                {
+                    // Button is disabled, don't block camera
+                    if (enableDebugLogging)
+                    {
+                        Debug.Log($"IsTouchInExclusionArea: MobileButton {uiObject.name} is DISABLED (IsEnabled=false) → ALLOW");
+                    }
+                    continue;
+                }
+                
+                // Button is enabled, block camera
+                if (enableDebugLogging)
+                {
+                    Debug.Log($"IsTouchInExclusionArea: MobileButton {uiObject.name} is ENABLED → BLOCK");
+                }
                 return true;
             }
+            
+            // Check other interactable components (Button, Selectable, etc.)
+            UnityEngine.UI.Button button = uiObject.GetComponent<UnityEngine.UI.Button>();
+            if (button != null)
+            {
+                if (!button.interactable)
+                {
+                    // Button is not interactable, don't block
+                    if (enableDebugLogging)
+                    {
+                        Debug.Log($"IsTouchInExclusionArea: Button {uiObject.name} is NOT INTERACTABLE → ALLOW");
+                    }
+                    continue;
+                }
+                
+                // Button is interactable, block camera
+                if (enableDebugLogging)
+                {
+                    Debug.Log($"IsTouchInExclusionArea: Button {uiObject.name} is INTERACTABLE → BLOCK");
+                }
+                return true;
+            }
+            
+            UnityEngine.UI.Selectable selectable = uiObject.GetComponent<UnityEngine.UI.Selectable>();
+            if (selectable != null)
+            {
+                if (!selectable.interactable)
+                {
+                    // Selectable is not interactable, don't block
+                    if (enableDebugLogging)
+                    {
+                        Debug.Log($"IsTouchInExclusionArea: Selectable {uiObject.name} is NOT INTERACTABLE → ALLOW");
+                    }
+                    continue;
+                }
+                
+                // Selectable is interactable, block camera
+                if (enableDebugLogging)
+                {
+                    Debug.Log($"IsTouchInExclusionArea: Selectable {uiObject.name} is INTERACTABLE → BLOCK");
+                }
+                return true;
+            }
+            
+            // If we get here, the UI element is active but has no interactable component
+            // This is likely a visual-only element (like joystick background), so we block
+            if (enableDebugLogging)
+            {
+                Debug.Log($"IsTouchInExclusionArea: Exclusion area {uiObject.name} is ACTIVE (no interactable component) → BLOCK");
+            }
+            return true;
         }
         
         return false;
