@@ -89,17 +89,44 @@ public class MobileCameraController : MonoBehaviour
     
     private void Update()
     {
-        if (!isEnabled || fpsController == null) return;
+        if (!isEnabled)
+        {
+            if (enableDebugLogging && Input.touchCount > 0)
+            {
+                Debug.Log($"MobileCameraController: Disabled - not processing {Input.touchCount} touches");
+            }
+            return;
+        }
+        
+        if (fpsController == null)
+        {
+            if (enableDebugLogging && Input.touchCount > 0)
+            {
+                Debug.Log("MobileCameraController: No FPS controller - not processing touches");
+            }
+            return;
+        }
         
         HandleTouchInput();
     }
     
     private void HandleTouchInput()
     {
+        if (enableDebugLogging && Input.touchCount > 0)
+        {
+            Debug.Log($"MobileCameraController: Processing {Input.touchCount} touches, cameraControlTouchId: {cameraControlTouchId}");
+        }
+        
         // Process real touches on mobile devices
         for (int i = 0; i < Input.touchCount; i++)
         {
             Touch touch = Input.GetTouch(i);
+            
+            if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Touch {i}: fingerId={touch.fingerId}, phase={touch.phase}, position={touch.position}");
+            }
+            
             ProcessTouch(touch);
         }
         
@@ -138,6 +165,11 @@ public class MobileCameraController : MonoBehaviour
     
     private void HandleTouchBegan(int fingerId, Vector2 screenPos)
     {
+        if (enableDebugLogging)
+        {
+            Debug.Log($"MobileCameraController: HandleTouchBegan - fingerId: {fingerId}, screenPos: {screenPos}, currentControlTouch: {cameraControlTouchId}");
+        }
+        
         // If camera control is already active, ignore all other touches
         if (cameraControlTouchId != -1)
         {
@@ -184,7 +216,7 @@ public class MobileCameraController : MonoBehaviour
         
         if (enableDebugLogging)
         {
-            Debug.Log($"MobileCameraController: Started camera control with touch {fingerId} at {screenPos}");
+            Debug.Log($"MobileCameraController: ✅ Started camera control with touch {fingerId} at {screenPos}");
         }
     }
     
@@ -290,14 +322,119 @@ public class MobileCameraController : MonoBehaviour
     
     private bool IsTouchOverUI(Vector2 screenPos)
     {
+        // Check if EventSystem exists and is valid
+        if (EventSystem.current == null)
+        {
+            if (enableDebugLogging)
+            {
+                Debug.LogWarning("MobileCameraController: EventSystem.current is null!");
+            }
+            return false; // If no EventSystem, assume not over UI
+        }
+        
         // Check if touch is over any UI element using EventSystem
         PointerEventData eventData = new PointerEventData(EventSystem.current);
         eventData.position = screenPos;
         
         List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, results);
         
-        return results.Count > 0;
+        try
+        {
+            EventSystem.current.RaycastAll(eventData, results);
+        }
+        catch (System.Exception e)
+        {
+            if (enableDebugLogging)
+            {
+                Debug.LogError($"MobileCameraController: EventSystem raycast failed: {e.Message}");
+            }
+            return false; // If raycast fails, assume not over UI
+        }
+        
+        // Filter results to only include ACTIVE and INTERACTABLE UI elements
+        bool isOverActiveUI = false;
+        int activeUICount = 0;
+        
+        foreach (var result in results)
+        {
+            GameObject uiObject = result.gameObject;
+            
+            // Check if the UI element is actually active and interactable
+            if (IsUIElementActiveAndInteractable(uiObject))
+            {
+                isOverActiveUI = true;
+                activeUICount++;
+                
+                if (enableDebugLogging)
+                {
+                    Debug.Log($"MobileCameraController: Touch blocked by ACTIVE UI element: {uiObject.name}");
+                }
+            }
+            else if (enableDebugLogging)
+            {
+                Debug.Log($"MobileCameraController: Ignoring INACTIVE UI element: {uiObject.name}");
+            }
+        }
+        
+        if (enableDebugLogging && results.Count > 0)
+        {
+            Debug.Log($"MobileCameraController: Touch at {screenPos} - Total UI: {results.Count}, Active UI: {activeUICount}, Blocked: {isOverActiveUI}");
+        }
+        
+        return isOverActiveUI;
+    }
+    
+    /// <summary>
+    /// Check if UI element is active and should block camera input
+    /// </summary>
+    private bool IsUIElementActiveAndInteractable(GameObject uiObject)
+    {
+        if (uiObject == null) return false;
+        
+        // Check if GameObject is active
+        if (!uiObject.activeInHierarchy) return false;
+        
+        // Check if it has a Button component and if it's interactable
+        UnityEngine.UI.Button button = uiObject.GetComponent<UnityEngine.UI.Button>();
+        if (button != null)
+        {
+            // Button must be interactable to block input
+            return button.interactable;
+        }
+        
+        // Check if it has other interactable components
+        UnityEngine.UI.Selectable selectable = uiObject.GetComponent<UnityEngine.UI.Selectable>();
+        if (selectable != null)
+        {
+            // Selectable must be interactable to block input
+            return selectable.interactable;
+        }
+        
+        // Check if it has a CanvasGroup that might be blocking interaction
+        CanvasGroup canvasGroup = uiObject.GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            // CanvasGroup must allow interaction and be visible
+            return canvasGroup.interactable && canvasGroup.alpha > 0f;
+        }
+        
+        // Check parent CanvasGroups (they can block interaction too)
+        CanvasGroup parentCanvasGroup = uiObject.GetComponentInParent<CanvasGroup>();
+        if (parentCanvasGroup != null)
+        {
+            return parentCanvasGroup.interactable && parentCanvasGroup.alpha > 0f;
+        }
+        
+        // For other UI elements (like Image, Text), check if they should block raycasts
+        UnityEngine.UI.Graphic graphic = uiObject.GetComponent<UnityEngine.UI.Graphic>();
+        if (graphic != null)
+        {
+            // Only block if raycastTarget is enabled (this is the key!)
+            return graphic.raycastTarget;
+        }
+        
+        // If we can't determine, assume it's active (safe default)
+        return true;
     }
     
     private bool IsTouchInExclusionArea(Vector2 screenPos)
@@ -424,6 +561,21 @@ public class MobileCameraController : MonoBehaviour
         }
         
         return true;
+    }
+    
+    /// <summary>
+    /// Get debug info about current touch state
+    /// </summary>
+    public string GetTouchDebugInfo()
+    {
+        return $"MobileCameraController Debug:\n" +
+               $"- Enabled: {isEnabled}\n" +
+               $"- Mobile Device: {isMobileDevice}\n" +
+               $"- FPS Controller: {(fpsController != null ? "OK" : "NULL")}\n" +
+               $"- Camera Control Touch ID: {cameraControlTouchId}\n" +
+               $"- Active Touches: {activeTouches.Count}\n" +
+               $"- Input Touch Count: {Input.touchCount}\n" +
+               $"- EventSystem: {(EventSystem.current != null ? "OK" : "NULL")}";
     }
     
     #if UNITY_EDITOR
