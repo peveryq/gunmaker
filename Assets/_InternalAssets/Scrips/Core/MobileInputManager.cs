@@ -12,6 +12,10 @@ public class MobileInputManager : MonoBehaviour
     [Header("Input Settings")]
     [SerializeField] private bool enableMobileInput = true;
     
+    [Header("Camera Sensitivity")]
+    [Tooltip("Multiplier for mobile/tablet camera sensitivity. Applied to touch sensitivity value from settings. Default: 2.0 (doubles sensitivity for mobile devices)")]
+    [SerializeField] private float mobileSensitivityMultiplier = 2.0f;
+    
     // Movement input (from virtual joystick)
     public Vector2 MovementInput { get; private set; }
     public bool IsMoving => MovementInput.magnitude > 0.1f;
@@ -178,4 +182,10 @@ public class MobileInputManager : MonoBehaviour
                DeviceDetectionManager.Instance != null && 
                DeviceDetectionManager.Instance.IsMobileOrTablet;
     }
+    
+    /// <summary>
+    /// Get mobile sensitivity multiplier for camera control
+    /// This multiplies the base sensitivity value from settings to make mobile feel better
+    /// </summary>
+    public float MobileSensitivityMultiplier => mobileSensitivityMultiplier;
 }

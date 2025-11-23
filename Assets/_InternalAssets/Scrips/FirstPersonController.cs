@@ -394,6 +394,14 @@ public class FirstPersonController : MonoBehaviour
             currentSensitivity = SettingsManager.Instance.CurrentSettings.GetCurrentSensitivity();
         }
         
+        // Apply mobile sensitivity multiplier if using external input (mobile/tablet)
+        // This makes mobile feel better while keeping the same settings scale (0.1-5)
+        if (useExternalMouseInput && MobileInputManager.Instance != null)
+        {
+            float mobileMultiplier = MobileInputManager.Instance.MobileSensitivityMultiplier;
+            currentSensitivity *= mobileMultiplier;
+        }
+        
         // Calculate effective sensitivity (may be reduced at high zoom)
         float effectiveSensitivity = currentSensitivity;
         

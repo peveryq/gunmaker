@@ -296,18 +296,13 @@ public class MobileCameraController : MonoBehaviour
     {
         if (fpsController == null) return;
         
-        // Get touch sensitivity from SettingsManager (device-specific)
-        float touchSensitivity = 2f; // Default fallback
-        if (SettingsManager.Instance != null)
-        {
-            touchSensitivity = SettingsManager.Instance.CurrentSettings.touchSensitivity;
-        }
-        
-        // Convert delta to rotation using touch sensitivity
-        // Don't use Time.deltaTime for touch input - deltaPosition is already frame-based
-        float sensitivity = touchSensitivity * 0.01f; // Scale factor for touch input
-        float deltaX = deltaPosition.x * sensitivity;
-        float deltaY = deltaPosition.y * sensitivity;
+        // Convert touch delta to rotation input
+        // Don't apply sensitivity here - it will be applied in FirstPersonController
+        // This ensures sensitivity is applied in one place and mobile multiplier works correctly
+        // Scale factor for touch input (converts pixels to rotation units)
+        float touchScale = 0.01f;
+        float deltaX = deltaPosition.x * touchScale;
+        float deltaY = deltaPosition.y * touchScale;
         
         if (invertY)
         {
@@ -315,6 +310,7 @@ public class MobileCameraController : MonoBehaviour
         }
         
         // Apply rotation through FPS controller's mouse look system
+        // FirstPersonController will apply sensitivity and mobile multiplier
         ApplyExternalMouseInput(deltaX, -deltaY); // Negative Y for proper camera control
     }
     
