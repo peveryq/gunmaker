@@ -285,6 +285,10 @@ public class ResultsScreenUI : MonoBehaviour
                 
                 // Return to workshop
                 ReturnToWorkshop();
+                
+                // Restore cursor after transition completes
+                // This ensures cursor is locked after loading into workshop
+                StartCoroutine(RestoreCursorAfterRewardedAd());
             });
         }
         else
@@ -297,6 +301,68 @@ public class ResultsScreenUI : MonoBehaviour
             
             CloseResults();
             ReturnToWorkshop();
+        }
+    }
+    
+    /// <summary>
+    /// Restore cursor after rewarded ad and location transition
+    /// Waits for loading to complete and then locks cursor if in gameplay mode
+    /// </summary>
+    private IEnumerator RestoreCursorAfterRewardedAd()
+    {
+        // Wait for ad to fully close and pause to be released
+        while (YG2.nowAdsShow || YG2.isPauseGame)
+        {
+            yield return null;
+        }
+        
+        // Wait for loading screen to complete
+        // Check if LoadingScreen exists and is active
+        LoadingScreen loadingScreen = FindFirstObjectByType<LoadingScreen>();
+        if (loadingScreen != null)
+        {
+            // Wait until loading screen is not showing
+            // We can check this by waiting a bit and checking if we're in workshop
+            yield return new WaitForSeconds(0.5f);
+        }
+        
+        // Wait until we're in workshop location
+        // Use LocationManager.Instance to ensure we get the correct instance
+        if (LocationManager.Instance != null)
+        {
+            while (LocationManager.Instance.CurrentLocation != LocationManager.LocationType.Workshop)
+            {
+                yield return null;
+            }
+        }
+        else if (locationManager != null)
+        {
+            // Fallback to field if Instance is not available
+            while (locationManager.CurrentLocation != LocationManager.LocationType.Workshop)
+            {
+                yield return null;
+            }
+        }
+        
+        // Wait a bit more to ensure everything is loaded
+        yield return new WaitForSeconds(0.2f);
+        
+        // Now restore cursor if we're in gameplay mode
+        // Check if we're in gameplay (not in UI menu)
+        bool isInGameplayMode = true;
+        
+        // Check if AdManager has any UI blocking (means UI menu is open)
+        if (AdManager.Instance != null && AdManager.Instance.IsAdTimerBlocked)
+        {
+            isInGameplayMode = false;
+        }
+        
+        // Check if FirstPersonController is enabled (player is active)
+        if (isInGameplayMode && FirstPersonController.Instance != null && FirstPersonController.Instance.enabled)
+        {
+            // We're in gameplay - lock cursor
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
     }
     

@@ -830,7 +830,47 @@ public class AdManager : MonoBehaviour
         }
         
         // YG2 automatically resumes game via PauseGame(false)
+        // However, cursor might not be restored properly, so we fix it manually
+        // Use coroutine with small delay to ensure YG2 has processed PauseGame(false)
+        StartCoroutine(RestoreCursorAfterAd());
+        
         // Note: Reward callback is called separately via onRewardAdv
+    }
+    
+    /// <summary>
+    /// Restore cursor state after ad closes
+    /// Only locks cursor if we're in gameplay mode (not in UI menu)
+    /// </summary>
+    private IEnumerator RestoreCursorAfterAd()
+    {
+        // Wait a frame to ensure YG2 has processed PauseGame(false)
+        yield return null;
+        
+        // Check if we're in gameplay mode
+        // If fullscreenUIBlockCount > 0, it means a UI menu is open
+        bool isInGameplayMode = fullscreenUIBlockCount == 0;
+        
+        // Also check if FirstPersonController is enabled (player is active)
+        if (isInGameplayMode && FirstPersonController.Instance != null && FirstPersonController.Instance.enabled)
+        {
+            // We're in gameplay - lock cursor
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            
+            if (enableDebugLogs)
+            {
+                Debug.Log("AdManager: Cursor locked after ad closed (gameplay mode)");
+            }
+        }
+        else
+        {
+            // We're in UI menu or player is inactive - cursor should be visible
+            // Don't change cursor state, let UI handle it
+            if (enableDebugLogs)
+            {
+                Debug.Log($"AdManager: Cursor left visible after ad closed (UI menu mode or player inactive, blockCount: {fullscreenUIBlockCount})");
+            }
+        }
     }
     
     private void OnRewardReceived(string rewardId)
