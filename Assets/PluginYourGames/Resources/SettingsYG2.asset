@@ -20,10 +20,10 @@ MonoBehaviour:
     playerPhoto: demo image
     payingStatus: 0
   InterstitialAdv:
-    showFirstAdv: 0
+    showFirstAdv: 1
     interAdvInterval: 90
-    postponeCallByFail: 0
-    postponeCallTimer: 10
+    postponeCallByFail: 1
+    postponeCallTimer: 90
     labelAdvSimLabel: 0
   Localization:
     setLanguageMod: 1
@@ -46,12 +46,12 @@ MonoBehaviour:
     loadSceneIfSDKLate: 0
     loadSceneIndex: 0
     initDelaySimulation: 0
-    buildNumber: 33
+    buildNumber: 38
   Simulation:
     device: 0
     language: ru
-    advIntervalSimulation: 90
-    durationAdv: 5
+    advIntervalSimulation: 5
+    durationAdv: 1
     loadAdv: 0
     testFailAds: 0
   Templates:

@@ -44587,12 +44587,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showAdsOnlyInWorkshop: 1
-  nextButtonAdFrequency: 3
+  nextButtonAdFrequency: 1
   nextButtonAdCounterKey: NextButtonAdCounter
   adTimerWarningUI: {fileID: 366467614}
   showCountdownWarning: 1
   countdownDuration: 2
-  enableDebugLogs: 0
+  enableDebugLogs: 1
 --- !u!4 &2054234965
 Transform:
   m_ObjectHideFlags: 0
@@ -51013,7 +51013,8 @@ MonoBehaviour:
   walkSpeed: 5
   runSpeed: 8
   gravity: 20
-  useCustomMouseInput: 0
+  useCustomMouseInput: 1
+  enableCursorToggle: 0
   mouseSensitivity: 1.5
   minLookAngle: -90
   maxLookAngle: 90

@@ -13,6 +13,8 @@ public class FirstPersonController : MonoBehaviour
     [Header("Mouse Look Settings")]
     [Tooltip("If enabled, uses custom mouse input handling with mobile support and FOV-based features. If disabled, uses standard Unity mouse input.")]
     [SerializeField] private bool useCustomMouseInput = true;
+    [Tooltip("If enabled, allows toggling cursor lock state with toggle key. If disabled, cursor toggle logic is completely disabled.")]
+    [SerializeField] private bool enableCursorToggle = true;
     [SerializeField] private float mouseSensitivity = 2f;
     [SerializeField] private float minLookAngle = -90f;
     [SerializeField] private float maxLookAngle = 90f;
@@ -178,6 +180,15 @@ public class FirstPersonController : MonoBehaviour
         mobileCameraController = GetComponent<MobileCameraController>();
     }
     
+    private void OnDestroy()
+    {
+        // Clean up DOTween tweens
+        if (fovKickReturnTween != null && fovKickReturnTween.IsActive())
+        {
+            fovKickReturnTween.Kill();
+        }
+    }
+    
     private void Update()
     {
         // Don't process input if game is paused by YG2
@@ -186,8 +197,8 @@ public class FirstPersonController : MonoBehaviour
             return;
         }
         
-        // Only handle cursor toggle if custom mouse input is enabled
-        if (useCustomMouseInput)
+        // Only handle cursor toggle if enabled
+        if (enableCursorToggle)
         {
             HandleCursorToggle();
         }
@@ -687,12 +698,4 @@ public class FirstPersonController : MonoBehaviour
     /// </summary>
     public bool MouseLookEnabled { get; set; } = true;
     
-    private void OnDestroy()
-    {
-        // Clean up DOTween tweens
-        if (fovKickReturnTween != null && fovKickReturnTween.IsActive())
-        {
-            fovKickReturnTween.Kill();
-        }
-    }
 }

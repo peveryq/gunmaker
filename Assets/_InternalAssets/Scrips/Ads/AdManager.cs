@@ -43,6 +43,8 @@ public class AdManager : MonoBehaviour
     private LocationManager.LocationType lastLocation = LocationManager.LocationType.Workshop;
     private int fullscreenUIBlockCount = 0; // Count of open fullscreen UIs blocking ads
     private int nextButtonAdCounter = 0; // Counter for Next button ad frequency
+    private float lastAdClosedTime = -1f; // Time when last ad was closed (to prevent immediate re-show)
+    private const float AD_COOLDOWN_AFTER_CLOSE = 3f; // Minimum seconds to wait after ad closes before checking again
     
     // Events
     public System.Action OnAdTimerStarted;
@@ -313,6 +315,18 @@ public class AdManager : MonoBehaviour
                 continue;
             }
             
+            // Check cooldown after last ad closed (prevent immediate re-show)
+            // This gives YG2 SDK time to reset its internal timer
+            if (lastAdClosedTime > 0f && Time.time - lastAdClosedTime < AD_COOLDOWN_AFTER_CLOSE)
+            {
+                float timeSinceClose = Time.time - lastAdClosedTime;
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"AdManager: Ad timer check skipped (cooldown: {AD_COOLDOWN_AFTER_CLOSE - timeSinceClose:F1}s remaining)");
+                }
+                continue;
+            }
+            
             // Check if YG2 timer is ready
             bool timerReady = false;
             
@@ -333,8 +347,21 @@ public class AdManager : MonoBehaviour
                 continue;
             }
             
+            // Only show ad if timer is ready AND we're not in cooldown period
+            // Also double-check that YG2 timer was actually reset (not still at 0 from previous ad)
             if (timerReady && !isWaitingForAd)
             {
+                // Additional safety check: if timer shows 0 seconds, it might be from previous ad
+                // Wait a bit more to ensure YG2 SDK has reset the timer
+                if (YG2.isSDKEnabled && YG2.timerInterAdv <= 0.1f && lastAdClosedTime > 0f && Time.time - lastAdClosedTime < AD_COOLDOWN_AFTER_CLOSE + 1f)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"AdManager: Timer shows ready but might be from previous ad, waiting a bit more");
+                    }
+                    continue;
+                }
+                
                 if (enableDebugLogs)
                 {
                     Debug.Log("AdManager: Timer ready, showing ad with warning");
@@ -470,8 +497,9 @@ public class AdManager : MonoBehaviour
         
         ShowInterstitialAd();
         
-        // Note: YG2 will automatically reset timer after ad is shown/closed
-        // So we don't need to restore the timer manually
+        // Note: YG2 will automatically reset timer to full interval after ad is shown/closed
+        // When returning to workshop, ResetAdTimer() will also reset timer to full interval
+        // This ensures timer is always reset to full interval on return, regardless of how ad was shown
     }
     
     /// <summary>
@@ -610,12 +638,12 @@ public class AdManager : MonoBehaviour
     
     /// <summary>
     /// Reset ad timer state (called when returning to workshop)
-    /// NOTE: We do NOT reset YG2 timer - it should continue counting from where it was
-    /// This ensures ads show at the correct interval, not immediately
+    /// Resets YG2 timer to full interval to start fresh countdown
+    /// This ensures ads show at the configured interval (e.g., 30 seconds) from return moment
     /// </summary>
     private void ResetAdTimer()
     {
-        // Reset our state only
+        // Reset our state
         isWaitingForAd = false;
         
         if (adTimerWarningUI != null)
@@ -623,14 +651,51 @@ public class AdManager : MonoBehaviour
             adTimerWarningUI.Hide();
         }
         
-        // DO NOT reset YG2 timer - let it continue counting
-        // The timer should show ads at the configured interval, not immediately
-        // When ad is shown, YG2 will automatically reset the timer
+        // Reset YG2 timer to full interval when returning to workshop
+        // This ensures ads show at the configured interval from return moment, not immediately
+        // Even if ad was shown via Next button and YG2 already reset timer, this is safe
+        // (it will just reset to the same interval)
+        if (YG2.isSDKEnabled)
+        {
+            // Use reflection to call YGInsides.SetTimerInterAdv() without parameters
+            // This sets timer to full interval (interAdvInterval, e.g., 30 seconds)
+            var ygInsidesType = System.Type.GetType("YG.Insides.YGInsides");
+            if (ygInsidesType != null)
+            {
+                // Try method without parameters first (sets to full interval)
+                var setTimerMethod = ygInsidesType.GetMethod("SetTimerInterAdv", 
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                    null, System.Type.EmptyTypes, null);
+                
+                if (setTimerMethod != null)
+                {
+                    setTimerMethod.Invoke(null, null);
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"AdManager: YG2 timer reset to full interval ({YG2.interAdvInterval}s) via SetTimerInterAdv()");
+                    }
+                }
+                else
+                {
+                    // Fallback: use method with parameter (set to interAdvInterval)
+                    var setTimerMethodWithParam = ygInsidesType.GetMethod("SetTimerInterAdv", 
+                        new System.Type[] { typeof(int) });
+                    if (setTimerMethodWithParam != null)
+                    {
+                        setTimerMethodWithParam.Invoke(null, new object[] { YG2.interAdvInterval });
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"AdManager: YG2 timer reset to full interval ({YG2.interAdvInterval}s) via SetTimerInterAdv(int)");
+                        }
+                    }
+                }
+            }
+        }
         
         if (enableDebugLogs)
         {
             float timeLeft = YG2.isSDKEnabled ? YG2.timerInterAdv : 0f;
-            Debug.Log($"AdManager: Ad timer state reset (YG2 timer continues: {timeLeft:F1}s remaining)");
+            Debug.Log($"AdManager: Ad timer reset - will start fresh countdown from return moment (YG2 timer: {timeLeft:F1}s remaining)");
         }
     }
     
@@ -663,6 +728,18 @@ public class AdManager : MonoBehaviour
         
         OnAdTimerStopped?.Invoke();
         
+        // Reset waiting flag
+        isWaitingForAd = false;
+        
+        // Record time when ad closed to prevent immediate re-show
+        // This gives YG2 SDK time to reset its internal timer
+        lastAdClosedTime = Time.time;
+        
+        if (enableDebugLogs)
+        {
+            Debug.Log($"AdManager: Ad closed, starting cooldown period ({AD_COOLDOWN_AFTER_CLOSE}s)");
+        }
+        
         // Ensure warning UI is hidden and controllers are restored
         if (adTimerWarningUI != null)
         {
@@ -672,6 +749,8 @@ public class AdManager : MonoBehaviour
         // YG2 automatically resumes game via PauseGame(false)
         // YG2 timer is reset automatically when ad closes
         // The timer will start counting again from 0
+        // However, YG2 SDK might not immediately update isTimerAdvCompleted,
+        // so we use a cooldown period to prevent immediate re-show
         
         // Ensure ad timer check is running if we're in workshop
         if (ShouldShowAds() && adCheckCoroutine == null)
