@@ -45789,6 +45789,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enableMobileInput: 1
+  mobileSensitivityMultiplier: 10
 --- !u!4 &2105831670
 Transform:
   m_ObjectHideFlags: 0
