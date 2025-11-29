@@ -50,7 +50,7 @@ MonoBehaviour:
   Simulation:
     device: 0
     language: ru
-    advIntervalSimulation: 5
+    advIntervalSimulation: 90
     durationAdv: 1
     loadAdv: 0
     testFailAds: 0

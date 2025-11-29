@@ -132,7 +132,7 @@ MonoBehaviour:
     russian: "\u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438"
     english: categories
   - key: shop.Stocks
-    russian: "\u0421\u0442\u0432\u043E\u043B\u044B"
+    russian: "\u041F\u0440\u0438\u043A\u043B\u0430\u0434\u044B"
     english: Stocks
   - key: shop.Barrels
     russian: "\u0421\u0442\u0432\u043E\u043B\u044B"
@@ -196,7 +196,54 @@ MonoBehaviour:
     russian: "\u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0439\u0432
       (\u0434\u0435\u0431\u0430\u0433)"
     english: delete save (debug)
-  - key: adWarning.prefix
+  - key: ad.warning
     russian: "\u0440\u0435\u043A\u043B\u0430\u043C\u0430 \u043D\u0430\u0447\u043D\u0435\u0442\u0441\u044F
       \u0447\u0435\u0440\u0435\u0437"
     english: ad starts in
+  - key: tutorial.quest.1
+    russian: "\u0441\u043E\u0437\u0434\u0430\u0439 \u043D\u043E\u0432\u043E\u0435
+      \u043E\u0440\u0443\u0436\u0438\u0435 \u043D\u0430 \u0432\u0435\u0440\u0441\u0442\u0430\u043A\u0435"
+    english: Create a new gun at the workbench
+  - key: tutorial.quest.2
+    russian: "\u043A\u0443\u043F\u0438 \u0441\u0442\u0432\u043E\u043B \u0447\u0435\u0440\u0435\u0437
+      \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440"
+    english: 'Buy a barrel at the computer '
+  - key: tutorial.quest.3
+    russian: "\u0432\u043E\u0437\u044C\u043C\u0438 \u0441\u0442\u0432\u043E\u043B"
+    english: Take the barrel
+  - key: tutorial.quest.4
+    russian: "\u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438 \u0441\u0442\u0432\u043E\u043B
+      \u043A \u043E\u0440\u0443\u0436\u0438\u044E"
+    english: Attach the barrel to the gun
+  - key: tutorial.quest.5
+    russian: "\u0432\u043E\u0437\u044C\u043C\u0438 \u0433\u043E\u0440\u0435\u043B\u043A\u0443"
+    english: Take blowtorch
+  - key: tutorial.quest.6
+    russian: "\u043F\u0440\u0438\u0432\u0430\u0440\u0438 \u0441\u0442\u0432\u043E\u043B
+      \u0433\u043E\u0440\u0435\u043B\u043A\u043E\u0439"
+    english: Weld the barrel with blowtocrh
+  - key: tutorial.quest.7
+    russian: "\u043A\u0443\u043F\u0438 \u043C\u0430\u0433\u0430\u0437\u0438\u043D
+      \u0447\u0435\u0440\u0435\u0437 \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440"
+    english: Buy a mag at the computer
+  - key: tutorial.quest.8
+    russian: "\u0432\u043E\u0437\u044C\u043C\u0438 \u043C\u0430\u0433\u0430\u0437\u0438\u043D"
+    english: Take the mag
+  - key: tutorial.quest.9
+    russian: "\u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438 \u043C\u0430\u0433\u0430\u0437\u0438\u043D
+      \u043A \u043E\u0440\u0443\u0436\u0438\u044E"
+    english: Attach the mag to the gun
+  - key: tutorial.quest.10
+    russian: "\u0432\u043E\u0437\u044C\u043C\u0438 \u043E\u0440\u0443\u0436\u0438\u0435
+      \u0441 \u0432\u0435\u0440\u0441\u0442\u0430\u043A\u0430"
+    english: Take the gun from workbench
+  - key: tutorial.quest.11
+    russian: "\u043F\u0435\u0440\u0435\u0437\u0430\u0440\u044F\u0434\u0438\u0441\u044C
+      \u0438 \u043F\u043E\u0441\u0442\u0440\u0435\u043B\u044F\u0439 \u043F\u043E
+      \u043C\u0438\u0448\u0435\u043D\u044F\u043C"
+    english: reload and shoot some targets
+  - key: tutorial.quest.12
+    russian: "\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0439\u0441\u044F
+      \u043D\u0430 \u0441\u0442\u0440\u0435\u043B\u044C\u0431\u0438\u0449\u0435 \u0447\u0435\u0440\u0435\u0437
+      \u0434\u0432\u0435\u0440\u044C"
+    english: Go to the door and enter shooting range
