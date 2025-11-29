@@ -90,6 +90,7 @@ public class GameManager : MonoBehaviour
         yield return InitializeMobileInput();
         yield return InitializeWeldingController();
         yield return InitializeAdManager();
+        yield return InitializeTutorial();
         
         // Wait for LocationManager to be ready
         yield return WaitForLocationManager();
@@ -251,6 +252,26 @@ public class GameManager : MonoBehaviour
             }
         }
         yield return null;
+    }
+    
+    /// <summary>
+    /// Initialize TutorialManager (optional).
+    /// TutorialManager initializes itself, we just ensure it exists.
+    /// </summary>
+    private IEnumerator InitializeTutorial()
+    {
+        // Wait a frame for TutorialManager to initialize
+        yield return null;
+        
+        var tutorialManager = TutorialManager.Instance;
+        if (tutorialManager != null)
+        {
+            Debug.Log("GameManager: TutorialManager found and initialized.");
+        }
+        else
+        {
+            Debug.Log("GameManager: TutorialManager not found. Tutorial system will not be available.");
+        }
     }
     
     /// <summary>

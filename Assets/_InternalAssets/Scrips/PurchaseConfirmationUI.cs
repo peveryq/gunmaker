@@ -397,6 +397,12 @@ public class PurchaseConfirmationUI : MonoBehaviour
             // Remove offering so it disappears from the shop list
             offeringGenerator.RemoveOffering(currentPartType, currentOffering);
             
+            // Notify TutorialManager about part purchase
+            if (TutorialManager.Instance != null)
+            {
+                TutorialManager.Instance.NotifyPartPurchased(currentPartType);
+            }
+            
             // Play purchase sound
             PlayPurchaseSound();
             

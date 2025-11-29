@@ -55,6 +55,9 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private float autosaveIconRotationSpeed = 180f;
     [SerializeField] private float autosaveDisplayDuration = 1.5f;
     [SerializeField] private string autosaveTextString = "autosave";
+    
+    [Header("Tutorial Quest UI")]
+    [SerializeField] private TutorialQuestUI tutorialQuestUI;
 
     private MoneySystem moneySystem;
     private bool hudVisible = true;

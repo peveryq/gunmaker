@@ -192,6 +192,20 @@ public class LocalizationManager : MonoBehaviour
         AddTranslation("stats.reload_speed", "Скорость перезарядки", "Reload Speed");
         AddTranslation("stats.aim", "Прицел", "Aim");
         AddTranslation("stats.ammo", "Боезапас", "Ammo");
+        
+        // Tutorial quest texts
+        AddTranslation("tutorial.quest.1", "Создай новое оружие на верстаке", "Create a new gun at the workbench");
+        AddTranslation("tutorial.quest.2", "Купи ствол в компьютере", "Buy a barrel at the computer");
+        AddTranslation("tutorial.quest.3", "Возьми ствол", "Take the barrel");
+        AddTranslation("tutorial.quest.4", "Прикрепи ствол к оружию", "Attach the barrel to the gun");
+        AddTranslation("tutorial.quest.5", "Возьми горелку", "Take blowtorch");
+        AddTranslation("tutorial.quest.6", "Привари ствол горелкой", "Weld the barrel with blowtorch");
+        AddTranslation("tutorial.quest.7", "Купи магазин в компьютере", "Buy a mag at the computer");
+        AddTranslation("tutorial.quest.8", "Возьми магазин", "Take the mag");
+        AddTranslation("tutorial.quest.9", "Прикрепи магазин к оружию", "Attach the mag to the gun");
+        AddTranslation("tutorial.quest.10", "Возьми оружие с верстака", "Take the gun from workbench");
+        AddTranslation("tutorial.quest.11", "Стреляй по мишеням", "Shoot some targets");
+        AddTranslation("tutorial.quest.12", "Подойди к двери и войди на стрельбище", "Go to the door and enter shooting range");
     }
     
     /// <summary>

@@ -317,6 +317,10 @@ public class SaveSystemManager : MonoBehaviour
                 YG2.saves.gameSettings = JsonUtility.ToJson(SettingsManager.Instance.CurrentSettings);
             }
             
+            // Tutorial progress (tutorialQuestIndex) is already updated in memory by TutorialManager
+            // when quests change. We just save whatever is in YG2.saves.tutorialQuestIndex here.
+            // No need to access TutorialManager directly - it updates the value in memory.
+            
             // Save to YG2 storage
             YG2.SaveProgress();
             

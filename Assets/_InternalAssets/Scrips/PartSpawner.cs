@@ -298,5 +298,8 @@ public class PartSpawner : MonoBehaviour
     
     // Public property for spawn point position (for debugging/gizmos)
     public Vector3 SpawnPosition => spawnPoint != null ? spawnPoint.position : Vector3.zero;
+    
+    // Public property for spawn point transform (for tutorial system)
+    public Transform SpawnPoint => spawnPoint;
 }
 

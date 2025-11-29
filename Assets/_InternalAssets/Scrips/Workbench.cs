@@ -488,6 +488,13 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
     {
         if (mountedWeapon == null || interactionHandler == null) return;
         
+        // Check if tutorial is blocking taking weapon (quest 10)
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingTakeWeapon())
+        {
+            // Tutorial is blocking - don't allow taking weapon yet
+            return;
+        }
+        
         // Restore original layer before unmounting
         SetLayerRecursively(mountedWeapon.gameObject, originalWeaponLayer);
         // Get ItemPickup
