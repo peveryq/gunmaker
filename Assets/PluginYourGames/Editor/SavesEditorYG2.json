@@ -7,11 +7,11 @@
         false,
         false
     ],
-    "idSave": 16,
-    "playerMoney": 10265,
+    "idSave": 6,
+    "playerMoney": 40000,
     "savedWeapons": [
         {
-            "weaponName": "хуй",
+            "weaponName": "123",
             "statsSnapshot": {
                 "power": 1.0,
                 "accuracy": 1.0,
@@ -25,7 +25,7 @@
             },
             "barrelPart": {
                 "partType": 0,
-                "partName": "старый ствол",
+                "partName": "поврежденный ствол",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
@@ -44,7 +44,7 @@
             },
             "magazinePart": {
                 "partType": 1,
-                "partName": "изношенный магазин",
+                "partName": "поврежденный магазин",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
@@ -101,7 +101,7 @@
             }
         },
         {
-            "weaponName": "",
+            "weaponName": "123",
             "statsSnapshot": {
                 "power": 1.0,
                 "accuracy": 1.0,
@@ -110,7 +110,7 @@
                 "reloadSpeed": 1.0,
                 "scope": 1.0,
                 "ammo": 0,
-                "damage": 10.0,
+                "damage": 25.0,
                 "totalPartCost": 0
             },
             "barrelPart": {
@@ -554,5 +554,5 @@
         }
     },
     "gameSettings": "{\"mouseSensitivity\":2.0,\"touchSensitivity\":2.0,\"masterVolume\":1.0,\"sfxVolume\":1.0,\"musicVolume\":1.0}",
-    "tutorialQuestIndex": 11
+    "tutorialQuestIndex": 8
 }

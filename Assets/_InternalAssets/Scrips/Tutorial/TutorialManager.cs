@@ -207,19 +207,43 @@ Format: [index] = Quest number + language
         
         int savedQuestIndex = YG2.saves.tutorialQuestIndex;
         
-        if (savedQuestIndex == -1)
+        // Check if this is a new game (no save data)
+        // savedQuestIndex will be -1 (None) if no tutorial progress was ever saved
+        if (savedQuestIndex == (int)TutorialQuest.None)
         {
-            // Tutorial completed
+            // New game or tutorial not started yet - start from quest 1
+            currentQuest = TutorialQuest.None;
+            tutorialCompleted = false;
+            Debug.Log("TutorialManager: New game detected (no tutorial progress) - starting from quest 1.");
+        }
+        else if (savedQuestIndex == (int)TutorialQuest.Completed)
+        {
+            // Tutorial completed (explicitly set to Completed after finishing all quests)
             tutorialCompleted = true;
             currentQuest = TutorialQuest.Completed;
             Debug.Log("TutorialManager: Tutorial already completed.");
         }
         else if (savedQuestIndex >= 0 && savedQuestIndex <= 11)
         {
-            // Load quest from save
-            currentQuest = (TutorialQuest)savedQuestIndex;
+            // Load checkpoint quest from save
+            TutorialQuest checkpointQuest = (TutorialQuest)savedQuestIndex;
+            
+            // Verify this is actually a checkpoint quest
+            if (!IsCheckpointQuest(checkpointQuest))
+            {
+                // Invalid checkpoint - start fresh
+                Debug.LogWarning($"TutorialManager: Saved quest index {savedQuestIndex} is not a checkpoint. Starting fresh.");
+                currentQuest = TutorialQuest.None;
+                tutorialCompleted = false;
+                return;
+            }
+            
+            // Continue from the quest after the checkpoint
+            // This is safe because we only save checkpoints that are guaranteed to be completed
+            TutorialQuest nextQuest = GetNextQuest(checkpointQuest);
+            currentQuest = nextQuest;
             tutorialCompleted = false;
-            Debug.Log($"TutorialManager: Loaded tutorial progress - Quest {savedQuestIndex + 1} ({currentQuest})");
+            Debug.Log($"TutorialManager: Loaded checkpoint - Quest {savedQuestIndex + 1} ({checkpointQuest}), continuing from Quest {(int)nextQuest + 1} ({nextQuest})");
         }
         else
         {
@@ -231,7 +255,52 @@ Format: [index] = Quest number + language
     }
     
     /// <summary>
+    /// Check if a quest is a checkpoint (quests 1, 4, 6, 9, 11, 12)
+    /// </summary>
+    private bool IsCheckpointQuest(TutorialQuest quest)
+    {
+        // Checkpoints: CreateGun (0), AttachBarrel (3), WeldBarrel (5), AttachMag (8), ShootTargets (10), EnterRange (11)
+        return quest == TutorialQuest.CreateGun || 
+               quest == TutorialQuest.AttachBarrel || 
+               quest == TutorialQuest.WeldBarrel || 
+               quest == TutorialQuest.AttachMag || 
+               quest == TutorialQuest.ShootTargets ||
+               quest == TutorialQuest.EnterRange;
+    }
+    
+    /// <summary>
+    /// Get the last completed checkpoint quest that is guaranteed to be completed
+    /// Logic: If current quest is not a checkpoint, return the last checkpoint BEFORE it
+    /// (because if we're on a non-checkpoint quest, it means the previous checkpoint was completed)
+    /// If current quest is a checkpoint, we haven't completed it yet, so return the previous checkpoint
+    /// </summary>
+    private TutorialQuest GetLastCheckpointQuest()
+    {
+        // If tutorial is completed, return Completed
+        if (tutorialCompleted || currentQuest == TutorialQuest.Completed)
+        {
+            return TutorialQuest.Completed;
+        }
+        
+        // Find the last checkpoint BEFORE current quest (not including current quest)
+        // This is the checkpoint that is guaranteed to be completed
+        TutorialQuest lastCheckpoint = TutorialQuest.None;
+        for (int i = 0; i < (int)currentQuest; i++)  // Note: < instead of <= to exclude current quest
+        {
+            TutorialQuest quest = (TutorialQuest)i;
+            if (IsCheckpointQuest(quest))
+            {
+                lastCheckpoint = quest;
+            }
+        }
+        
+        return lastCheckpoint;
+    }
+    
+    /// <summary>
     /// Update tutorial progress in memory (will be saved by autosave system)
+    /// Only saves checkpoint quests (1, 4, 6, 9, 11, 12)
+    /// Saves the last checkpoint that is guaranteed to be completed (before current quest)
     /// </summary>
     private void SaveTutorialProgress()
     {
@@ -244,14 +313,26 @@ Format: [index] = Quest number + language
         // Update progress in memory - will be saved by autosave system
         if (tutorialCompleted)
         {
-            YG2.saves.tutorialQuestIndex = -1;
+            // Save Completed status (12) to distinguish from new game (-1)
+            YG2.saves.tutorialQuestIndex = (int)TutorialQuest.Completed;
         }
         else
         {
-            YG2.saves.tutorialQuestIndex = (int)currentQuest;
+            // Save only the last checkpoint quest that is guaranteed to be completed
+            // This is the last checkpoint BEFORE current quest (not including current quest)
+            TutorialQuest checkpointQuest = GetLastCheckpointQuest();
+            if (checkpointQuest == TutorialQuest.None)
+            {
+                // No checkpoint reached yet, don't save progress (keep as -1 for new game)
+                YG2.saves.tutorialQuestIndex = (int)TutorialQuest.None;
+            }
+            else
+            {
+                YG2.saves.tutorialQuestIndex = (int)checkpointQuest;
+            }
         }
         
-        Debug.Log($"TutorialManager: Updated tutorial progress in memory - Quest index: {YG2.saves.tutorialQuestIndex} (will be saved by autosave)");
+        Debug.Log($"TutorialManager: Updated tutorial progress in memory - Current quest: {currentQuest}, Checkpoint quest index: {YG2.saves.tutorialQuestIndex} (will be saved by autosave)");
     }
     
     /// <summary>

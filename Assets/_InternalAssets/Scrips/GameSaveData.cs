@@ -20,8 +20,8 @@ namespace YG
         // Game settings (serialized as JSON string)
         public string gameSettings = "";
         
-        // Tutorial progress (-1 = completed, 0-11 = current quest index)
-        public int tutorialQuestIndex = 0;
+        // Tutorial progress (-1 = none/new game, 0/3/5/8/11 = checkpoint quest index, 12 = completed)
+        public int tutorialQuestIndex = -1;
     }
 }
 
