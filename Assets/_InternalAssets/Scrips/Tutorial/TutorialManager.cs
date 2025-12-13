@@ -255,16 +255,15 @@ Format: [index] = Quest number + language
     }
     
     /// <summary>
-    /// Check if a quest is a checkpoint (quests 1, 4, 6, 9, 11, 12)
+    /// Check if a quest is a checkpoint (quests 1, 4, 6, 9, 12)
     /// </summary>
     private bool IsCheckpointQuest(TutorialQuest quest)
     {
-        // Checkpoints: CreateGun (0), AttachBarrel (3), WeldBarrel (5), AttachMag (8), ShootTargets (10), EnterRange (11)
+        // Checkpoints: CreateGun (0), AttachBarrel (3), WeldBarrel (5), AttachMag (8), EnterRange (11)
         return quest == TutorialQuest.CreateGun || 
                quest == TutorialQuest.AttachBarrel || 
                quest == TutorialQuest.WeldBarrel || 
                quest == TutorialQuest.AttachMag || 
-               quest == TutorialQuest.ShootTargets ||
                quest == TutorialQuest.EnterRange;
     }
     
@@ -299,7 +298,7 @@ Format: [index] = Quest number + language
     
     /// <summary>
     /// Update tutorial progress in memory (will be saved by autosave system)
-    /// Only saves checkpoint quests (1, 4, 6, 9, 11, 12)
+    /// Only saves checkpoint quests (1, 4, 6, 9, 12)
     /// Saves the last checkpoint that is guaranteed to be completed (before current quest)
     /// </summary>
     private void SaveTutorialProgress()

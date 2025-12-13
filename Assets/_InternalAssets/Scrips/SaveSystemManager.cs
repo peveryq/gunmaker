@@ -194,22 +194,60 @@ public class SaveSystemManager : MonoBehaviour
             // Double-check we're in workshop
             if (locationManager != null && locationManager.CurrentLocation == LocationManager.LocationType.Workshop)
             {
-                autoSaveTimer += Time.deltaTime;
-                
-                if (autoSaveTimer >= autoSaveInterval)
+                // Check if auto-save should be blocked (quests 10 or 11)
+                bool shouldBlockAutoSave = false;
+                if (TutorialManager.Instance != null)
                 {
-                    TriggerAutoSave();
+                    TutorialQuest currentQuest = TutorialManager.Instance.CurrentQuest;
+                    if (currentQuest == TutorialQuest.TakeGun || currentQuest == TutorialQuest.ShootTargets)
+                    {
+                        shouldBlockAutoSave = true;
+                    }
+                }
+                
+                if (!shouldBlockAutoSave)
+                {
+                    autoSaveTimer += Time.deltaTime;
+                    
+                    if (autoSaveTimer >= autoSaveInterval)
+                    {
+                        TriggerAutoSave();
+                        autoSaveTimer = 0f;
+                    }
+                }
+                else
+                {
+                    // Reset timer when blocked to prevent accumulation
                     autoSaveTimer = 0f;
                 }
             }
             else if (locationManager == null)
             {
                 // If LocationManager is null, assume workshop and continue auto-save
-                autoSaveTimer += Time.deltaTime;
-                
-                if (autoSaveTimer >= autoSaveInterval)
+                // Check if auto-save should be blocked (quests 10 or 11)
+                bool shouldBlockAutoSave = false;
+                if (TutorialManager.Instance != null)
                 {
-                    TriggerAutoSave();
+                    TutorialQuest currentQuest = TutorialManager.Instance.CurrentQuest;
+                    if (currentQuest == TutorialQuest.TakeGun || currentQuest == TutorialQuest.ShootTargets)
+                    {
+                        shouldBlockAutoSave = true;
+                    }
+                }
+                
+                if (!shouldBlockAutoSave)
+                {
+                    autoSaveTimer += Time.deltaTime;
+                    
+                    if (autoSaveTimer >= autoSaveInterval)
+                    {
+                        TriggerAutoSave();
+                        autoSaveTimer = 0f;
+                    }
+                }
+                else
+                {
+                    // Reset timer when blocked to prevent accumulation
                     autoSaveTimer = 0f;
                 }
             }
@@ -262,6 +300,19 @@ public class SaveSystemManager : MonoBehaviour
         {
             Debug.LogWarning("SaveSystemManager: Cannot auto-save - YG2 SDK not initialized yet.");
             return;
+        }
+        
+        // Block auto-save if player is on quest 10 or 11 (before quest 12)
+        if (TutorialManager.Instance != null)
+        {
+            TutorialQuest currentQuest = TutorialManager.Instance.CurrentQuest;
+            // Block if current quest is TakeGun (quest 10, index 9) or ShootTargets (quest 11, index 10)
+            if (currentQuest == TutorialQuest.TakeGun || currentQuest == TutorialQuest.ShootTargets)
+            {
+                // Auto-save blocked - player is on quest 10 or 11, waiting for quest 12
+                Debug.Log($"SaveSystemManager: Auto-save blocked - current quest is {currentQuest} (quest {(int)currentQuest + 1})");
+                return;
+            }
         }
         
         // Perform save

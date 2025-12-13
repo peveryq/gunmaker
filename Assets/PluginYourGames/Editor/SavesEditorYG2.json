@@ -7,7 +7,7 @@
         false,
         false
     ],
-    "idSave": 6,
+    "idSave": 2,
     "playerMoney": 40000,
     "savedWeapons": [
         {
@@ -25,7 +25,7 @@
             },
             "barrelPart": {
                 "partType": 0,
-                "partName": "поврежденный ствол",
+                "partName": "ржавый ствол",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
@@ -44,7 +44,7 @@
             },
             "magazinePart": {
                 "partType": 1,
-                "partName": "поврежденный магазин",
+                "partName": "грубый магазин",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
@@ -101,7 +101,7 @@
             }
         },
         {
-            "weaponName": "123",
+            "weaponName": "",
             "statsSnapshot": {
                 "power": 1.0,
                 "accuracy": 1.0,
@@ -110,7 +110,7 @@
                 "reloadSpeed": 1.0,
                 "scope": 1.0,
                 "ammo": 0,
-                "damage": 25.0,
+                "damage": 10.0,
                 "totalPartCost": 0
             },
             "barrelPart": {
@@ -463,7 +463,7 @@
     ],
     "workbenchWeapon": {
         "weaponData": {
-            "weaponName": "",
+            "weaponName": "123",
             "statsSnapshot": {
                 "power": 1.0,
                 "accuracy": 1.0,
@@ -471,13 +471,13 @@
                 "recoil": 100.0,
                 "reloadSpeed": 1.0,
                 "scope": 1.0,
-                "ammo": 0,
-                "damage": 10.0,
+                "ammo": 8,
+                "damage": 25.0,
                 "totalPartCost": 0
             },
             "barrelPart": {
                 "partType": 0,
-                "partName": "",
+                "partName": "ржавый ствол",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
@@ -485,18 +485,18 @@
                 "recoilModifier": 0.0,
                 "reloadSpeedModifier": 0.0,
                 "scopeModifier": 0.0,
-                "magazineCapacity": 15,
-                "isWelded": false,
-                "weldingProgress": 0.0,
-                "meshGUID": "",
-                "materialGUID": "",
-                "meshName": "",
+                "magazineCapacity": 0,
+                "isWelded": true,
+                "weldingProgress": 100.0,
+                "meshGUID": "63daf754bee1e8840886d8c45ef661a6",
+                "materialGUID": "4abc8c0ba3de1d74baac56007363db2f",
+                "meshName": "barrel_0",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
             "magazinePart": {
-                "partType": 0,
-                "partName": "",
+                "partType": 1,
+                "partName": "грубый магазин",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
@@ -504,12 +504,12 @@
                 "recoilModifier": 0.0,
                 "reloadSpeedModifier": 0.0,
                 "scopeModifier": 0.0,
-                "magazineCapacity": 15,
+                "magazineCapacity": 8,
                 "isWelded": false,
                 "weldingProgress": 0.0,
-                "meshGUID": "",
-                "materialGUID": "",
-                "meshName": "",
+                "meshGUID": "e3908b714a5d08b4aaab819df23bd428",
+                "materialGUID": "4abc8c0ba3de1d74baac56007363db2f",
+                "meshName": "mag_0",
                 "lensOverlayPrefabGUID": "",
                 "lensOverlayName": ""
             },
@@ -554,5 +554,5 @@
         }
     },
     "gameSettings": "{\"mouseSensitivity\":2.0,\"touchSensitivity\":2.0,\"masterVolume\":1.0,\"sfxVolume\":1.0,\"musicVolume\":1.0}",
-    "tutorialQuestIndex": 8
+    "tutorialQuestIndex": 5
 }
