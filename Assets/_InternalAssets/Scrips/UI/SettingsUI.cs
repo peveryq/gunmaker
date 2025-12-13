@@ -68,10 +68,40 @@ public class SettingsUI : MonoBehaviour
     private void Update()
     {
         // Handle keyboard shortcut (Q key)
+        // Don't open settings if player is in a fullscreen window
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            ToggleSettings();
+            if (!IsFullscreenBlocked())
+            {
+                ToggleSettings();
+            }
         }
+    }
+    
+    /// <summary>
+    /// Проверка: сейчас открыт какой-либо полноэкранный UI, перекрывающий HUD?
+    /// </summary>
+    private bool IsFullscreenBlocked()
+    {
+        // На стрельбище AdManager блокируется, но это не полноэкранное окно
+        // Проверяем только если мы в мастерской
+        bool isInWorkshop = LocationManager.Instance != null && 
+                           LocationManager.Instance.CurrentLocation == LocationManager.LocationType.Workshop;
+        
+        // 1) Блок от AdManager (используется для таймера рекламы и полноэкранных окон)
+        // Но только если мы в мастерской (на стрельбище блок не означает полноэкранное окно)
+        if (isInWorkshop && AdManager.Instance != null && AdManager.Instance.IsAdTimerBlocked)
+        {
+            return true;
+        }
+        
+        // 2) Общий контекст HUD — если кто-то запросил скрытие HUD, значит на экране полноэкранный UI
+        if (GameplayUIContext.HasInstance && GameplayUIContext.Instance.IsHudHidden)
+        {
+            return true;
+        }
+        
+        return false;
     }
     
     private void InitializeUI()
