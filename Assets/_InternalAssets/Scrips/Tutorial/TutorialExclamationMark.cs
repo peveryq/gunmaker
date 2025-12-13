@@ -69,15 +69,13 @@ public class TutorialExclamationMark : MonoBehaviour
         // Create looping animation: move up, then down, repeat
         Vector3 upPosition = originalPosition + Vector3.up * animationDistance;
         
-        animationTween = transform.DOLocalMoveY(upPosition.y, animationDuration * 0.5f)
-            .SetEase(animationEase)
-            .OnComplete(() =>
-            {
-                // Move back down
-                animationTween = transform.DOLocalMoveY(originalPosition.y, animationDuration * 0.5f)
-                    .SetEase(animationEase)
-                    .SetLoops(-1, LoopType.Restart);
-            });
+        // Create a sequence that moves up then down, and loops infinitely
+        Sequence sequence = DOTween.Sequence();
+        sequence.Append(transform.DOLocalMoveY(upPosition.y, animationDuration * 0.5f).SetEase(animationEase));
+        sequence.Append(transform.DOLocalMoveY(originalPosition.y, animationDuration * 0.5f).SetEase(animationEase));
+        sequence.SetLoops(-1, LoopType.Restart);
+        
+        animationTween = sequence;
     }
     
     /// <summary>

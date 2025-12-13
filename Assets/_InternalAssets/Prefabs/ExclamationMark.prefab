@@ -99,6 +99,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc62eaae9f5589346b85000c0e38ad2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animationDistance: 0.3
-  animationDuration: 1
-  animationEase: 4
+  animationDistance: 0.2
+  animationDuration: 0.7
+  animationEase: 21
