@@ -51,7 +51,15 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     
     public bool CanInteract(InteractionHandler player)
     {
-        return !isLocked;
+        if (isLocked) return false;
+        
+        // Block interaction with door until quest 12 is reached
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingDoor())
+        {
+            return false;
+        }
+        
+        return true;
     }
     
     public string GetInteractionPrompt(InteractionHandler player)
@@ -67,6 +75,21 @@ public class LocationDoor : MonoBehaviour, IInteractable, IInteractionOptionsPro
     public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
     {
         if (options == null) return;
+        
+        // Block interaction with door until quest 12 is reached
+        // Check this FIRST before other checks to prevent showing the button
+        if (TutorialManager.Instance != null)
+        {
+            if (TutorialManager.Instance.IsQuestBlockingDoor())
+            {
+                return;
+            }
+        }
+        else
+        {
+            // If TutorialManager is not available yet, block interaction
+            return;
+        }
         
         bool available = !isLocked;
         string resolvedLabel;

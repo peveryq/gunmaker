@@ -255,15 +255,16 @@ Format: [index] = Quest number + language
     }
     
     /// <summary>
-    /// Check if a quest is a checkpoint (quests 1, 4, 6, 9, 12)
+    /// Check if a quest is a checkpoint (quests 1, 4, 6, 9, 11, 12)
     /// </summary>
     private bool IsCheckpointQuest(TutorialQuest quest)
     {
-        // Checkpoints: CreateGun (0), AttachBarrel (3), WeldBarrel (5), AttachMag (8), EnterRange (11)
+        // Checkpoints: CreateGun (0), AttachBarrel (3), WeldBarrel (5), AttachMag (8), ShootTargets (10), EnterRange (11)
         return quest == TutorialQuest.CreateGun || 
                quest == TutorialQuest.AttachBarrel || 
                quest == TutorialQuest.WeldBarrel || 
                quest == TutorialQuest.AttachMag || 
+               quest == TutorialQuest.ShootTargets ||
                quest == TutorialQuest.EnterRange;
     }
     
@@ -298,7 +299,7 @@ Format: [index] = Quest number + language
     
     /// <summary>
     /// Update tutorial progress in memory (will be saved by autosave system)
-    /// Only saves checkpoint quests (1, 4, 6, 9, 12)
+    /// Only saves checkpoint quests (1, 4, 6, 9, 11, 12)
     /// Saves the last checkpoint that is guaranteed to be completed (before current quest)
     /// </summary>
     private void SaveTutorialProgress()
@@ -594,6 +595,20 @@ Format: [index] = Quest number + language
         // Save progress
         SaveTutorialProgress();
         
+        // Force auto-save when quest 10 (TakeGun) becomes active
+        if (quest == TutorialQuest.TakeGun)
+        {
+            if (SaveSystemManager.Instance != null)
+            {
+                SaveSystemManager.Instance.TriggerAutoSaveOnReturn();
+                Debug.Log("TutorialManager: Forced auto-save triggered for quest 10 (TakeGun)");
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: Cannot trigger auto-save - SaveSystemManager.Instance is null");
+            }
+        }
+        
         OnQuestStarted?.Invoke(quest);
         
         Debug.Log($"TutorialManager: Started quest {quest} ({questText})");
@@ -620,6 +635,20 @@ Format: [index] = Quest number + language
         
         // Save progress
         SaveTutorialProgress();
+        
+        // Force auto-save when quest 10 (TakeGun) becomes active
+        if (nextQuest == TutorialQuest.TakeGun)
+        {
+            if (SaveSystemManager.Instance != null)
+            {
+                SaveSystemManager.Instance.TriggerAutoSaveOnReturn();
+                Debug.Log("TutorialManager: Forced auto-save triggered for quest 10 (TakeGun)");
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: Cannot trigger auto-save - SaveSystemManager.Instance is null");
+            }
+        }
         
         OnQuestStarted?.Invoke(nextQuest);
         
@@ -654,6 +683,93 @@ Format: [index] = Quest number + language
         OnQuestCompleted?.Invoke(completedQuest);
         
         Debug.Log($"TutorialManager: Completed quest {completedQuest}");
+    }
+    
+    /// <summary>
+    /// Complete current quest and skip specified quests, jumping directly to target quest
+    /// </summary>
+    private void CompleteQuestWithSkip(TutorialQuest[] questsToSkip, TutorialQuest targetQuest)
+    {
+        if (currentQuest == TutorialQuest.None || currentQuest == TutorialQuest.Completed)
+        {
+            return;
+        }
+        
+        TutorialQuest completedQuest = currentQuest;
+        
+        // Hide exclamation mark first
+        HideExclamationMark(completedQuest);
+        
+        // Mark skipped quests as completed
+        foreach (TutorialQuest skippedQuest in questsToSkip)
+        {
+            OnQuestCompleted?.Invoke(skippedQuest);
+            Debug.Log($"TutorialManager: Skipped quest {skippedQuest}");
+        }
+        
+        // Если сейчас открыт полноэкранный UI, ждём его закрытия и только потом показываем анимации
+        if (IsFullscreenBlocked())
+        {
+            StartCoroutine(WaitForFullscreenAndRunQuestTransitionWithSkip(completedQuest, targetQuest));
+        }
+        else
+        {
+            RunQuestTransitionWithSkip(completedQuest, targetQuest);
+        }
+        
+        OnQuestCompleted?.Invoke(completedQuest);
+        
+        Debug.Log($"TutorialManager: Completed quest {completedQuest}, skipped {questsToSkip.Length} quests, jumping to {targetQuest}");
+    }
+    
+    /// <summary>
+    /// Выполнить переход к целевому квесту с анимациями (пропуская промежуточные квесты)
+    /// </summary>
+    private void RunQuestTransitionWithSkip(TutorialQuest completedQuest, TutorialQuest targetQuest)
+    {
+        if (questUI != null)
+        {
+            questUI.CompleteQuestAnimation(() =>
+            {
+                // Switch directly to target quest
+                questUI.SwitchQuestAnimation(GetQuestText(targetQuest), () =>
+                {
+                    // Continue with target quest (UI already updated)
+                    ContinueToNextQuest(targetQuest);
+                });
+            });
+        }
+        else
+        {
+            // No UI - just move to target quest
+            StartQuest(targetQuest);
+        }
+    }
+    
+    /// <summary>
+    /// Короутина: ждём выхода из полноэкранного окна и только после этого запускаем анимации перехода с пропуском квестов
+    /// </summary>
+    private IEnumerator WaitForFullscreenAndRunQuestTransitionWithSkip(TutorialQuest completedQuest, TutorialQuest targetQuest)
+    {
+        // Ждём пока разблокируется полноэкранный UI
+        while (IsFullscreenBlocked())
+        {
+            yield return null;
+        }
+        
+        // После закрытия полноэкранного окна проверяем локацию для квеста 12
+        // (на случай, если событие смены локации сработало, пока окно было открыто)
+        if (completedQuest == TutorialQuest.EnterRange)
+        {
+            CheckEnterRangeQuest();
+            // Если квест завершился, выходим (RunQuestTransition вызовется из CompleteQuest)
+            if (quest12Completed)
+            {
+                yield break;
+            }
+        }
+        
+        RunQuestTransitionWithSkip(completedQuest, targetQuest);
     }
     
     /// <summary>
@@ -1004,7 +1120,25 @@ Format: [index] = Quest number + language
                 if (welding != null && welding.IsWelded)
                 {
                     quest6Completed = true;
-                    CompleteQuest();
+                    
+                    // Check if weapon already has a magazine attached
+                    // If yes, skip quests 7, 8, 9 and go directly to quest 10
+                    WeaponPart magazine = workbench.MountedWeapon.GetPart(PartType.Magazine);
+                    if (magazine != null)
+                    {
+                        // Magazine already attached - skip quests 7, 8, 9
+                        quest7Completed = true; // BuyMag
+                        quest8Completed = true; // TakeMag
+                        quest9Completed = true; // AttachMag
+                        
+                        // Complete quest 6 and jump directly to quest 10
+                        CompleteQuestWithSkip(questsToSkip: new[] { TutorialQuest.BuyMag, TutorialQuest.TakeMag, TutorialQuest.AttachMag }, targetQuest: TutorialQuest.TakeGun);
+                    }
+                    else
+                    {
+                        // No magazine - continue normally
+                        CompleteQuest();
+                    }
                 }
             }
         }
@@ -1161,6 +1295,92 @@ Format: [index] = Quest number + language
         return currentQuest != TutorialQuest.TakeGun && 
                currentQuest != TutorialQuest.Completed && 
                currentQuest != TutorialQuest.None;
+    }
+    
+    /// <summary>
+    /// Check if tutorial is blocking interaction with shop computer (before quest 1)
+    /// </summary>
+    public bool IsQuestBlockingShopComputer()
+    {
+        // If tutorial is not initialized yet, block interaction
+        if (!isInitialized)
+        {
+            return true;
+        }
+        
+        // Block until quest 1 (CreateGun) is reached or started
+        // Block if currentQuest is None (new game, before quest 1 starts)
+        // Also block if currentQuest is CreateGun but quest 1 is not yet completed
+        // (to prevent interaction during quest 1 execution)
+        // Allow interaction once quest 1 (CreateGun) is completed or any quest after it
+        if (currentQuest == TutorialQuest.None)
+        {
+            return true;
+        }
+        
+        // If we're on quest 1, check if it's completed
+        if (currentQuest == TutorialQuest.CreateGun)
+        {
+            // Block if quest 1 is not completed yet
+            return !quest1Completed;
+        }
+        
+        // Allow interaction for all other quests (quest 2 and beyond)
+        return false;
+    }
+    
+    /// <summary>
+    /// Check if auto-save should be blocked (quest 10 or quest 11, before quest 12)
+    /// </summary>
+    public bool IsAutoSaveBlocked()
+    {
+        if (!isInitialized || tutorialCompleted)
+        {
+            return false;
+        }
+        
+        // Block if current quest is TakeGun (quest 10) - not yet completed
+        if (currentQuest == TutorialQuest.TakeGun)
+        {
+            return true;
+        }
+        
+        // Block if current quest is ShootTargets (quest 11) - not yet completed
+        if (currentQuest == TutorialQuest.ShootTargets && !quest11Completed)
+        {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// Check if tutorial is blocking interaction with door (before quest 12)
+    /// </summary>
+    public bool IsQuestBlockingDoor()
+    {
+        // If tutorial is not initialized yet, block interaction
+        if (!isInitialized)
+        {
+            return true;
+        }
+        
+        // If tutorial is completed, allow interaction
+        if (tutorialCompleted || currentQuest == TutorialQuest.Completed)
+        {
+            return false;
+        }
+        
+        // Block until quest 12 (EnterRange) is reached or started
+        // Block on all quests before quest 12 (quests 1-11)
+        // Allow interaction once quest 12 (EnterRange) is active
+        if (currentQuest == TutorialQuest.EnterRange)
+        {
+            return false;
+        }
+        
+        // Block on all other quests (1-11)
+        return true;
     }
     
     /// <summary>

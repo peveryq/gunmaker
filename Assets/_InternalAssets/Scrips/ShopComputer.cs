@@ -59,6 +59,12 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
             return false;
         }
         
+        // Block interaction with shop computer until quest 1 is reached
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingShopComputer())
+        {
+            return false;
+        }
+        
         return true;
     }
     
@@ -75,6 +81,22 @@ public class ShopComputer : MonoBehaviour, IInteractable, IInteractionOptionsPro
     public void PopulateInteractionOptions(InteractionHandler handler, List<InteractionOption> options)
     {
         if (options == null) return;
+        
+        // Block interaction with shop computer until quest 1 is reached
+        // Check this FIRST before CanInteract to prevent showing the button
+        if (TutorialManager.Instance != null)
+        {
+            if (TutorialManager.Instance.IsQuestBlockingShopComputer())
+            {
+                return;
+            }
+        }
+        else
+        {
+            // If TutorialManager is not available yet, block interaction
+            return;
+        }
+        
         bool available = CanInteract(handler);
         if (!available)
         {
