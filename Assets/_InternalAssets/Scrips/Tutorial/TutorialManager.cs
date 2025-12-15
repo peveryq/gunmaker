@@ -1401,5 +1401,10 @@ Format: [index] = Quest number + language
     /// Check if tutorial is completed
     /// </summary>
     public bool IsTutorialCompleted => tutorialCompleted;
+    
+    /// <summary>
+    /// Check if tutorial system is initialized
+    /// </summary>
+    public bool IsInitialized => isInitialized;
 }
 

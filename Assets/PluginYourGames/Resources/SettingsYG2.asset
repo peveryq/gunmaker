@@ -20,7 +20,7 @@ MonoBehaviour:
     playerPhoto: demo image
     payingStatus: 0
   InterstitialAdv:
-    showFirstAdv: 1
+    showFirstAdv: 0
     interAdvInterval: 90
     postponeCallByFail: 1
     postponeCallTimer: 90
@@ -50,7 +50,7 @@ MonoBehaviour:
   Simulation:
     device: 0
     language: ru
-    advIntervalSimulation: 90
+    advIntervalSimulation: 10
     durationAdv: 1
     loadAdv: 0
     testFailAds: 0

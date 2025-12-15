@@ -72,9 +72,9 @@ public class SettingsUI : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q))
         {
             if (!IsFullscreenBlocked())
-            {
-                ToggleSettings();
-            }
+        {
+            ToggleSettings();
+        }
         }
     }
     

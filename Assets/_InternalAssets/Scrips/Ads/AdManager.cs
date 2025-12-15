@@ -351,6 +351,16 @@ public class AdManager : MonoBehaviour
             // Also double-check that YG2 timer was actually reset (not still at 0 from previous ad)
             if (timerReady && !isWaitingForAd)
             {
+                // Check if tutorial is blocking ads (must complete quest 12 first)
+                if (IsTutorialBlockingAds())
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log("AdManager: Ad timer ready but tutorial not completed - skipping ad");
+                    }
+                    continue; // Skip showing ad, but timer continues running
+                }
+                
                 // Additional safety check: if timer shows 0 seconds, it might be from previous ad
                 // Wait a bit more to ensure YG2 SDK has reset the timer
                 if (YG2.isSDKEnabled && YG2.timerInterAdv <= 0.1f && lastAdClosedTime > 0f && Time.time - lastAdClosedTime < AD_COOLDOWN_AFTER_CLOSE + 1f)
@@ -379,6 +389,16 @@ public class AdManager : MonoBehaviour
     {
         if (isWaitingForAd || YG2.nowAdsShow)
         {
+            return;
+        }
+        
+        // Double-check if tutorial is blocking ads (safety check)
+        if (IsTutorialBlockingAds())
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log("AdManager: ShowAdWithWarning called but tutorial not completed - blocking");
+            }
             return;
         }
         
@@ -984,4 +1004,46 @@ public class AdManager : MonoBehaviour
     /// Check if ad timer is currently blocked by fullscreen UI
     /// </summary>
     public bool IsAdTimerBlocked => fullscreenUIBlockCount > 0;
+    
+    /// <summary>
+    /// Check if tutorial is blocking ads (must complete quest 12 first)
+    /// Returns true if tutorial is active and not completed (blocks ads)
+    /// Returns true if tutorial is not initialized yet (blocks ads during initial load)
+    /// Returns false if tutorial is completed (allows ads)
+    /// </summary>
+    private bool IsTutorialBlockingAds()
+    {
+        // If TutorialManager doesn't exist, allow ads
+        if (TutorialManager.Instance == null)
+        {
+            return false;
+        }
+        
+        // If tutorial is completed, allow ads
+        if (TutorialManager.Instance.IsTutorialCompleted)
+        {
+            return false;
+        }
+        
+        // If tutorial is not initialized yet, block ads (tutorial might start soon)
+        // This prevents ads from showing during initial game load
+        if (!TutorialManager.Instance.IsInitialized)
+        {
+            return true;
+        }
+        
+        // Check current quest - block ads if quest 12 (EnterRange) is not completed
+        // Quest 12 is the last quest, so if it's not completed, tutorial is still active
+        TutorialQuest currentQuest = TutorialManager.Instance.CurrentQuest;
+        
+        // Block ads if tutorial is active (any quest except Completed)
+        // This means ads will only show after quest 12 is completed
+        if (currentQuest == TutorialQuest.Completed)
+        {
+            return false; // Tutorial completed, allow ads
+        }
+        
+        // Tutorial is active (quests 1-12), block ads
+        return true;
+    }
 }

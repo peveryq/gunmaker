@@ -7,7 +7,7 @@
         false,
         false
     ],
-    "idSave": 4,
+    "idSave": 6,
     "playerMoney": 40010,
     "savedWeapons": [
         {
@@ -25,7 +25,7 @@
             },
             "barrelPart": {
                 "partType": 0,
-                "partName": "сrude ствол",
+                "partName": "старый ствол",
                 "partCost": 0,
                 "powerModifier": 0.0,
                 "accuracyModifier": 0.0,
