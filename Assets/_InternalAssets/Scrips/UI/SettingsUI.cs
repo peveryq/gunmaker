@@ -53,6 +53,15 @@ public class SettingsUI : MonoBehaviour
     [SerializeField] private Button clearSaveDataButton;
     [SerializeField] private Image clearSaveDataProgressBar; // Progress bar for hold-to-clear
     [SerializeField] private float clearSaveDataHoldTime = 2f; // Time in seconds to hold the button
+    [SerializeField] private Button saveGameButton; // Button for manual save trigger
+    
+    [Header("Auto-Save Indicator")]
+    [SerializeField] private GameObject autosaveRoot;
+    [SerializeField] private Image autosaveIcon;
+    [SerializeField] private TextMeshProUGUI autosaveText;
+    [SerializeField] private float autosaveIconRotationSpeed = 180f;
+    [SerializeField] private float autosaveDisplayDuration = 1.5f;
+    [SerializeField] private string autosaveTextString = "autosave";
     
     [Header("Localization")]
     [SerializeField] private SettingsLabels labels = new SettingsLabels();
@@ -63,6 +72,10 @@ public class SettingsUI : MonoBehaviour
     // Clear save data button hold tracking
     private bool isClearSaveDataButtonHeld = false;
     private Coroutine clearSaveDataHoldCoroutine;
+    
+    // Auto-save indicator
+    private Tween autosaveIconRotationTween;
+    private Coroutine autosaveDisplayCoroutine;
     
     private void Start()
     {
@@ -177,6 +190,12 @@ public class SettingsUI : MonoBehaviour
             musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
         }
         
+        // Action buttons - Save Game button
+        if (saveGameButton != null)
+        {
+            saveGameButton.onClick.AddListener(OnSaveGameClicked);
+        }
+        
         // Action buttons - Clear Save Data uses hold-to-confirm, not simple click
         if (clearSaveDataButton != null)
         {
@@ -221,6 +240,12 @@ public class SettingsUI : MonoBehaviour
             clearSaveDataProgressBar.gameObject.SetActive(false); // Hide by default
         }
         
+        // Initialize auto-save indicator (hide by default)
+        if (autosaveRoot != null)
+        {
+            autosaveRoot.SetActive(false);
+        }
+        
         // Subscribe to settings manager events
         if (SettingsManager.Instance != null)
         {
@@ -234,6 +259,18 @@ public class SettingsUI : MonoBehaviour
         if (SettingsManager.Instance != null)
         {
             SettingsManager.Instance.OnSettingsChanged -= OnSettingsUpdated;
+        }
+        
+        // Kill rotation tween on destroy
+        if (autosaveIconRotationTween != null && autosaveIconRotationTween.IsActive())
+        {
+            autosaveIconRotationTween.Kill();
+        }
+        
+        // Stop coroutine
+        if (autosaveDisplayCoroutine != null)
+        {
+            StopCoroutine(autosaveDisplayCoroutine);
         }
     }
     
@@ -522,6 +559,116 @@ public class SettingsUI : MonoBehaviour
             
             Debug.Log("SettingsUI: All save data cleared and saved to cloud.");
         }
+    }
+    
+    /// <summary>
+    /// Handle save game button click - triggers manual save with UI indicator
+    /// </summary>
+    private void OnSaveGameClicked()
+    {
+        if (SaveSystemManager.Instance != null)
+        {
+            // Trigger save with UI indicator
+            // SaveGameData bypasses quest blocking (unlike TriggerAutoSave)
+            SaveSystemManager.Instance.SaveGameData(showUI: true);
+            
+            // Show indicator in settings UI (separate from GameplayHUD indicator)
+            ShowAutoSaveIndicator();
+            
+            Debug.Log("SettingsUI: Manual save triggered.");
+        }
+        else
+        {
+            Debug.LogWarning("SettingsUI: Cannot save - SaveSystemManager.Instance is null.");
+        }
+    }
+    
+    /// <summary>
+    /// Show auto-save indicator with rotating icon and text (similar to GameplayHUD)
+    /// </summary>
+    private void ShowAutoSaveIndicator()
+    {
+        if (autosaveRoot == null) return;
+        
+        // Stop any existing display
+        if (autosaveDisplayCoroutine != null)
+        {
+            StopCoroutine(autosaveDisplayCoroutine);
+        }
+        
+        // Kill any existing rotation tween
+        if (autosaveIconRotationTween != null && autosaveIconRotationTween.IsActive())
+        {
+            autosaveIconRotationTween.Kill();
+        }
+        
+        // Start display coroutine
+        autosaveDisplayCoroutine = StartCoroutine(ShowAutoSaveIndicatorCoroutine());
+    }
+    
+    private IEnumerator ShowAutoSaveIndicatorCoroutine()
+    {
+        // Show root
+        if (autosaveRoot != null)
+        {
+            autosaveRoot.SetActive(true);
+        }
+        
+        // Text is managed by LocalizedText component if present
+        // If no LocalizedText component, we can set it manually as fallback
+        if (autosaveText != null)
+        {
+            // Check if LocalizedText component exists - if so, don't override
+            LocalizedText localizedTextComponent = autosaveText.GetComponent<LocalizedText>();
+            if (localizedTextComponent == null)
+            {
+                // No LocalizedText component, use fallback text
+                if (!string.IsNullOrEmpty(autosaveTextString))
+                {
+                    autosaveText.text = autosaveTextString;
+                }
+            }
+            // If LocalizedText exists, it will handle the text automatically
+        }
+        
+        // Reset icon rotation
+        if (autosaveIcon != null)
+        {
+            autosaveIcon.rectTransform.localRotation = Quaternion.identity;
+        }
+        
+        // Start rotating icon with DOTween
+        if (autosaveIcon != null && !Mathf.Approximately(autosaveIconRotationSpeed, 0f))
+        {
+            autosaveIconRotationTween = autosaveIcon.rectTransform
+                .DORotate(new Vector3(0f, 0f, -360f), 360f / autosaveIconRotationSpeed, RotateMode.FastBeyond360)
+                .SetLoops(-1, LoopType.Restart)
+                .SetEase(Ease.Linear);
+        }
+        
+        // Wait for display duration
+        yield return new WaitForSeconds(autosaveDisplayDuration);
+        
+        // Hide root
+        if (autosaveRoot != null)
+        {
+            autosaveRoot.SetActive(false);
+        }
+        
+        // Kill rotation tween
+        if (autosaveIconRotationTween != null && autosaveIconRotationTween.IsActive())
+        {
+            autosaveIconRotationTween.Kill();
+            autosaveIconRotationTween = null;
+        }
+        
+        // Reset icon rotation
+        if (autosaveIcon != null)
+        {
+            autosaveIcon.rectTransform.localRotation = Quaternion.identity;
+        }
+        
+        autosaveDisplayCoroutine = null;
     }
     
     /// <summary>
