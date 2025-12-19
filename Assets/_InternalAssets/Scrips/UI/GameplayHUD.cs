@@ -56,10 +56,14 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private float autosaveDisplayDuration = 1.5f;
     [SerializeField] private string autosaveTextString = "autosave";
     
+    [Header("Drop Item Hint")]
+    [SerializeField] private GameObject dropItemHintRoot;
+    
     [Header("Tutorial Quest UI")]
     [SerializeField] private TutorialQuestUI tutorialQuestUI;
 
     private MoneySystem moneySystem;
+    private InteractionHandler interactionHandler;
     private bool hudVisible = true;
     private bool crosshairVisible = true;
     private bool reloadIndicatorVisible;
@@ -98,6 +102,12 @@ public class GameplayHUD : MonoBehaviour
         if (autosaveRoot != null)
         {
             autosaveRoot.SetActive(false);
+        }
+        
+        // Hide drop item hint initially
+        if (dropItemHintRoot != null)
+        {
+            dropItemHintRoot.SetActive(false);
         }
         
         // Setup settings button
@@ -158,6 +168,9 @@ public class GameplayHUD : MonoBehaviour
 
             reloadSpinnerImage.rectTransform.Rotate(0f, 0f, -reloadSpinnerSpeed * delta);
         }
+        
+        // Update drop item hint visibility
+        UpdateDropItemHint();
     }
 
     public HUDInteractionPanel InteractionPanel => interactionPanel;
@@ -547,6 +560,32 @@ public class GameplayHUD : MonoBehaviour
         else
         {
             Debug.LogWarning("GameplayHUD: SettingsUI not found in scene!");
+        }
+    }
+    
+    /// <summary>
+    /// Update drop item hint visibility based on item holding state and platform
+    /// </summary>
+    private void UpdateDropItemHint()
+    {
+        if (dropItemHintRoot == null) return;
+        
+        // Find InteractionHandler if not cached
+        if (interactionHandler == null)
+        {
+            interactionHandler = FindFirstObjectByType<InteractionHandler>();
+        }
+        
+        // Show hint only when: item is held AND platform is desktop AND HUD is visible
+        bool shouldShow = hudVisible && 
+                         interactionHandler != null && 
+                         interactionHandler.IsHoldingItem &&
+                         DeviceDetectionManager.Instance != null && 
+                         DeviceDetectionManager.Instance.IsDesktop;
+        
+        if (dropItemHintRoot.activeSelf != shouldShow)
+        {
+            dropItemHintRoot.SetActive(shouldShow);
         }
     }
 }
