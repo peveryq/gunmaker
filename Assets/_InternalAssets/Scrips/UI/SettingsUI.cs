@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
 using System.Collections;
+using UnityEngine.SceneManagement;
+using YG;
 
 /// <summary>
 /// Settings UI controller - manages the settings panel and sliders
@@ -392,19 +394,61 @@ public class SettingsUI : MonoBehaviour
     }
     
     /// <summary>
-    /// Handle clear save data button click (for testing only)
+    /// Handle clear save data button click - resets all saves and restarts the game
     /// </summary>
     private void OnClearSaveDataClicked()
     {
         if (SettingsManager.Instance != null)
         {
+            // Close settings UI first
+            CloseSettings();
+            
+            // Clear all save data (this will call YG2.SetDefaultSaves() and YG2.SaveProgress())
             SettingsManager.Instance.ClearAllSaveData();
             
-            // Refresh UI to show default values
-            RefreshUI();
+            Debug.Log("SettingsUI: All save data cleared. Restarting game...");
             
-            Debug.Log("SettingsUI: All save data cleared (testing mode).");
+            // Wait a moment to ensure save operation completes, then reload the game
+            StartCoroutine(RestartGameAfterSaveClear());
         }
+    }
+    
+    /// <summary>
+    /// Coroutine to restart the game after clearing saves
+    /// </summary>
+    private IEnumerator RestartGameAfterSaveClear()
+    {
+        // Wait a frame to ensure save operations complete
+        yield return null;
+        
+        // Additional small delay to ensure cloud sync is initiated (if needed)
+        yield return new WaitForSeconds(0.1f);
+        
+        // Reset GameManager initialization state so it will restart initialization when Main scene loads
+        if (GameManager.Instance != null)
+        {
+            // Use reflection to reset the private isInitialized and isInitializing fields
+            var initializedField = typeof(GameManager).GetField("isInitialized", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var initializingField = typeof(GameManager).GetField("isInitializing", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (initializedField != null)
+            {
+                initializedField.SetValue(GameManager.Instance, false);
+            }
+            if (initializingField != null)
+            {
+                initializingField.SetValue(GameManager.Instance, false);
+            }
+            
+            Debug.Log("SettingsUI: GameManager initialization state reset.");
+        }
+        
+        // Reload the game by loading Bootstrap scene (scene 0)
+        // Bootstrapper will load Main scene, and GameManager.OnSceneLoaded will restart initialization
+        Debug.Log("SettingsUI: Loading Bootstrap scene to restart game with clean saves...");
+        SceneManager.LoadScene(0);
     }
     
     /// <summary>

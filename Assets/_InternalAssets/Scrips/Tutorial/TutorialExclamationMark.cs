@@ -17,6 +17,8 @@ public class TutorialExclamationMark : MonoBehaviour
     
     private void Awake()
     {
+        // Store original local position (should be Vector3.zero if created correctly)
+        // DO NOT modify transform properties - they should match prefab settings and parent transform
         originalPosition = transform.localPosition;
     }
     

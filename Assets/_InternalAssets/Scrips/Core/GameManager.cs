@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using YG;
 
 /// <summary>
@@ -31,6 +32,7 @@ public class GameManager : MonoBehaviour
     
     // State
     private bool isInitialized = false;
+    private bool isInitializing = false; // Track if initialization is in progress
     public bool IsInitialized => isInitialized;
     
     // Events
@@ -65,6 +67,48 @@ public class GameManager : MonoBehaviour
         StartCoroutine(InitializeGame());
     }
     
+    void OnEnable()
+    {
+        // Subscribe to scene loaded event to handle scene reloads
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    /// <summary>
+    /// Called when a scene is loaded. Restarts initialization if Main scene is loaded and not already initialized.
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // If Main scene is loaded and we haven't initialized yet (or were reset), restart initialization
+        // This handles the case when scene is reloaded (e.g., after clearing saves)
+        if (scene.buildIndex == 1 && !isInitialized && !isInitializing) // Main.unity is scene index 1
+        {
+            Debug.Log("GameManager: Main scene loaded, restarting initialization...");
+            // Re-find LoadingScreen in case it was recreated in the scene
+            if (loadingScreen == null)
+            {
+                loadingScreen = FindFirstObjectByType<LoadingScreen>();
+            }
+            StartCoroutine(InitializeGame());
+        }
+    }
+    
+    /// <summary>
+    /// Reset GameManager state (call when save data is cleared)
+    /// Resets initialization flags so game will reinitialize on next scene load
+    /// </summary>
+    public void ResetGameState()
+    {
+        Debug.Log("GameManager: Resetting game state...");
+        isInitialized = false;
+        isInitializing = false;
+        Debug.Log("GameManager: Game state reset complete. Will reinitialize on next scene load.");
+    }
+    
     /// <summary>
     /// Main initialization coroutine. Initializes all systems in order.
     /// All systems are optional - if they don't exist, initialization is skipped.
@@ -72,6 +116,16 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private IEnumerator InitializeGame()
     {
+        // Prevent multiple initialization coroutines from running simultaneously
+        if (isInitializing)
+        {
+            Debug.Log("GameManager: Initialization already in progress, skipping...");
+            yield break;
+        }
+        
+        isInitializing = true;
+        isInitialized = false;
+        
         Debug.Log("GameManager: Starting game initialization...");
         
         // Show loading screen
@@ -106,6 +160,7 @@ public class GameManager : MonoBehaviour
         
         // Mark as initialized
         isInitialized = true;
+        isInitializing = false;
         
         Debug.Log("GameManager: All systems initialized and location loaded!");
         

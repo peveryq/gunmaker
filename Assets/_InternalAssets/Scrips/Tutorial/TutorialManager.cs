@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using YG;
 
 /// <summary>
@@ -48,6 +49,7 @@ Format: [index] = Quest number + language
     private TutorialQuest currentQuest = TutorialQuest.None;
     private bool isInitialized = false;
     private bool tutorialCompleted = false;
+    private bool isInitializing = false; // Track if initialization coroutine is running
     
     // Exclamation marks
     private Dictionary<TutorialQuest, TutorialExclamationMark> exclamationMarks = new Dictionary<TutorialQuest, TutorialExclamationMark>();
@@ -94,14 +96,51 @@ Format: [index] = Quest number + language
         }
     }
     
+    private void OnEnable()
+    {
+        // Subscribe to scene loaded event to handle scene reloads
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    /// <summary>
+    /// Called when a scene is loaded. Reinitializes tutorial if needed (e.g., after save data was cleared)
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // If Main scene is loaded and tutorial is not initialized and not already initializing, restart initialization
+        // This handles the case when ResetTutorial() was called before scene reload
+        if (scene.buildIndex == 1 && !isInitialized && !isInitializing) // Main.unity is scene index 1
+        {
+            Debug.Log("TutorialManager: Main scene loaded, restarting initialization...");
+            StartCoroutine(WaitForInitialization());
+        }
+    }
+    
     private void Start()
     {
         // Wait for GameManager and SaveSystemManager initialization
-        StartCoroutine(WaitForInitialization());
+        // Only start if not already initializing (avoid duplicate coroutines)
+        if (!isInitializing && !isInitialized)
+        {
+            StartCoroutine(WaitForInitialization());
+        }
     }
     
     private IEnumerator WaitForInitialization()
     {
+        // Prevent multiple initialization coroutines
+        if (isInitializing || isInitialized)
+        {
+            yield break;
+        }
+        
+        isInitializing = true;
+        
         // Wait for GameManager
         while (GameManager.Instance == null)
         {
@@ -126,8 +165,13 @@ Format: [index] = Quest number + language
         // Additional wait to ensure all systems are ready
         yield return new WaitForSeconds(0.1f);
         
-        // Now initialize tutorial
-        InitializeTutorial();
+        // Now initialize tutorial (will skip if already initialized)
+        if (!isInitialized)
+        {
+            InitializeTutorial();
+        }
+        
+        isInitializing = false;
     }
     
     /// <summary>
@@ -156,7 +200,8 @@ Format: [index] = Quest number + language
             }
         }
         
-        // Auto-find locations if not assigned
+        // Auto-find locations ONLY if they are not already assigned in Inspector
+        // This prevents overwriting manually assigned locations when scene reloads
         AutoFindLocations();
         
         // Create exclamation marks
@@ -335,12 +380,51 @@ Format: [index] = Quest number + language
         Debug.Log($"TutorialManager: Updated tutorial progress in memory - Current quest: {currentQuest}, Checkpoint quest index: {YG2.saves.tutorialQuestIndex} (will be saved by autosave)");
     }
     
+    // Store names of location objects to restore them after scene reload
+    private string workbenchLocationName;
+    private string shopComputerLocationName;
+    private string partSpawnLocationName;
+    private string blowtorchLocationName;
+    private string shootingTargetsLocationName;
+    private string locationDoorLocationName;
+    
     /// <summary>
-    /// Auto-find quest locations if not assigned in Inspector
+    /// Auto-find quest locations ONLY if not already assigned in Inspector
+    /// If locations were assigned but lost due to scene reload, restore them by name
+    /// This prevents overwriting manually assigned locations when scene reloads
     /// </summary>
     private void AutoFindLocations()
     {
-        // Find workbench
+        // Store names of assigned locations before they might be null
+        if (workbenchLocation != null)
+        {
+            workbenchLocationName = GetFullPath(workbenchLocation);
+        }
+        if (shopComputerLocation != null)
+        {
+            shopComputerLocationName = GetFullPath(shopComputerLocation);
+        }
+        if (partSpawnLocation != null)
+        {
+            partSpawnLocationName = GetFullPath(partSpawnLocation);
+        }
+        if (blowtorchLocation != null)
+        {
+            blowtorchLocationName = GetFullPath(blowtorchLocation);
+        }
+        if (shootingTargetsLocation != null)
+        {
+            shootingTargetsLocationName = GetFullPath(shootingTargetsLocation);
+        }
+        if (locationDoorLocation != null)
+        {
+            locationDoorLocationName = GetFullPath(locationDoorLocation);
+        }
+        
+        // First, try to restore locations by saved names (to recover from scene reload)
+        RestoreLocationsByName();
+        
+        // Then, auto-find only if still null (fallback for cases when not assigned in Inspector)
         if (workbenchLocation == null)
         {
             Workbench workbench = FindFirstObjectByType<Workbench>();
@@ -350,7 +434,6 @@ Format: [index] = Quest number + language
             }
         }
         
-        // Find shop computer
         if (shopComputerLocation == null)
         {
             ShopComputer shopComputer = FindFirstObjectByType<ShopComputer>();
@@ -360,7 +443,6 @@ Format: [index] = Quest number + language
             }
         }
         
-        // Find part spawn point
         if (partSpawnLocation == null)
         {
             if (PartSpawner.Instance != null && PartSpawner.Instance.SpawnPoint != null)
@@ -369,7 +451,6 @@ Format: [index] = Quest number + language
             }
         }
         
-        // Find blowtorch
         if (blowtorchLocation == null)
         {
             Blowtorch blowtorch = FindFirstObjectByType<Blowtorch>();
@@ -383,7 +464,6 @@ Format: [index] = Quest number + language
             }
         }
         
-        // Find location door
         if (locationDoorLocation == null)
         {
             LocationDoor door = FindFirstObjectByType<LocationDoor>();
@@ -392,9 +472,82 @@ Format: [index] = Quest number + language
                 locationDoorLocation = door.transform;
             }
         }
+    }
+    
+    /// <summary>
+    /// Restore location references by their saved full path names
+    /// </summary>
+    private void RestoreLocationsByName()
+    {
+        if (!string.IsNullOrEmpty(workbenchLocationName))
+        {
+            workbenchLocation = FindTransformByPath(workbenchLocationName);
+        }
+        if (!string.IsNullOrEmpty(shopComputerLocationName))
+        {
+            shopComputerLocation = FindTransformByPath(shopComputerLocationName);
+        }
+        if (!string.IsNullOrEmpty(partSpawnLocationName))
+        {
+            partSpawnLocation = FindTransformByPath(partSpawnLocationName);
+        }
+        if (!string.IsNullOrEmpty(blowtorchLocationName))
+        {
+            blowtorchLocation = FindTransformByPath(blowtorchLocationName);
+        }
+        if (!string.IsNullOrEmpty(shootingTargetsLocationName))
+        {
+            shootingTargetsLocation = FindTransformByPath(shootingTargetsLocationName);
+        }
+        if (!string.IsNullOrEmpty(locationDoorLocationName))
+        {
+            locationDoorLocation = FindTransformByPath(locationDoorLocationName);
+        }
+    }
+    
+    /// <summary>
+    /// Get full path string for a transform (e.g., "Root/Parent/Child")
+    /// </summary>
+    private string GetFullPath(Transform transform)
+    {
+        if (transform == null) return null;
         
-        // Note: shootingTargetsLocation should be assigned manually in Inspector
-        // as it's a custom location chosen by the user
+        string path = transform.name;
+        Transform parent = transform.parent;
+        
+        while (parent != null)
+        {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+        
+        return path;
+    }
+    
+    /// <summary>
+    /// Find transform by full path string (e.g., "Root/Parent/Child")
+    /// </summary>
+    private Transform FindTransformByPath(string fullPath)
+    {
+        if (string.IsNullOrEmpty(fullPath)) return null;
+        
+        // Split path by "/"
+        string[] pathParts = fullPath.Split('/');
+        if (pathParts.Length == 0) return null;
+        
+        // Find root object (first part of path)
+        GameObject root = GameObject.Find(pathParts[0]);
+        if (root == null) return null;
+        
+        // Navigate down the path
+        Transform current = root.transform;
+        for (int i = 1; i < pathParts.Length; i++)
+        {
+            current = current.Find(pathParts[i]);
+            if (current == null) return null;
+        }
+        
+        return current;
     }
     
     /// <summary>
@@ -436,8 +589,11 @@ Format: [index] = Quest number + language
             return;
         }
         
+        // Create exclamation mark as child of location
+        // Use default Instantiate behavior - it will preserve prefab's local transform relative to parent
+        // DO NOT modify localScale/localRotation - let prefab settings and parent transform handle it
         GameObject markObj = Instantiate(exclamationMarkPrefab, location);
-        markObj.transform.localPosition = Vector3.zero;
+        markObj.transform.localPosition = Vector3.zero; // Only set position to zero (relative to parent)
         
         TutorialExclamationMark mark = markObj.GetComponent<TutorialExclamationMark>();
         if (mark == null)
@@ -1428,5 +1584,80 @@ Format: [index] = Quest number + language
     /// Check if tutorial system is initialized
     /// </summary>
     public bool IsInitialized => isInitialized;
+    
+    /// <summary>
+    /// Reset tutorial state (call when save data is cleared)
+    /// Resets all quest flags and prepares for fresh tutorial start
+    /// </summary>
+    public void ResetTutorial()
+    {
+        Debug.Log("TutorialManager: Resetting tutorial state...");
+        
+        // Unsubscribe from events to prevent duplicate subscriptions on reinit
+        UnsubscribeFromEvents();
+        
+        // Destroy existing exclamation marks (they will be recreated on reinit)
+        foreach (var mark in exclamationMarks.Values)
+        {
+            if (mark != null && mark.gameObject != null)
+            {
+                Destroy(mark.gameObject);
+            }
+        }
+        exclamationMarks.Clear();
+        currentExclamationMark = null;
+        
+        // Reset all quest completion flags
+        quest1Completed = false;
+        quest2Completed = false;
+        quest3Completed = false;
+        quest4Completed = false;
+        quest5Completed = false;
+        quest6Completed = false;
+        quest7Completed = false;
+        quest8Completed = false;
+        quest9Completed = false;
+        quest10Completed = false;
+        quest11Completed = false;
+        quest12Completed = false;
+        
+        // Reset quest state
+        currentQuest = TutorialQuest.None;
+        tutorialCompleted = false;
+        initialMoneyForQuest11 = 0;
+        
+        // Hide UI
+        if (questUI != null)
+        {
+            questUI.Hide();
+        }
+        
+        // Reset initialization flags so tutorial will reinitialize on next scene load
+        isInitialized = false;
+        isInitializing = false;
+        
+        Debug.Log("TutorialManager: Tutorial state reset complete. Will reinitialize on next scene load.");
+    }
+    
+    /// <summary>
+    /// Unsubscribe from all events (used during reset)
+    /// </summary>
+    private void UnsubscribeFromEvents()
+    {
+        if (WeaponSlotManager.Instance != null)
+        {
+            WeaponSlotManager.Instance.SlotsChanged -= OnSlotsChanged;
+        }
+        
+        if (MoneySystem.Instance != null)
+        {
+            MoneySystem.Instance.OnMoneyChanged -= OnMoneyChanged;
+        }
+        
+        if (LocationManager.Instance != null)
+        {
+            LocationManager.Instance.OnLocationChangedEvent -= OnLocationChanged;
+        }
+    }
 }
 

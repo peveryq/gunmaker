@@ -5,7 +5,7 @@
 - **Active gameplay scripts:** 70+ C# files across `_InternalAssets/Scrips`
 - **Key ScriptableObjects:** `ShopPartConfig.asset`, `PartTypeDefaultSettings.asset`, `GameBalanceConfig.asset`, per-weapon `WeaponSettings/*`, `LocalizationData.asset`, `PartNameLocalization.asset`
 - **Primary prefabs:** Universal weapon part prefab, shop item tile, weldable weapon bodies, pooled bullet holes, locker UI widgets, mobile UI elements
-- **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `SETTINGS_SYSTEM_GUIDE.md`, `BUTTON_SOUND_SYSTEM_GUIDE.md`, `MOBILE_UI_SETUP_GUIDE.md`, this analysis document
+- **Documentation retained:** `SHOP_UI_SETUP_GUIDE.md`, `LOCATION_TRANSITION_SETUP_GUIDE.md`, `SETTINGS_SYSTEM_GUIDE.md`, `BUTTON_SOUND_SYSTEM_GUIDE.md`, `MOBILE_UI_SETUP_GUIDE.md`, `TUTORIAL_IMPLEMENTATION_GUIDE.md`, this analysis document
 
 ---
 
@@ -76,6 +76,19 @@
 | UI integration | All interactive scripts | Localized interaction buttons (`Workbench`, `WeaponLockerInteractable`, `LocationDoor`, `ShopComputer`, `ItemPickup`), dynamic messages (`LocationSelectionUI`), weapon stats (`PurchaseConfirmationUI`, `WeaponStatsUI`, `WeaponSellModal`), HUD elements (`GameplayHUD`) |
 | Initialization | `Bootstrapper`, `GameManager` | Bootstrapper waits for YG2 SDK initialization, loads main scene. GameManager coordinates system initialization including localization |
 
+### Tutorial System (2025 Update)
+| System | Key Scripts | Highlights |
+|--------|-------------|-----------|
+| Quest management | `TutorialManager`, `TutorialQuest` | Singleton manager with 12 sequential quests, automatic initialization, checkpoint-based save system, quest completion tracking via events and polling |
+| Quest UI | `TutorialQuestUI`, `GameplayHUD` | Animated quest text display with completion/transition animations (DOTween), waits for fullscreen UI to close before playing animations, integrated into GameplayHUD |
+| Visual indicators | `TutorialExclamationMark` | 3D animated exclamation marks at quest locations, smooth up-down animation (DOTween Sequence), only one active at a time, automatically positioned at interaction points |
+| Interaction blocking | `Workbench`, `ShopComputer`, `LocationDoor` | Blocks weapon pickup from workbench until quest 10, blocks shop computer until quest 1 completed, blocks door until quest 11 completed, prevents interaction options from appearing |
+| Save integration | `TutorialManager`, `SaveSystemManager`, `GameSaveData` | Checkpoint system (quests 1, 4, 6, 9, 11, 12), saves last completed checkpoint, loads from checkpoint on game start, progress reverts to last checkpoint if non-checkpoint quest completed and game exited |
+| Ad blocking | `AdManager`, `TutorialManager` | Blocks interstitial ads and warning UI until quest 12 completed, timer continues running normally, prevents ads from interrupting tutorial flow |
+| Localization | `TutorialManager`, `LocalizationManager` | All quest texts localized via `LocalizationHelper`, uses keys similar to `Workbench.cs`, supports Russian and English, localized audio clips for quests |
+| Auto-save control | `TutorialManager`, `SaveSystemManager` | Blocks auto-save during quest 10 (TakeGun), forces autosave when quest 10 becomes active, resumes auto-save after quest 11 completion |
+| Quest logic | `TutorialManager` | Quest 6 skip logic (if magazine already attached, skips quests 7-9), Quest 11 triggers on money earned from targets, Quest 12 triggers immediately on location load, quest completion via events (`OnQuestStarted`, `OnQuestCompleted`) and polling |
+
 ---
 
 ## Data & Flow Overview
@@ -139,10 +152,12 @@ Save System (Automatic)
             ↳ Auto-save timer (20s intervals, workshop only)
             ↳ LocationManager.OnLocationChangedEvent subscription
             ↳ YG2.onGetSDKData subscription
+            ↳ TutorialManager.IsAutoSaveBlocked() check [blocks during quest 10-11]
        → SaveGameData()
             ↳ YG2.saves.playerMoney = MoneySystem.CurrentMoney
             ↳ YG2.saves.savedWeapons = WeaponSlotManager.GetSaveData()
             ↳ YG2.saves.workbenchWeapon = WorkbenchSaveData(workbench.MountedWeapon)
+            ↳ YG2.saves.tutorialQuestIndex = TutorialManager.GetLastCheckpointQuest() [checkpoint quests only]
             ↳ YG2.SaveProgress() [cloud + local storage]
             ↳ GameplayHUD.ShowAutoSaveIndicator() [if showUI = true]
        → LoadGameData()
@@ -150,6 +165,30 @@ Save System (Automatic)
             ↳ WeaponSlotManager.LoadFromSaveData() → RestoreWeaponFromSaveData()
                  ↳ RestorePartFromSaveData() [uses PartSpawner + ShopPartConfig for mesh lookup]
             ↳ Workbench.MountWeaponForLoad() [if workbenchWeapon exists]
+            ↳ TutorialManager.LoadTutorialProgress() [loads from YG2.saves.tutorialQuestIndex]
+
+Tutorial System (Automatic)
+       → TutorialManager (DontDestroyOnLoad singleton)
+            ↳ GameManager.OnGameInitialized subscription
+            ↳ WaitForInitialization() coroutine [waits for GameManager and SaveSystemManager]
+            ↳ LoadTutorialProgress() [on initialization]
+                 ↳ If no save data: Start from quest 1 (CreateGun)
+                 ↳ If save data exists: Load last checkpoint, continue from next quest
+                 ↳ If all quests completed: Skip tutorial
+            ↳ Event subscriptions [OnQuestStarted, OnQuestCompleted, OnMoneyChanged, OnLocationChangedEvent, SlotsChanged]
+            ↳ Polling checks [Update() for quest completion without direct events]
+       → Quest Flow
+            ↳ StartQuest() → Show exclamation mark, update UI, play audio
+            ↳ CheckQuestCompletion() [event-based or polling]
+            ↳ CompleteQuest() → Wait for fullscreen UI to close, play completion animation, transition to next quest
+            ↳ SaveTutorialProgress() [only for checkpoint quests: 1, 4, 6, 9, 11, 12]
+       → Interaction Blocking
+            ↳ Workbench.IsQuestBlockingTakeWeapon() [blocks until quest 10]
+            ↳ ShopComputer.IsQuestBlockingShopComputer() [blocks until quest 1 completed]
+            ↳ LocationDoor.IsQuestBlockingDoor() [blocks until quest 11 completed]
+       → Ad Blocking
+            ↳ AdManager.IsTutorialBlockingAds() [blocks ads until quest 12 completed]
+            ↳ Timer continues running, but ads and warning UI are skipped
 ```
 
 - **Two-phase randomisation:** Tile generation caches rarity, price, mesh, icon, manufacturer. Stat roll occurs when the player inspects a tile, preventing unnecessary calculations.
@@ -298,6 +337,20 @@ Save System (Automatic)
 - **Integration points:** All interactive scripts (`Workbench`, `WeaponLockerInteractable`, `LocationDoor`, `ShopComputer`, `ItemPickup`) use localization keys for button labels. Dynamic messages (`LocationSelectionUI`) and weapon stats (`PurchaseConfirmationUI`, `WeaponStatsUI`, `WeaponSellModal`) use `LocalizationHelper` for runtime translation. HUD elements support both `LocalizedText` component and programmatic localization.
 - **Default translations:** Hardcoded translations for common UI elements (shop, categories, locations, actions, stats, HUD messages) ensure system works even without `LocalizationData` assigned. Translations can be overridden via ScriptableObject.
 
+### Appendix O – Tutorial System
+- **TutorialManager:** Singleton with `DontDestroyOnLoad`, manages 12 sequential tutorial quests. Initializes after `GameManager` and `SaveSystemManager` are ready via coroutine. Handles quest progression, state tracking, exclamation mark management, and integration with all game systems.
+- **Quest system:** 12 quests covering core gameplay: CreateGun, BuyBarrel, TakeBarrel, AttachBarrel, TakeBlowtorch, WeldBarrel, BuyMag, TakeMag, AttachMag, TakeGun, ShootTargets, EnterRange. Quest completion tracked via events (`OnQuestStarted`, `OnQuestCompleted`, `OnMoneyChanged`, `OnLocationChangedEvent`, `SlotsChanged`) and polling in `Update()` for systems without direct events.
+- **Checkpoint system:** Only specific quests (1, 4, 6, 9, 11, 12) are saved as checkpoints. If player completes a non-checkpoint quest and exits, progress reverts to last checkpoint. `SaveTutorialProgress()` updates `YG2.saves.tutorialQuestIndex` in memory, actual save happens during regular autosave cycle.
+- **Quest UI:** `TutorialQuestUI` displays localized quest text with animations (DOTween). Completion and transition animations wait for fullscreen UI to close before playing. Integrated into `GameplayHUD` as a child component.
+- **Exclamation marks:** 3D animated indicators at quest locations. `TutorialExclamationMark` component with smooth up-down animation using DOTween Sequence (prevents teleportation). Only one mark active at a time, automatically positioned at interaction points (workbench, shop computer, part spawner, door).
+- **Interaction blocking:** Prevents player from interacting with game objects before appropriate quests. `Workbench` blocks taking weapon until quest 10, `ShopComputer` blocks interaction until quest 1 completed, `LocationDoor` blocks interaction until quest 11 completed. Blocking implemented in `CanInteract()`, `PopulateInteractionOptions()`, and `GetInteractionPrompt()` methods.
+- **Ad blocking:** `AdManager` checks `TutorialManager.IsTutorialBlockingAds()` before showing interstitial ads. Blocks ads and warning UI until quest 12 completed, but timer continues running normally. Prevents ads from interrupting tutorial flow.
+- **Auto-save control:** Blocks auto-save during quest 10 (TakeGun) and quest 11 (ShootTargets) until quest 11 is completed. Forces autosave when quest 10 becomes active via `SaveSystemManager.TriggerAutoSaveOnReturn()`. Prevents save conflicts during critical tutorial moments.
+- **Quest skip logic:** Quest 6 (WeldBarrel) checks if magazine is already attached. If yes, automatically marks quests 7, 8, 9 as completed and jumps directly to quest 10. Handles edge case where player already has magazine-equipped weapon.
+- **Localization:** All quest texts localized via `LocalizationHelper` using keys similar to `Workbench.cs` pattern. Keys follow format `tutorial.quest.{questIndex}` (e.g., `tutorial.quest.0` for CreateGun). Supports Russian and English, localized audio clips for quests.
+- **Initialization:** Waits for `GameManager` and `SaveSystemManager` initialization via coroutine. Handles scene reloads via `OnSceneLoaded` event. Supports tutorial reset via `ResetTutorial()` method (unsubscribes from events, clears exclamation marks, resets all quest flags).
+- **Quest completion triggers:** Quest 11 (ShootTargets) completes when player earns money from shooting targets (via `MoneySystem.OnMoneyChanged` event). Quest 12 (EnterRange) completes immediately upon loading into TestingRange location, regardless of fullscreen UI status.
+
 ### Appendix M – Mobile Input & Hold Interactions System
 - **Device Detection:** `DeviceDetectionManager` singleton detects device type via YG2 SDK (`YG2.envir.deviceType`, `YG2.envir.isMobile`, `YG2.envir.isTablet`). Provides `IsMobile`, `IsTablet`, `IsDesktop` properties and `SetDeviceTypeForTesting` for editor debugging.
 - **Mobile Input Management:** `MobileInputManager` singleton abstracts mobile input states (`MovementInput`, `IsShootPressed`, `IsAimPressed`, `IsReloadPressed`, `IsDropPressed`). Provides methods to set states and trigger one-time actions.
@@ -387,6 +440,16 @@ Save System (Automatic)
 60. Fixed mobile camera control issues: corrected sensitivity calculation (removed incorrect Time.deltaTime), implemented exclusive finger tracking (only one finger controls camera at a time), added blocking of inactive/disabled UI elements, improved exclusion area logic to check UI element state
 61. Enhanced mobile UI state management: MobileUIController now properly hides drop button when items are placed on workbench, calls OnItemDropped() in Workbench.MountWeapon() and InstallPart()
 62. Implemented floating virtual joystick: joystick moves to touch position on first contact, center aligns with finger, remains fixed during drag, returns to original position on release (optional), eliminates need for precise center targeting
+63. Implemented comprehensive tutorial system: TutorialManager singleton with 12 sequential quests, automatic initialization, checkpoint-based save system (quests 1, 4, 6, 9, 11, 12), quest completion tracking via events and polling
+64. Added tutorial UI: TutorialQuestUI component with animated quest text display (DOTween), completion/transition animations that wait for fullscreen UI to close, integrated into GameplayHUD
+65. Implemented 3D exclamation marks: TutorialExclamationMark component with smooth up-down animation (DOTween Sequence), only one active at a time, automatically positioned at quest interaction points
+66. Added interaction blocking: Blocks weapon pickup from workbench until quest 10, blocks shop computer until quest 1 completed, blocks door until quest 11 completed, prevents interaction options from appearing
+67. Integrated tutorial with save system: Saves last completed checkpoint quest, loads from checkpoint on game start, progress reverts to last checkpoint if non-checkpoint quest completed and game exited
+68. Implemented ad blocking for tutorial: Blocks interstitial ads and warning UI until quest 12 completed, timer continues running normally, prevents ads from interrupting tutorial flow
+69. Added auto-save control: Blocks auto-save during quest 10-11, forces autosave when quest 10 becomes active, resumes auto-save after quest 11 completion
+70. Implemented quest skip logic: Quest 6 checks if magazine already attached, automatically skips quests 7-9 and jumps to quest 10 if condition met
+71. Localized all tutorial quests: All quest texts use LocalizationHelper with keys similar to Workbench.cs pattern, supports Russian and English, localized audio clips
+72. Enhanced tutorial initialization: Waits for GameManager and SaveSystemManager via coroutine, handles scene reloads, supports tutorial reset functionality
 
 ---
 
@@ -405,6 +468,8 @@ Save System (Automatic)
 | **Mobile Support** | ✅ Complete | Adaptive UI, floating joystick, button sounds, settings system |
 | **Settings & Options** | ✅ Complete | Sensitivity, volume controls, auto-save integration |
 | **UI Polish** | ✅ Complete | Button sounds, crosshair animations, HUD feedback |
+| **Tutorial System** | ✅ Complete | 12 sequential quests, checkpoint saves, interaction blocking, ad blocking, full localization |
+| **Tutorial System** | ✅ Complete | 12 sequential quests, checkpoint saves, interaction blocking, ad blocking, full localization |
 
 ### Mobile Experience (2025 Update)
 - ✅ **Device Detection:** Automatic mobile/tablet/desktop detection via YG2 SDK

@@ -186,6 +186,30 @@ public class SettingsManager : MonoBehaviour
             // Force save immediately (as recommended by YG2 documentation)
             YG2.SaveProgress();
             
+            // IMPORTANT: Clear WeaponSlotManager slots immediately (they persist due to DontDestroyOnLoad)
+            // This ensures slots are empty when scene reloads, even if save data hasn't reloaded yet
+            if (WeaponSlotManager.Instance != null)
+            {
+                WeaponSlotManager.Instance.ForceRebuild(); // Clears all slots
+                Debug.Log("SettingsManager: WeaponSlotManager slots cleared.");
+            }
+            
+            // IMPORTANT: Reset TutorialManager state immediately (it persists due to DontDestroyOnLoad)
+            // This ensures tutorial restarts fresh when scene reloads
+            if (TutorialManager.Instance != null)
+            {
+                TutorialManager.Instance.ResetTutorial();
+                Debug.Log("SettingsManager: TutorialManager state reset.");
+            }
+            
+            // IMPORTANT: Reset GameManager state immediately (it persists due to DontDestroyOnLoad)
+            // This ensures loading screen will show and game will reinitialize properly
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.ResetGameState();
+                Debug.Log("SettingsManager: GameManager state reset.");
+            }
+            
             // Reset current settings to defaults
             currentSettings = GameSettings.CreateDefault();
             ApplyAllSettings();
