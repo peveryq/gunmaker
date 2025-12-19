@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using DG.Tweening;
 using System.Collections;
-using UnityEngine.SceneManagement;
 using YG;
 
 /// <summary>
@@ -51,12 +51,18 @@ public class SettingsUI : MonoBehaviour
     
     [Header("Action Buttons")]
     [SerializeField] private Button clearSaveDataButton;
+    [SerializeField] private Image clearSaveDataProgressBar; // Progress bar for hold-to-clear
+    [SerializeField] private float clearSaveDataHoldTime = 2f; // Time in seconds to hold the button
     
     [Header("Localization")]
     [SerializeField] private SettingsLabels labels = new SettingsLabels();
     
     private bool isOpen = false;
     private bool isInitialized = false;
+    
+    // Clear save data button hold tracking
+    private bool isClearSaveDataButtonHeld = false;
+    private Coroutine clearSaveDataHoldCoroutine;
     
     private void Start()
     {
@@ -171,10 +177,48 @@ public class SettingsUI : MonoBehaviour
             musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
         }
         
-        // Action buttons
+        // Action buttons - Clear Save Data uses hold-to-confirm, not simple click
         if (clearSaveDataButton != null)
         {
-            clearSaveDataButton.onClick.AddListener(OnClearSaveDataClicked);
+            // Remove default onClick listener - we'll use EventTrigger for hold detection
+            clearSaveDataButton.onClick.RemoveAllListeners();
+            
+            // Add EventTrigger for PointerDown and PointerUp events
+            EventTrigger trigger = clearSaveDataButton.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = clearSaveDataButton.gameObject.AddComponent<EventTrigger>();
+            }
+            
+            // Clear existing triggers to avoid duplicates
+            trigger.triggers.Clear();
+            
+            // PointerDown event - start holding
+            EventTrigger.Entry pointerDown = new EventTrigger.Entry();
+            pointerDown.eventID = EventTriggerType.PointerDown;
+            pointerDown.callback.AddListener((data) => { OnClearSaveDataButtonDown(); });
+            trigger.triggers.Add(pointerDown);
+            
+            // PointerUp event - stop holding
+            EventTrigger.Entry pointerUp = new EventTrigger.Entry();
+            pointerUp.eventID = EventTriggerType.PointerUp;
+            pointerUp.callback.AddListener((data) => { OnClearSaveDataButtonUp(); });
+            trigger.triggers.Add(pointerUp);
+            
+            // PointerExit event - also stop holding if pointer leaves button
+            EventTrigger.Entry pointerExit = new EventTrigger.Entry();
+            pointerExit.eventID = EventTriggerType.PointerExit;
+            pointerExit.callback.AddListener((data) => { OnClearSaveDataButtonUp(); });
+            trigger.triggers.Add(pointerExit);
+        }
+        
+        // Initialize progress bar
+        if (clearSaveDataProgressBar != null)
+        {
+            clearSaveDataProgressBar.type = Image.Type.Filled;
+            clearSaveDataProgressBar.fillMethod = Image.FillMethod.Horizontal;
+            clearSaveDataProgressBar.fillAmount = 0f;
+            clearSaveDataProgressBar.gameObject.SetActive(false); // Hide by default
         }
         
         // Subscribe to settings manager events
@@ -247,6 +291,9 @@ public class SettingsUI : MonoBehaviour
     
     public void CloseSettings()
     {
+        // Cancel any ongoing clear save data hold
+        OnClearSaveDataButtonUp();
+        
         // Unblock ad timer when settings UI closes
         if (AdManager.Instance != null)
         {
@@ -394,61 +441,87 @@ public class SettingsUI : MonoBehaviour
     }
     
     /// <summary>
-    /// Handle clear save data button click - resets all saves and restarts the game
+    /// Handle clear save data button pointer down - start hold timer
+    /// </summary>
+    private void OnClearSaveDataButtonDown()
+    {
+        if (!isOpen || clearSaveDataHoldCoroutine != null) return;
+        
+        isClearSaveDataButtonHeld = true;
+        clearSaveDataHoldCoroutine = StartCoroutine(ClearSaveDataHoldRoutine());
+        Debug.Log("SettingsUI: Clear Save Data button held down.");
+    }
+    
+    /// <summary>
+    /// Handle clear save data button pointer up - stop hold timer
+    /// </summary>
+    private void OnClearSaveDataButtonUp()
+    {
+        if (!isClearSaveDataButtonHeld) return;
+        
+        StopClearSaveDataHold();
+        Debug.Log("SettingsUI: Clear Save Data button released.");
+    }
+    
+    /// <summary>
+    /// Stop the hold routine and reset progress bar
+    /// </summary>
+    private void StopClearSaveDataHold()
+    {
+        if (clearSaveDataHoldCoroutine != null)
+        {
+            StopCoroutine(clearSaveDataHoldCoroutine);
+            clearSaveDataHoldCoroutine = null;
+        }
+        isClearSaveDataButtonHeld = false;
+        if (clearSaveDataProgressBar != null)
+        {
+            clearSaveDataProgressBar.fillAmount = 0f;
+            clearSaveDataProgressBar.gameObject.SetActive(false);
+        }
+    }
+    
+    /// <summary>
+    /// Coroutine to handle the hold duration and progress bar fill
+    /// </summary>
+    private IEnumerator ClearSaveDataHoldRoutine()
+    {
+        float timer = 0f;
+        if (clearSaveDataProgressBar != null)
+        {
+            clearSaveDataProgressBar.gameObject.SetActive(true);
+            clearSaveDataProgressBar.fillAmount = 0f;
+            clearSaveDataProgressBar.type = Image.Type.Filled;
+            clearSaveDataProgressBar.fillMethod = Image.FillMethod.Horizontal;
+        }
+        
+        while (timer < clearSaveDataHoldTime)
+        {
+            timer += Time.deltaTime;
+            if (clearSaveDataProgressBar != null)
+            {
+                clearSaveDataProgressBar.fillAmount = timer / clearSaveDataHoldTime;
+            }
+            yield return null;
+        }
+        
+        // Hold time completed, trigger the action
+        StopClearSaveDataHold(); // Stop routine and hide bar
+        OnClearSaveDataClicked();
+    }
+    
+    /// <summary>
+    /// Handle clear save data action - resets all saves (no scene reload)
     /// </summary>
     private void OnClearSaveDataClicked()
     {
         if (SettingsManager.Instance != null)
         {
-            // Close settings UI first
-            CloseSettings();
-            
             // Clear all save data (this will call YG2.SetDefaultSaves() and YG2.SaveProgress())
             SettingsManager.Instance.ClearAllSaveData();
             
-            Debug.Log("SettingsUI: All save data cleared. Restarting game...");
-            
-            // Wait a moment to ensure save operation completes, then reload the game
-            StartCoroutine(RestartGameAfterSaveClear());
+            Debug.Log("SettingsUI: All save data cleared and saved to cloud.");
         }
-    }
-    
-    /// <summary>
-    /// Coroutine to restart the game after clearing saves
-    /// </summary>
-    private IEnumerator RestartGameAfterSaveClear()
-    {
-        // Wait a frame to ensure save operations complete
-        yield return null;
-        
-        // Additional small delay to ensure cloud sync is initiated (if needed)
-        yield return new WaitForSeconds(0.1f);
-        
-        // Reset GameManager initialization state so it will restart initialization when Main scene loads
-        if (GameManager.Instance != null)
-        {
-            // Use reflection to reset the private isInitialized and isInitializing fields
-            var initializedField = typeof(GameManager).GetField("isInitialized", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var initializingField = typeof(GameManager).GetField("isInitializing", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (initializedField != null)
-            {
-                initializedField.SetValue(GameManager.Instance, false);
-            }
-            if (initializingField != null)
-            {
-                initializingField.SetValue(GameManager.Instance, false);
-            }
-            
-            Debug.Log("SettingsUI: GameManager initialization state reset.");
-        }
-        
-        // Reload the game by loading Bootstrap scene (scene 0)
-        // Bootstrapper will load Main scene, and GameManager.OnSceneLoaded will restart initialization
-        Debug.Log("SettingsUI: Loading Bootstrap scene to restart game with clean saves...");
-        SceneManager.LoadScene(0);
     }
     
     /// <summary>
