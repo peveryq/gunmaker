@@ -228,11 +228,14 @@ public class WeaponController : MonoBehaviour
                 }
                 
                 // Also check mobile input for desktop testing
-                if (MobileInputManager.Instance != null)
+                // BUT: Only use mobile input if desktop mouse is NOT being used
+                // This prevents mobile input from interfering with desktop mouse hold detection
+                if (MobileInputManager.Instance != null && !aimInputPressed && !aimInputHeld)
                 {
                     bool mobileAimPressed = MobileInputManager.Instance.IsAimPressed;
                     
                     // Detect mobile aim button press/release
+                    // Only process if desktop mouse is not active
                     if (mobileAimPressed && !isRightMouseHeld)
                     {
                         // Mobile aim button pressed - treat like desktop mouse down
@@ -241,6 +244,7 @@ public class WeaponController : MonoBehaviour
                     else if (!mobileAimPressed && isRightMouseHeld)
                     {
                         // Mobile aim button released - treat like desktop mouse up
+                        // But only if we're tracking mobile input (not desktop mouse)
                         aimInputReleased = true;
                     }
                     
@@ -252,6 +256,8 @@ public class WeaponController : MonoBehaviour
             }
             
             // Universal aiming logic (works for both desktop and mobile input)
+            
+            // Step 1: Handle button press
             if (aimInputPressed)
             {
                 rightMouseDownTime = Time.time;
@@ -259,9 +265,6 @@ public class WeaponController : MonoBehaviour
                 
                 // Remember if we were in toggle mode before this press
                 wasToggleModeOnPress = isAimingToggleMode;
-                
-                // Activate aim immediately on button press (works for both click and hold)
-                isAiming = true;
                 
                 // If we were in toggle mode, disable it temporarily
                 // We'll determine if this becomes a toggle toggle (off) or hold on button release
@@ -271,19 +274,13 @@ public class WeaponController : MonoBehaviour
                 }
             }
             
-            // Check for aim button held (desktop or mobile)
-            if (isRightMouseHeld && aimInputHeld)
-            {
-                // While held, keep aim active
-                isAiming = true;
-            }
-            
-            // Check for aim button release (desktop or mobile)
+            // Step 2: Handle button release FIRST (before held check)
             if (aimInputReleased)
             {
-                if (isRightMouseHeld)
+                if (isRightMouseHeld && rightMouseDownTime > 0f)
                 {
                     float holdDuration = Time.time - rightMouseDownTime;
+                    isRightMouseHeld = false; // Set to false immediately
                     
                     if (holdDuration < CLICK_THRESHOLD)
                     {
@@ -291,23 +288,34 @@ public class WeaponController : MonoBehaviour
                         // If we were in toggle mode before press, toggle it off
                         // Otherwise, toggle it on
                         isAimingToggleMode = !wasToggleModeOnPress;
-                        isAiming = isAimingToggleMode;
+                    }
+                    else
+                    {
+                        // Was holding: deactivate aim (it was hold mode)
+                        isAimingToggleMode = false;
+                    }
+                    
+                    // Reset rightMouseDownTime to prevent issues
+                    rightMouseDownTime = 0f;
+                }
+            }
+            
+            // Step 3: Update aiming state based on current conditions
+            // Priority order: held button > toggle mode > default (off)
+            if (isRightMouseHeld && aimInputHeld)
+            {
+                // Button is currently held - always aim (hold mode)
+                isAiming = true;
+            }
+            else if (isAimingToggleMode)
+            {
+                // Toggle mode is active and button is not held - maintain toggle state
+                isAiming = true;
             }
             else
             {
-                        // Was holding: deactivate aim (it was hold mode)
+                // Button is not held and not in toggle mode - aim is off
                 isAiming = false;
-                        isAimingToggleMode = false;
-                    }
-                }
-                
-                isRightMouseHeld = false;
-            }
-            
-            // If in toggle mode and button is not being held, maintain toggle state
-            if (!isRightMouseHeld && isAimingToggleMode)
-            {
-                isAiming = true;
             }
             
             // Notify crosshair if aiming state changed

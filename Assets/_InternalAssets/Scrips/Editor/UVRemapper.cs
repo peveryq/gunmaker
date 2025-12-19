@@ -10,10 +10,12 @@ using System.IO;
 public class UVRemapper : EditorWindow
 {
     private GameObject targetModel;
+    private Mesh targetMesh; // Direct mesh selection (alternative to GameObject)
     private int textureCount = 4; // Must match atlas configuration
     private int textureID = 0; // ID of the texture slot in atlas (0-based, left-to-right, top-to-bottom)
     private bool applyToAllMeshes = true;
     private bool createBackup = true;
+    private bool reverseMode = false; // If true, remaps UV from atlas slot back to full [0,1] range
     
     private Vector2 scrollPosition;
     
@@ -32,28 +34,80 @@ public class UVRemapper : EditorWindow
         EditorGUILayout.LabelField("UV Remapper", EditorStyles.boldLabel);
         EditorGUILayout.Space(5);
         
-        EditorGUILayout.HelpBox(
-            "This tool remaps UV coordinates of 3D models to match texture atlas slots.\n\n" +
-            "The model's UV coordinates (originally [0,1]) will be scaled and offset to match the selected atlas slot.\n\n" +
-            "Note: For imported meshes (.fbx, .obj, etc.), a new .asset file will be created next to the original file.",
-            MessageType.Info
-        );
+        // Add scroll view for content that doesn't fit
+        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
         
-        EditorGUILayout.Space(10);
-        
-        // Model selection
+        // Model/Mesh selection
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-        EditorGUILayout.LabelField("Model Settings", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Target Selection", EditorStyles.boldLabel);
+        
+        EditorGUILayout.LabelField("Select either GameObject or Mesh:", EditorStyles.miniLabel);
         
         targetModel = (GameObject)EditorGUILayout.ObjectField(
-            "Target Model",
+            "Target GameObject (optional)",
             targetModel,
             typeof(GameObject),
             true
         );
         
-        applyToAllMeshes = EditorGUILayout.Toggle("Apply to All Meshes", applyToAllMeshes);
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("OR", EditorStyles.centeredGreyMiniLabel);
+        EditorGUILayout.Space(5);
+        
+        targetMesh = (Mesh)EditorGUILayout.ObjectField(
+            "Target Mesh (optional)",
+            targetMesh,
+            typeof(Mesh),
+            false
+        );
+        
+        // Clear one when the other is set
+        if (targetModel != null && targetMesh != null)
+        {
+            if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.ExecuteCommand)
+            {
+                // Determine which was just set (this is approximate, but works for most cases)
+                if (GUI.GetNameOfFocusedControl() == "Target GameObject (optional)")
+                {
+                    targetMesh = null;
+                }
+                else if (GUI.GetNameOfFocusedControl() == "Target Mesh (optional)")
+                {
+                    targetModel = null;
+                }
+            }
+        }
+        
+        EditorGUILayout.Space(5);
+        
+        // Show which mode is active
+        if (targetMesh != null)
+        {
+            EditorGUILayout.HelpBox($"Processing single mesh: {targetMesh.name}", MessageType.Info);
+            applyToAllMeshes = false; // Disable when mesh is selected
+        }
+        else if (targetModel != null)
+        {
+            EditorGUILayout.HelpBox($"Processing GameObject: {targetModel.name}", MessageType.Info);
+            applyToAllMeshes = EditorGUILayout.Toggle("Apply to All Meshes", applyToAllMeshes);
+        }
+        
         createBackup = EditorGUILayout.Toggle("Create Backup", createBackup);
+        
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+        EditorGUILayout.Space(5);
+        
+        // Reverse mode toggle
+        reverseMode = EditorGUILayout.Toggle("Reverse Mode", reverseMode);
+        if (reverseMode)
+        {
+            EditorGUILayout.HelpBox(
+                "Reverse Mode: Remaps UV coordinates from atlas slot back to full [0,1] range.\n" +
+                "Use this to restore original UV mapping after remapping to atlas slot.",
+                MessageType.Info
+            );
+        }
         
         EditorGUILayout.EndVertical();
         
@@ -62,6 +116,9 @@ public class UVRemapper : EditorWindow
         // Atlas settings
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         EditorGUILayout.LabelField("Atlas Settings", EditorStyles.boldLabel);
+        
+        // Disable texture ID selection in reverse mode (not needed)
+        EditorGUI.BeginDisabledGroup(reverseMode);
         
         int newCount = EditorGUILayout.IntField("Texture Count (multiple of 4)", textureCount);
         if (newCount != textureCount)
@@ -111,12 +168,23 @@ public class UVRemapper : EditorWindow
         EditorGUILayout.LabelField($"  U: [{uMin:F3}, {uMax:F3}]");
         EditorGUILayout.LabelField($"  V: [{vMin:F3}, {vMax:F3}]");
         
+        EditorGUI.EndDisabledGroup();
+        
+        if (reverseMode)
+        {
+            EditorGUILayout.Space(5);
+            EditorGUILayout.HelpBox(
+                "In Reverse Mode, the tool will automatically detect which atlas slot the UVs are currently in and remap them back to [0,1] range.",
+                MessageType.Info
+            );
+        }
+        
         EditorGUILayout.EndVertical();
         
         EditorGUILayout.Space(10);
         
         // Remap button
-        EditorGUI.BeginDisabledGroup(targetModel == null);
+        EditorGUI.BeginDisabledGroup(targetModel == null && targetMesh == null);
         
         if (GUILayout.Button("Remap UV Coordinates", GUILayout.Height(30)))
         {
@@ -125,32 +193,19 @@ public class UVRemapper : EditorWindow
         
         EditorGUI.EndDisabledGroup();
         
-        if (targetModel == null)
+        if (targetModel == null && targetMesh == null)
         {
-            EditorGUILayout.HelpBox("Please assign a Target Model first.", MessageType.Warning);
+            EditorGUILayout.HelpBox("Please assign either a Target GameObject or Target Mesh first.", MessageType.Warning);
         }
         
-        EditorGUILayout.Space(10);
-        
-        // Info section
-        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-        EditorGUILayout.LabelField("How it works:", EditorStyles.boldLabel);
-        EditorGUILayout.LabelField(
-            "1. Original UV coordinates are in range [0, 1] (full texture)\n" +
-            "2. These are scaled and offset to match the selected atlas slot\n" +
-            "3. For example, if slot is at position (1, 0) in a 2x2 grid:\n" +
-            "   - U coordinates are scaled by 0.5 and offset by 0.5\n" +
-            "   - V coordinates are scaled by 0.5 and offset by 0.0",
-            EditorStyles.wordWrappedLabel
-        );
-        EditorGUILayout.EndVertical();
+        EditorGUILayout.EndScrollView();
     }
     
     private void RemapUVs()
     {
-        if (targetModel == null)
+        if (targetModel == null && targetMesh == null)
         {
-            EditorUtility.DisplayDialog("Error", "Target Model is not assigned!", "OK");
+            EditorUtility.DisplayDialog("Error", "Please assign either a Target GameObject or Target Mesh!", "OK");
             return;
         }
         
@@ -181,43 +236,73 @@ public class UVRemapper : EditorWindow
         Debug.Log($"UVRemapper: UV Offset: U={uOffset:F4}, V={vOffset:F4}");
         Debug.Log($"UVRemapper: Target UV range: U[{uOffset:F4}, {uOffset + slotWidth:F4}], V[{vOffset:F4}, {vOffset + slotHeight:F4}]");
         
-        // Collect all meshes to process
+        // Collect meshes to process
+        List<Mesh> meshesToProcess = new List<Mesh>();
         List<MeshFilter> meshFilters = new List<MeshFilter>();
         
-        if (applyToAllMeshes)
+        if (targetMesh != null)
         {
-            meshFilters.AddRange(targetModel.GetComponentsInChildren<MeshFilter>(true));
+            // Direct mesh mode - process only the selected mesh
+            meshesToProcess.Add(targetMesh);
+            Debug.Log($"UVRemapper: Processing direct mesh: {targetMesh.name}");
         }
-        else
+        else if (targetModel != null)
         {
-            MeshFilter mf = targetModel.GetComponent<MeshFilter>();
-            if (mf != null)
-                meshFilters.Add(mf);
+            // GameObject mode - collect mesh filters
+            if (applyToAllMeshes)
+            {
+                meshFilters.AddRange(targetModel.GetComponentsInChildren<MeshFilter>(true));
+            }
+            else
+            {
+                MeshFilter mf = targetModel.GetComponent<MeshFilter>();
+                if (mf != null)
+                    meshFilters.Add(mf);
+            }
+            
+            if (meshFilters.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Error", "No MeshFilter components found on the target model!", "OK");
+                return;
+            }
+            
+            // Extract meshes from filters
+            foreach (MeshFilter mf in meshFilters)
+            {
+                if (mf.sharedMesh != null)
+                {
+                    meshesToProcess.Add(mf.sharedMesh);
+                }
+            }
         }
         
-        if (meshFilters.Count == 0)
+        if (meshesToProcess.Count == 0)
         {
-            EditorUtility.DisplayDialog("Error", "No MeshFilter components found on the target model!", "OK");
+            EditorUtility.DisplayDialog("Error", "No meshes found to process!", "OK");
             return;
         }
         
         int processedCount = 0;
         
-        foreach (MeshFilter meshFilter in meshFilters)
+        for (int meshIndex = 0; meshIndex < meshesToProcess.Count; meshIndex++)
         {
-            if (meshFilter.sharedMesh == null)
-            {
-                Debug.LogWarning($"UVRemapper: MeshFilter on {meshFilter.name} has no mesh, skipping...");
-                continue;
-            }
+            Mesh originalMesh = meshesToProcess[meshIndex];
+            MeshFilter meshFilter = null;
             
-            Mesh originalMesh = meshFilter.sharedMesh;
+            // Try to find corresponding MeshFilter if we're in GameObject mode
+            if (targetModel != null && meshIndex < meshFilters.Count)
+            {
+                meshFilter = meshFilters[meshIndex];
+            }
             
             // Check if mesh is an asset or instance
             bool isAsset = AssetDatabase.Contains(originalMesh);
             
             // Register undo
-            Undo.RecordObject(meshFilter, "Remap UV Coordinates");
+            if (meshFilter != null)
+            {
+                Undo.RecordObject(meshFilter, "Remap UV Coordinates");
+            }
             if (isAsset)
             {
                 Undo.RegisterCompleteObjectUndo(originalMesh, "Remap UV Coordinates");
@@ -260,13 +345,55 @@ public class UVRemapper : EditorWindow
             
             // Remap UVs
             Vector2[] remappedUVs = new Vector2[originalUVs.Length];
-            for (int i = 0; i < originalUVs.Length; i++)
+            
+            if (reverseMode)
             {
-                // Scale original UV [0,1] to slot size, then offset to slot position
-                remappedUVs[i] = new Vector2(
-                    originalUVs[i].x * slotWidth + uOffset,
-                    originalUVs[i].y * slotHeight + vOffset
-                );
+                // Reverse mode: remap from atlas slot back to full [0,1] range
+                // First, try to detect which slot the UVs are currently in
+                // Then apply inverse transformation: (uv - offset) / slotSize
+                
+                // Detect current slot from UV coordinates
+                float avgU = 0f, avgV = 0f;
+                foreach (Vector2 uv in originalUVs)
+                {
+                    avgU += uv.x;
+                    avgV += uv.y;
+                }
+                avgU /= originalUVs.Length;
+                avgV /= originalUVs.Length;
+                
+                // Find which slot contains the average UV
+                int detectedRow = Mathf.FloorToInt((1f - avgV) / slotHeight);
+                int detectedCol = Mathf.FloorToInt(avgU / slotWidth);
+                detectedRow = Mathf.Clamp(detectedRow, 0, gridSize - 1);
+                detectedCol = Mathf.Clamp(detectedCol, 0, gridSize - 1);
+                
+                float detectedUOffset = detectedCol * slotWidth;
+                float detectedVOffset = 1f - (detectedRow + 1) * slotHeight;
+                
+                Debug.Log($"UVRemapper: Reverse mode - Detected slot: Row {detectedRow}, Col {detectedCol}");
+                Debug.Log($"UVRemapper: Reverse mode - Detected offset: U={detectedUOffset:F4}, V={detectedVOffset:F4}");
+                
+                // Apply inverse transformation: scale and offset back to [0,1]
+                for (int i = 0; i < originalUVs.Length; i++)
+                {
+                    remappedUVs[i] = new Vector2(
+                        (originalUVs[i].x - detectedUOffset) / slotWidth,
+                        (originalUVs[i].y - detectedVOffset) / slotHeight
+                    );
+                }
+            }
+            else
+            {
+                // Normal mode: remap from [0,1] to atlas slot
+                for (int i = 0; i < originalUVs.Length; i++)
+                {
+                    // Scale original UV [0,1] to slot size, then offset to slot position
+                    remappedUVs[i] = new Vector2(
+                        originalUVs[i].x * slotWidth + uOffset,
+                        originalUVs[i].y * slotHeight + vOffset
+                    );
+                }
             }
             
             // Apply remapped UVs
@@ -299,7 +426,23 @@ public class UVRemapper : EditorWindow
                     // Instead, create a new .asset file next to the original
                     string directory = Path.GetDirectoryName(assetPath).Replace('\\', '/');
                     string fileName = Path.GetFileNameWithoutExtension(assetPath);
-                    string newAssetPath = $"{directory}/{fileName}_remapped_uv{textureID}.asset";
+                    
+                    // Use mesh name to create unique filename for each mesh from the same FBX
+                    // This prevents overwriting when processing multiple meshes from one FBX
+                    string meshName = originalMesh.name;
+                    // Sanitize mesh name for filename (remove invalid characters)
+                    meshName = System.Text.RegularExpressions.Regex.Replace(meshName, @"[^\w\s-]", "");
+                    meshName = meshName.Replace(" ", "_");
+                    
+                    // Create unique filename: {fbxName}_{meshName}_remapped_uv{textureID}.asset
+                    string newAssetPath = $"{directory}/{fileName}_{meshName}_remapped_uv{textureID}.asset";
+                    
+                    // If filename is too long or same as original, add index
+                    if (newAssetPath.Length > 200 || meshName == fileName || string.IsNullOrEmpty(meshName))
+                    {
+                        // Use index instead of mesh name if name is too long
+                        newAssetPath = $"{directory}/{fileName}_mesh{meshIndex}_remapped_uv{textureID}.asset";
+                    }
                     
                     // Check if file already exists
                     if (AssetDatabase.LoadAssetAtPath<Mesh>(newAssetPath) != null)
@@ -309,7 +452,10 @@ public class UVRemapper : EditorWindow
                         EditorUtility.CopySerialized(newMesh, existingMesh);
                         EditorUtility.SetDirty(existingMesh);
                         AssetDatabase.SaveAssets();
-                        meshFilter.sharedMesh = existingMesh;
+                        if (meshFilter != null)
+                        {
+                            meshFilter.sharedMesh = existingMesh;
+                        }
                         Debug.Log($"UVRemapper: Updated existing remapped mesh: {newAssetPath}");
                     }
                     else
@@ -322,13 +468,25 @@ public class UVRemapper : EditorWindow
                         Mesh reloadedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(newAssetPath);
                         if (reloadedMesh != null)
                         {
-                            meshFilter.sharedMesh = reloadedMesh;
+                            if (meshFilter != null)
+                            {
+                                meshFilter.sharedMesh = reloadedMesh;
+                            }
                             Debug.Log($"UVRemapper: Created new remapped mesh asset: {newAssetPath}");
+                            
+                            // If processing direct mesh, update the reference
+                            if (targetMesh != null && targetMesh == originalMesh)
+                            {
+                                targetMesh = reloadedMesh;
+                            }
                         }
                         else
                         {
                             Debug.LogError($"UVRemapper: Failed to create mesh asset: {newAssetPath}");
-                            meshFilter.sharedMesh = newMesh; // Fallback to instance
+                            if (meshFilter != null)
+                            {
+                                meshFilter.sharedMesh = newMesh; // Fallback to instance
+                            }
                         }
                     }
                 }
@@ -356,13 +514,25 @@ public class UVRemapper : EditorWindow
                         Mesh reloadedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
                         if (reloadedMesh != null)
                         {
-                            meshFilter.sharedMesh = reloadedMesh;
+                            if (meshFilter != null)
+                            {
+                                meshFilter.sharedMesh = reloadedMesh;
+                            }
                             Debug.Log($"UVRemapper: Successfully replaced mesh asset: {assetPath}");
+                            
+                            // If processing direct mesh, update the reference
+                            if (targetMesh != null && targetMesh == originalMesh)
+                            {
+                                targetMesh = reloadedMesh;
+                            }
                         }
                         else
                         {
                             Debug.LogError($"UVRemapper: Failed to reload mesh from {assetPath}");
-                            meshFilter.sharedMesh = newMesh; // Fallback to instance
+                            if (meshFilter != null)
+                            {
+                                meshFilter.sharedMesh = newMesh; // Fallback to instance
+                            }
                         }
                     }
                     else
@@ -375,12 +545,24 @@ public class UVRemapper : EditorWindow
             else
             {
                 // For instance meshes, just replace the reference
-                meshFilter.sharedMesh = newMesh;
-                Debug.Log($"UVRemapper: Replaced instance mesh on {meshFilter.name}");
+                if (meshFilter != null)
+                {
+                    meshFilter.sharedMesh = newMesh;
+                    Debug.Log($"UVRemapper: Replaced instance mesh on {meshFilter.name}");
+                }
+                else
+                {
+                    // Direct mesh mode - update the mesh reference
+                    if (targetMesh != null && targetMesh == originalMesh)
+                    {
+                        targetMesh = newMesh;
+                    }
+                    Debug.Log($"UVRemapper: Created new instance mesh for direct mesh processing");
+                }
             }
             
             // Verify the changes were applied
-            Mesh finalMesh = meshFilter.sharedMesh;
+            Mesh finalMesh = meshFilter != null ? meshFilter.sharedMesh : (targetMesh != null && targetMesh == originalMesh ? targetMesh : newMesh);
             if (finalMesh != null)
             {
                 Vector2[] finalUVs = finalMesh.uv;
@@ -416,13 +598,17 @@ public class UVRemapper : EditorWindow
             }
             
             processedCount++;
-            Debug.Log($"UVRemapper: Remapped UVs for mesh: {originalMesh.name} on {meshFilter.name}");
+            string meshLocation = meshFilter != null ? $"on {meshFilter.name}" : "(direct mesh)";
+            Debug.Log($"UVRemapper: Remapped UVs for mesh: {originalMesh.name} {meshLocation}");
         }
         
         // Force scene update
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
-            UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene()
-        );
+        if (targetModel != null)
+        {
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+                UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene()
+            );
+        }
         
         EditorUtility.DisplayDialog(
             "UV Remapping Complete",
@@ -435,10 +621,14 @@ public class UVRemapper : EditorWindow
         
         Debug.Log($"UVRemapper: ===== Completed remapping for {processedCount} mesh(es) =====");
         
-        // Select the target model to see changes
+        // Select the target model or ping the mesh asset
         if (targetModel != null)
         {
             Selection.activeGameObject = targetModel;
+        }
+        else if (targetMesh != null)
+        {
+            EditorGUIUtility.PingObject(targetMesh);
         }
     }
 }

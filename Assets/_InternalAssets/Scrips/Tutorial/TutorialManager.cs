@@ -1290,11 +1290,33 @@ Format: [index] = Quest number + language
     /// <summary>
     /// Check if tutorial is blocking taking weapon from workbench (quest 10)
     /// </summary>
+    /// <summary>
+    /// Check if tutorial is blocking taking weapon from workbench (before quest 10)
+    /// </summary>
     public bool IsQuestBlockingTakeWeapon()
     {
-        return currentQuest != TutorialQuest.TakeGun && 
-               currentQuest != TutorialQuest.Completed && 
-               currentQuest != TutorialQuest.None;
+        // If tutorial is not initialized yet, block interaction
+        if (!isInitialized)
+        {
+            return true;
+        }
+        
+        // If tutorial is completed, allow interaction
+        if (tutorialCompleted || currentQuest == TutorialQuest.Completed)
+        {
+            return false;
+        }
+        
+        // Allow interaction starting from quest 10 (TakeGun) and all subsequent quests
+        // Block on all quests before quest 10 (quests 1-9)
+        // Quest 10 (TakeGun) = 9, Quest 11 (ShootTargets) = 10, Quest 12 (EnterRange) = 11, Completed = 12
+        if ((int)currentQuest >= (int)TutorialQuest.TakeGun)
+        {
+            return false; // Allow interaction (quest 10 or later)
+        }
+        
+        // Block on all quests before quest 10 (quests 1-9, None)
+        return true;
     }
     
     /// <summary>

@@ -7,7 +7,7 @@ Mesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: wall_plywood_1
-  serializedVersion: 11
+  serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
     firstByte: 0
@@ -31,7 +31,7 @@ Mesh:
   m_VariableBoneCountWeights:
     m_Data: 
   m_MeshCompression: 0
-  m_IsReadable: 0
+  m_IsReadable: 1
   m_KeepVertices: 1
   m_KeepIndices: 1
   m_IndexFormat: 0
@@ -97,7 +97,7 @@ Mesh:
       format: 0
       dimension: 0
     m_DataSize: 384
-    _typelessdata: e3d1cd3f1a266ab6011599b300000000000080bf00000000f4ff7fbf00000000c0d7a53a000080bfc76e503f4871c53be4d1cd3f1a266ab600e5a54000000000000080bf00000000f4ff7fbf0000000083eca53a000080bf2587503fcc71993ef0d1cdbf219573b600e5a54000000000000080bf00000000f4ff7fbf0000000029e1a53a000080bf162a7f3f9253993ef1d1cdbf219573b6dccb943300000000000080bf00000000f4ff7fbf0000000066cca53a000080bfc0117f3f48e4bd3be4d1cd3f1a266ab600e5a54000000000000000000000803ff4ff7fbff9e9a53a00000000000080bf2587503fcc71993ee4d1cd3f025c343e00e5a54000000000000000000000803ff4ff7fbf07eba53a00000000000080bff987503f988d9e3ef0d1cdbf705c343e00e5a54000000000000000000000803ff4ff7fbf3508a63a00000000000080bfea2a7f3f5c6f9e3ef0d1cdbf219573b600e5a54000000000000000000000803ff4ff7fbf2707a63a00000000000080bf162a7f3f9253993e
+    _typelessdata: e3d1cd3f1a266ab6011599b300000000000080bf00000000f4ff7fbf00000000c0d7a53a000080bfc76ed03e4871453be4d1cd3f1a266ab600e5a54000000000000080bf00000000f4ff7fbf0000000083eca53a000080bf2587d03ecc71193ef0d1cdbf219573b600e5a54000000000000080bf00000000f4ff7fbf0000000029e1a53a000080bf162aff3e9253193ef1d1cdbf219573b6dccb943300000000000080bf00000000f4ff7fbf0000000066cca53a000080bfc011ff3e48e43d3be4d1cd3f1a266ab600e5a54000000000000000000000803ff4ff7fbff9e9a53a00000000000080bf2587d03ecc71193ee4d1cd3f025c343e00e5a54000000000000000000000803ff4ff7fbf07eba53a00000000000080bff987d03e988d1e3ef0d1cdbf705c343e00e5a54000000000000000000000803ff4ff7fbf3508a63a00000000000080bfea2aff3e5c6f1e3ef0d1cdbf219573b600e5a54000000000000000000000803ff4ff7fbf2707a63a00000000000080bf162aff3e9253193e
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 0
@@ -157,11 +157,24 @@ Mesh:
   m_CookingOptions: 30
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  'm_MeshMetrics[0]': 311.63214
+  'm_MeshMetrics[0]': 1
   'm_MeshMetrics[1]': 1
-  m_MeshOptimizationFlags: -1
+  m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
     offset: 0
     size: 0
     path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0

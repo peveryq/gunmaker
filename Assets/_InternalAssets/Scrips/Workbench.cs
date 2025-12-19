@@ -929,6 +929,12 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         
         if (mountedWeapon != null && heldItem == null)
         {
+            // Check if tutorial is blocking taking weapon (quest 10)
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingTakeWeapon())
+            {
+                // Tutorial is blocking - don't allow interaction
+                return false;
+            }
             return true;
         }
         
@@ -973,7 +979,16 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
         }
         else if (mountedWeapon != null && heldItem == null)
         {
-            return "[E] Take weapon";
+            // Check if tutorial is blocking taking weapon (quest 10)
+            if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingTakeWeapon())
+            {
+                // Tutorial is blocking - don't show prompt
+                return "";
+            }
+            
+            // Use localized label
+            string localizedLabel = GetLocalizedLabel(interactionLabels.takeGunKey, interactionLabels.takeGun, "take gun");
+            return $"[E] {localizedLabel}";
         }
         else if (mountedWeapon != null && heldItem != null)
         {

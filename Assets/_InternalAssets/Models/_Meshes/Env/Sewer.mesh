@@ -7,7 +7,7 @@ Mesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Sewer
-  serializedVersion: 11
+  serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
     firstByte: 0
@@ -31,7 +31,7 @@ Mesh:
   m_VariableBoneCountWeights:
     m_Data: 
   m_MeshCompression: 0
-  m_IsReadable: 0
+  m_IsReadable: 1
   m_KeepVertices: 1
   m_KeepIndices: 1
   m_IndexFormat: 0
@@ -97,7 +97,7 @@ Mesh:
       format: 0
       dimension: 0
     m_DataSize: 192
-    _typelessdata: bcc41f3f0d9781c10bada83500000000000000000000803f000080bfa23a51b800000000000080bf808e9a3b40a7363c08cb1f3f0e9781419df1a8b500000000000000000000803f000080bfc44e58b800000000000080bff07c973b42257d3fd6c61fbf0e9781419df1a8b500000000000000000000803f000080bf382158b800000000000080bf2273aa3d63257d3feec81fbf0d9781c10bada83500000000000000000000803f000080bf170d51b800000000000080bf2ca4aa3d20af363c
+    _typelessdata: bcc41f3f0d9781c10bada83500000000000000000000803f000080bfa23a51b800000000000080bf8e9a003f40a7b63b08cb1f3f0e9781419df1a8b500000000000000000000803f000080bfc44e58b800000000000080bf7d97003f4225fd3ed6c61fbf0e9781419df1a8b500000000000000000000803f000080bf382158b800000000000080bf32a70a3f6325fd3eeec81fbf0d9781c10bada83500000000000000000000803f000080bf170d51b800000000000080bf43aa0a3f20afb63b
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 0
@@ -159,9 +159,22 @@ Mesh:
   m_BakedTriangleCollisionMesh: 
   'm_MeshMetrics[0]': 1
   'm_MeshMetrics[1]': 1
-  m_MeshOptimizationFlags: -1
+  m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
     offset: 0
     size: 0
     path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0
