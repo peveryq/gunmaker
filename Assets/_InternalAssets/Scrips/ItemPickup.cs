@@ -91,6 +91,13 @@ public class ItemPickup : MonoBehaviour, IInteractable, IInteractionOptionsProvi
             return;
         }
 
+        // Check if this is a Blowtorch and if tutorial is blocking it
+        Blowtorch blowtorch = GetComponent<Blowtorch>();
+        if (blowtorch != null && TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingBlowtorch())
+        {
+            return; // Don't add interaction option if blowtorch is blocked
+        }
+
         bool available = CanInteract(handler);
         if (!available)
         {

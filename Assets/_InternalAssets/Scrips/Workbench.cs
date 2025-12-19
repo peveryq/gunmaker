@@ -777,8 +777,8 @@ public class Workbench : MonoBehaviour, IInteractable, IInteractionOptionsProvid
             if (TutorialManager.Instance == null || !TutorialManager.Instance.IsQuestBlockingTakeWeapon())
             {
                 // Туториал не блокирует - создаем опцию "взять оружие"
-                label = GetLocalizedLabel(interactionLabels.takeGunKey, interactionLabels.takeGun, "take gun");
-                optionId = "workbench.take";
+            label = GetLocalizedLabel(interactionLabels.takeGunKey, interactionLabels.takeGun, "take gun");
+            optionId = "workbench.take";
             }
             // Если туториал блокирует, label и optionId остаются null, опция не будет добавлена
         }

@@ -177,16 +177,34 @@ public class Blowtorch : MonoBehaviour, IInteractable
     // IInteractable implementation
     public bool Interact(InteractionHandler player)
     {
+        // Check if tutorial is blocking interaction with blowtorch
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingBlowtorch())
+        {
+            return false;
+        }
+        
         return itemPickup?.Interact(player) ?? false;
     }
     
     public bool CanInteract(InteractionHandler player)
     {
+        // Check if tutorial is blocking interaction with blowtorch
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingBlowtorch())
+        {
+            return false;
+        }
+        
         return itemPickup?.CanInteract(player) ?? false;
     }
     
     public string GetInteractionPrompt(InteractionHandler player)
     {
+        // If tutorial is blocking, return empty string to hide prompt
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsQuestBlockingBlowtorch())
+        {
+            return string.Empty;
+        }
+        
         return itemPickup?.GetInteractionPrompt(player) ?? "Pick up Blowtorch";
     }
     

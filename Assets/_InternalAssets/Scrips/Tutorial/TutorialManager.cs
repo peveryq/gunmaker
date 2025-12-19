@@ -1562,6 +1562,35 @@ Format: [index] = Quest number + language
     }
     
     /// <summary>
+    /// Check if tutorial is blocking interaction with blowtorch (before quest 5)
+    /// </summary>
+    public bool IsQuestBlockingBlowtorch()
+    {
+        // If tutorial is not initialized yet, block interaction
+        if (!isInitialized)
+        {
+            return true;
+        }
+        
+        // If tutorial is completed, allow interaction
+        if (tutorialCompleted || currentQuest == TutorialQuest.Completed)
+        {
+            return false;
+        }
+        
+        // Allow interaction starting from quest 5 (TakeBlowtorch) and all subsequent quests
+        // Block on all quests before quest 5 (quests 1-4, None)
+        // Quest 5 (TakeBlowtorch) = 4, so allow if currentQuest >= 4
+        if ((int)currentQuest >= (int)TutorialQuest.TakeBlowtorch)
+        {
+            return false; // Allow interaction (quest 5 or later)
+        }
+        
+        // Block on all quests before quest 5 (quests 1-4, None)
+        return true;
+    }
+    
+    /// <summary>
     /// Notify that a part was purchased (called from PurchaseConfirmationUI or ShopUI)
     /// </summary>
     public void NotifyPartPurchased(PartType partType)
